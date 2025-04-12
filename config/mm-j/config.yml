@@ -1,6 +1,7 @@
 # See config.example.yml for documentation.
 name: oot-gc
-object: orig/mm-j/main.dol
+object_base: orig/mm-j
+object: files/tgcmj/120903_majora.tgc:sys/main.dol
 hash: 089548a8ac6e446c77e0e4c9c3f21d7ce2b6fea6
 symbols: config/mm-j/symbols.txt
 splits: config/mm-j/splits.txt
