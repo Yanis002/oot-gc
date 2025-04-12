@@ -448,6 +448,10 @@ const f32 D_80135F7C = 0.26f;
 const f32 D_80135F80 = 8.44f;
 const f64 D_80135F88 = 8.44;
 
+extern u16 lbl_80131FB0[];
+extern u16 lbl_8013BFB0[];
+extern u16 lbl_801617B0[];
+
 static inline bool frameSetProjection(Frame* pFrame, s32 iHint) {
     MatrixHint* pHint = &pFrame->aMatrixHint[iHint];
 
@@ -3155,7 +3159,13 @@ static bool frameDrawRectTexture_Setup(Frame* pFrame, Rectangle* pRectangle) {
                     if (!pFrame->bPauseBGDrawn) {
                         cTempAlpha = pFrame->cBlurAlpha;
                         pFrame->cBlurAlpha = 220;
+
+#if VERSION == MQ_J
+                        ZeldaDrawFrame(pFrame, lbl_8013BFB0);
+#else
                         ZeldaDrawFrame(pFrame, pFrame->nCopyBuffer);
+#endif
+
                         pFrame->cBlurAlpha = cTempAlpha;
                         pFrame->bPauseBGDrawn = true;
                         bSkip = true;
@@ -3362,8 +3372,20 @@ bool frameEnd(Frame* pFrame) {
     }
 
     if (gpSystem->eTypeROM == SRT_DRMARIO && pFrame->bGrabbedFrame) {
+#if VERSION == MQ_J
+        //! TODO: find something better
+        GXSetTexCopySrc(0, 0, GC_FRAME_WIDTH, GC_FRAME_HEIGHT);
+        GXSetTexCopyDst(N64_FRAME_WIDTH, N64_FRAME_HEIGHT, GX_TF_RGB565, GX_TRUE);
+        pData = lbl_801617B0;
+        DCInvalidateRange(pData, N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16));
+        GXCopyTex(pData, GX_FALSE);
+        sCopyFrameSyncReceived = false;
+        GXSetDrawSync(FRAME_SYNC_TOKEN);
+        while (!sCopyFrameSyncReceived) {}
+#else
         pData = pFrame->nTempBuffer;
         CopyCFB(pData);
+#endif
         pFrame->bGrabbedFrame = false;
     }
 
@@ -3951,7 +3973,11 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
         if (i == ARRAY_COUNT(sCommandCodes2)) {
             if (!pFrame->bHackPause) {
                 for (i = 0; i < N64_FRAME_WIDTH * N64_FRAME_HEIGHT; i++) {
+#if VERSION == MQ_J
+                    lbl_8013BFB0[i] = lbl_801617B0[i];
+#else
                     pFrame->nCopyBuffer[i] = pFrame->nTempBuffer[i];
+#endif
                 }
             }
             pFrame->bHackPause = true;
@@ -3975,17 +4001,30 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
                 pFrame->bShrinking |= 0x10;
             }
             if (!pFrame->bBlurOn && (pFrame->bShrinking & 0xF0) == 0) {
+#if VERSION == MQ_J
+                CopyCFB(lbl_801617B0);
+#else
                 CopyCFB(pFrame->nTempBuffer);
+#endif
             }
         } else if (!pFrame->bBlurOn) {
+#if VERSION == MQ_J
+            CopyCFB(lbl_801617B0);
+#else
             CopyCFB(pFrame->nTempBuffer);
+#endif
         }
     }
 
     if (((pBuffer->nAddress == 0x42EEC0) || (pBuffer->nAddress == 0x3A9480) || (pBuffer->nAddress == 0x3A92C0)) &&
         pFrame->bBlurOn && !pFrame->bBlurredThisFrame) {
+#if VERSION == MQ_J
+        ZeldaDrawFrameBlur(pFrame, lbl_801617B0);
+        CopyCFB(lbl_801617B0);
+#else
         ZeldaDrawFrameBlur(pFrame, pFrame->nTempBuffer);
         CopyCFB(pFrame->nTempBuffer);
+#endif
         pFrame->bBlurredThisFrame = true;
     }
 
@@ -4140,7 +4179,11 @@ bool frameHackCIMG_Zelda2_Camera(Frame* pFrame, FrameBuffer* pBuffer, u32 nComma
         }
 
         if ((pFrame->bSnapShot & 0xF00) != 0) {
+#if VERSION == MQ_J
+            ZeldaDrawFrameCamera(pFrame, lbl_80131FB0);
+#else
             ZeldaDrawFrameCamera(pFrame, pFrame->nCameraBuffer);
+#endif
             pFrame->bSnapShot &= ~0xF00;
             return true;
         }
@@ -4153,7 +4196,11 @@ bool frameHackCIMG_Zelda2_Camera(Frame* pFrame, FrameBuffer* pBuffer, u32 nComma
 
         // possible bug? probably meant to be ``pFrame->bSnapShot & 0xF00``
         if ((pFrame->bSnapShot & 0xF0) != 0) {
+#if VERSION == MQ_J
+            ZeldaCopyCamera(lbl_80131FB0);
+#else
             ZeldaCopyCamera(pFrame->nCameraBuffer);
+#endif
             pFrame->bSnapShot &= ~0xF00;
         }
 
@@ -4235,7 +4282,11 @@ bool frameHackTIMG_Panel(Frame* pFrame, FrameBuffer* pBuffer) {
 
     if (pBuffer->nAddress >= 0x358800 && pBuffer->nAddress <= 0x37B800) {
         if (pBuffer->nFormat == 0 && pBuffer->nWidth == 1 && pBuffer->nSize == 2) {
+#if VERSION == MQ_J
+            pBuffer->pData = lbl_801617B0 + ((((s32)(pBuffer->nAddress + 0xFFCA7800) / 2) + 0x8C0));
+#else
             pBuffer->pData = pFrame->nTempBuffer + ((((s32)(pBuffer->nAddress + 0xFFCA7800) / 2) + 0x8C0));
+#endif
             return true;
         }
         pFrame->bFrameOn = false;
@@ -4270,7 +4321,13 @@ bool frameHackCIMG_Panel(Rdp* pRDP, Frame* pFrame, FrameBuffer* pBuffer, u64** p
         Rectangle rect;
 
         pFrame->bFrameOn = true;
+
+#if VERSION == MQ_J
+        FR = lbl_801617B0;
+#else
         FR = pFrame->nTempBuffer;
+#endif
+
         pBuffer = &pFrame->aBuffer[FBT_IMAGE];
 
         nCommandHi = GBI_COMMAND_HI(&pnGBI[7]);
