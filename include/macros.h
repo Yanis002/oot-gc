@@ -30,6 +30,12 @@
 #define SQ(x) ((x) * (x))
 #define CLAMP(x, l, h) (((x) > (h)) ? (h) : (((x) < (l)) ? (l) : (x)))
 
+#if IS_OOT
+#define OOT_INLINE static inline
+#else
+#define OOT_INLINE static
+#endif
+
 // Adds no-ops to increase a function's size, preventing automatic inlining
 #define NO_INLINE() \
     (void)0;        \
