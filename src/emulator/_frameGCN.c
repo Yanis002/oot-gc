@@ -56,8 +56,13 @@ bool gNoSwapBuffer = false;
 static s32 gnCountMapHack;
 
 #if IS_MM
-static LensTexture sLensTex;
+f32 gFarVal;
+f32 gNearVal;
+GXProjectionType gRealProjectionType;
+
+FRAME_TEXTURE* gpTexture[8];
 Mtx gTextureMatrix[8];
+Mtx44 gRealProjectionMtx;
 #endif
 
 static inline bool frameSetProjection(Frame* pFrame, s32 iHint) {
@@ -3024,9 +3029,11 @@ bool _frameDrawRectangle(Frame* pFrame, u32 nColor, s32 nX, s32 nY, s32 nSizeX, 
     return true;
 }
 
+#if IS_OOT
 // Variables from unused function ZeldaDrawFrameZTexture
 static GXTexObj sFrameObj1_1562;
 static GXTexObj sFrameObj2_1563;
+#endif
 
 void ZeldaDrawFrameNoBlend(Frame* pFrame, u16* pData) {
     Mtx matrix;
@@ -3170,9 +3177,11 @@ void ZeldaDrawFrame(Frame* pFrame, u16* pData) {
     frameDrawReset(pFrame, 0x47F2D);
 }
 
+#if IS_OOT
 // Variables from unused functions ConvertZ and ConvertCFB
 static u32 line_1582[N64_FRAME_WIDTH / 4][4][4];
 static u16 line_1606[N64_FRAME_WIDTH / 4][4][4];
+#endif
 
 OOT_INLINE void CopyCFB(u16* srcP) {
     GXSetTexCopySrc(0, 0, GC_FRAME_WIDTH, GC_FRAME_HEIGHT);
@@ -3217,6 +3226,8 @@ void CopyAndConvertCFB(u16* srcP) {
 }
 
 #if IS_MM
+static LensTexture sLensTex;
+
 void CopyZValue(u32* ptr) {
     GXSetCopyFilter(GX_FALSE, NULL, GX_FALSE, NULL);
     GXSetColorUpdate(GX_FALSE);
@@ -3274,7 +3285,7 @@ void frameCopyLensTexture(Frame* pFrame, Rectangle* pRectangle) {
 }
 
 // non-matching
-static GXColor color = { 0, 0, 255, 255 };
+const GXColor color = { 0, 0, 255, 255 };
 void WriteZValue(Frame* pFrame, u32* ptr) {
     // Parameters
     // Frame* pFrame; // r27
@@ -3669,12 +3680,22 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
     s32 pad[2];
 #endif
     static s32 sCommandCodes[] = {
+#if IS_OOT
         0xE7000000, 0x00000000, 0xEF000CF0, 0x0F0A4004, 0xFB000000,
         0xFFFFFFFF, 0xFC12FE25, 0xFFFFFBFD, 0xFF10013F, 0x804096C0,
+#elif IS_MM
+        0xE7000000, 0x00000000, 0xEF000CF0, 0x0F0A4004, 0xFB000000,
+        0xFFFFFFFF, 0xFC12FE25, 0xFFFFFBFD, 0xFF10013F, 0x00000000,
+#endif
     };
     static s32 sCommandCodes2[] = {
+#if IS_OOT
         0xE7000000, 0x00000000, 0xE7000000, 0x00000000, 0xEF000CF0,
         0x0F0A0004, 0xFCFFFFFF, 0xFFFCFE7F, 0xFF88013F, 0x80784600,
+#elif IS_MM
+        0xE7000000, 0x00000000, 0xEF000CF0, 0x0F0A4004, 0xFB000000,
+        0xFFFFFFFF, 0xFC12FE25, 0xFFFFFBFD, 0xFF10013F, 0x00000000,
+#endif
     };
     static s32 nLastFrame;
     static s32 nCopyFrame;
@@ -3950,6 +3971,7 @@ bool frameHackCIMG_Zelda2_Camera(Frame* pFrame, FrameBuffer* pBuffer, u32 nComma
     return false;
 }
 
+#if IS_OOT
 void PanelDrawBG8(u16* BG, u16* LUT, u8* bitmap, s32 sizeX, s32 sizeY, s32 posX, s32 posY, bool flip) {
     s32 i;
     s32 j;
@@ -4722,6 +4744,7 @@ bool frameHackCIMG_Panel(Rdp* pRDP, Frame* pFrame, FrameBuffer* pBuffer, u64** p
 
     return false;
 }
+#endif
 
 bool frameGetDepth(Frame* pFrame, u16* pnData, s32 nAddress) {
     u32 nX;

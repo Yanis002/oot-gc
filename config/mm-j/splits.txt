@@ -116,8 +116,8 @@ emulator/frame.c:
 	.rodata     start:0x800DF2C0 end:0x800DF300
 	.data       start:0x800F6948 end:0x800F73C8
 	.bss        start:0x80116980 end:0x8013FB50
-	.sdata      start:0x80144AE8 end:0x80144B78
-	.sbss       start:0x80145958 end:0x801459B8
+	.sdata      start:0x80144AE8 end:0x80144B70
+	.sbss       start:0x80145958 end:0x801459A8
 	.sdata2     start:0x801460C8 end:0x801462C8
 
 emulator/system.c:
@@ -125,7 +125,7 @@ emulator/system.c:
 	.rodata     start:0x800DF300 end:0x800DF340
 	.data       start:0x800F73C8 end:0x800F77A0
 	.bss        start:0x8013FB50 end:0x8013FCC8
-	.sdata      start:0x80144B78 end:0x80144DF0
+	.sdata      start:0x80144B70 end:0x80144DF0
 	.sdata2     start:0x801462C8 end:0x801462D8
 
 emulator/cpu.c:
@@ -133,7 +133,7 @@ emulator/cpu.c:
 	.data       start:0x800F77A0 end:0x800F9F30
 	.bss        start:0x8013FCC8 end:0x8013FEE0
 	.sdata      start:0x80144DF0 end:0x801454B8
-	.sbss       start:0x801459B8 end:0x80145A38
+	.sbss       start:0x801459A8 end:0x80145A38
 	.sdata2     start:0x801462D8 end:0x80146308
 
 emulator/pif.c:
