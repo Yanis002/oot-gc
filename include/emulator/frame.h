@@ -355,6 +355,39 @@ typedef struct Frame {
     /* 0x3D148 0x3D134 */ u16* nCameraBuffer;
 } Frame; // size = 0x3D150 0x3D138
 
+typedef struct _FRAME_TEXTURE {
+    /* 0x00 */ s32 nMode;
+    /* 0x04 */ s32 iPackPixel;
+    /* 0x08 */ s32 iPackColor;
+    /* 0x0C */ s32 nFrameLast;
+    /* 0x10 */ s16 nSizeX;
+    /* 0x12 */ s16 nSizeY;
+    /* 0x14 */ u32 nAddress;
+    /* 0x18 */ u32 nCodePixel;
+    /* 0x1C */ u32 nCodeColor;
+    /* 0x20 */ struct _FRAME_TEXTURE* pTextureNext;
+    /* 0x24 */ u32 nData0;
+    /* 0x28 */ u32 nData1;
+    /* 0x2C */ u32 nData2;
+    /* 0x30 */ u32 nData3;
+    /* 0x34 */ GXTexFmt eFormat;
+    /* 0x38 */ GXTlutObj objectTLUT;
+    /* 0x44 */ GXTexObj objectTexture;
+    /* 0x64 */ GXTexWrapMode eWrapS;
+    /* 0x68 */ GXTexWrapMode eWrapT;
+} FRAME_TEXTURE; // size = 0x6C
+
+typedef struct LensTexture {
+    /* 0x0000 */ u8 lensTexture[64 * 64 * 2];
+    /* 0x2000 */ FRAME_TEXTURE texture;
+    /* 0x206C */ f32 rS0;
+    /* 0x2070 */ f32 rS1;
+    /* 0x2074 */ f32 rT0;
+    /* 0x2078 */ f32 rT1;
+    /* 0x207C */ u8 alphaComp;
+    /* 0x2080 */ Mtx texMtx;
+} LensTexture; // size = 0x20B0
+
 extern _XL_OBJECTTYPE gClassFrame;
 extern bool gNoSwapBuffer;
 extern GXTexMapID ganNamePixel[];

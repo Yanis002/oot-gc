@@ -454,6 +454,11 @@ const f32 D_80135F7C = 0.26f;
 const f32 D_80135F80 = 8.44f;
 const f64 D_80135F88 = 8.44;
 
+#if IS_MM
+static LensTexture sLensTex;
+Mtx gTextureMatrix[8];
+#endif
+
 static inline bool frameSetProjection(Frame* pFrame, s32 iHint) {
     MatrixHint* pHint = &pFrame->aMatrixHint[iHint];
 
@@ -2816,6 +2821,162 @@ void CopyAndConvertCFB(u16* srcP) {
     }
 }
 
+void CopyZValue(u32* ptr) {
+    GXSetCopyFilter(GX_FALSE, NULL, GX_FALSE, NULL);
+    GXSetColorUpdate(GX_FALSE);
+    GXSetTexCopySrc(0, 0, GC_FRAME_WIDTH, GC_FRAME_HEIGHT);
+    GXSetTexCopyDst(GC_FRAME_WIDTH, GC_FRAME_HEIGHT, GX_TF_Z24X8, GX_FALSE);
+    DCInvalidateRange(ptr, GC_FRAME_WIDTH * GC_FRAME_HEIGHT * 4);
+    GXCopyTex(ptr, GX_FALSE);
+    GXPixModeSync();
+    GXSetCopyFilter(rmode->aa, &rmode->sample_pattern[0], GX_TRUE, rmode->vfilter);
+    GXSetColorUpdate(GX_TRUE);
+}
+
+// non-matching
+void frameCopyLensTexture(Frame* pFrame, Rectangle* pRectangle) {
+    // Parameters
+    // Frame* pFrame; // r30
+    // struct __anon_0x2F75F* pRectangle; // r31
+
+    // Local variables
+    void* originalDataP; // r1+0x8
+
+    // References
+    // -> static struct LensTexture sLensTex;
+    // -> struct _FRAME_TEXTURE* gpTexture[8];
+    // -> f32 gTextureMatrix[8][3][4];
+
+    memcpy(sLensTex.texMtx, gTextureMatrix[pRectangle->iTile], sizeof(Mtx));
+
+    // var_r5 = sLensTex.texture;
+    // var_r4 = gTextureMatrix[pRectangle->iTile] - 8;
+
+    // s32 i;
+
+    // for (i = 0; i < 12; i++) {
+
+    // }
+
+    // do {
+    //     temp_r3 = var_r4->unk8;
+    //     var_r4 += 8;
+    //     var_r5 += 8;
+    //     var_r5[2] = temp_r3;
+    //     var_r5[1] = var_r4->unk4;
+    // } while (var_ctr != 0);
+
+    // var_r5[2] = var_r4->unk8;
+    memcpy(sLensTex.lensTexture, OSPhysicalToCached(GXGetTexObjData(&sLensTex.texture.objectTexture)), sizeof(sLensTex.lensTexture));
+    GXInitTexObjData(&sLensTex.texture.objectTexture, sLensTex.lensTexture);
+
+    sLensTex.rS0 = pRectangle->rS;
+    sLensTex.rS1 = N64_FRAME_WIDTH * pRectangle->rDeltaS + pRectangle->rS;
+    sLensTex.rT0 = pRectangle->rT;
+    sLensTex.rT1 = N64_FRAME_HEIGHT * pRectangle->rDeltaT + pRectangle->rT;
+    sLensTex.alphaComp = pFrame->aColor[2].a;
+}
+
+// non-matching
+static GXColor color = { 0, 0, 255, 255 };
+void WriteZValue(Frame* pFrame, u32* ptr) {
+    // Parameters
+    // Frame* pFrame; // r27
+    // u32* ptr; // r28
+
+    // Local variables
+    s32 x; // r1+0x5C
+    f32 matrix[3][4]; // r1+0x2C
+    s32 pad[3];
+
+    static GXTexObj texObj;
+
+    // References
+    // -> struct _GXRenderModeObj* rmode;
+    // -> static struct LensTexture sLensTex;
+    // -> static struct _GXTexObj texObj$1646;
+    // -> enum _GXTexCoordID ganNameTexCoord[8];
+    // -> u32 ganNameTexMtx[8];
+
+    frameDrawSetup2D(pFrame);
+
+    DCStoreRange(ptr, GC_FRAME_WIDTH * GC_FRAME_HEIGHT * 4);
+    GXSetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+    GXSetNumTevStages(2);
+    GXSetNumTexGens(2);
+    GXSetNumChans(0);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXPeekZ(0, 0, &x);
+
+    if (x == 1) {
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_ZERO);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_A0, GX_CA_ZERO, GX_CA_TEXA, GX_CA_ZERO);
+    } else {
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_C0, GX_CC_TEXC, GX_CC_ZERO);
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_A0, GX_CA_TEXA, GX_CA_ZERO);
+    }
+
+    GXSetTevColorOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE1, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE1, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_CPREV);
+    GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
+    GXSetTexCoordGen2(ganNameTexCoord[4], GX_TG_MTX2x4, GX_TG_TEX1, ganNameTexMtx[4], GX_FALSE, 0x7D);
+    GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetColorUpdate(0U);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_GREATER, sLensTex.alphaComp, GX_AOP_AND, GX_GREATER, sLensTex.alphaComp);
+    GXSetZTexture(GX_ZT_REPLACE, GX_TF_Z24X8, 0);
+    GXSetZMode(GX_TRUE, GX_ALWAYS, GX_TRUE);
+    GXSetZCompLoc(GX_FALSE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    GXLoadTexMtxImm(matrix, 0x21, GX_MTX2x4);
+    GXLoadTexMtxImm(sLensTex.texMtx, 0x21, GX_MTX2x4);
+    GXInitTexObj(&texObj, ptr, GC_FRAME_WIDTH, GC_FRAME_HEIGHT, GX_TF_Z24X8, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXLoadTexObj(&sLensTex.texture.objectTexture, GX_TEXMAP1);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX1, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA6, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_RGBA6, 0);
+
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition2f32(0.0f, 0.0f);
+    GXPosition3f32(0.0f, 0.0f, 0.0f);
+    GXPosition2f32(sLensTex.rS0, sLensTex.rT0);
+    GXPosition3f32(N64_FRAME_WIDTH, 0.0f, 0.0f);
+    GXPosition2f32(1.0f, 0.0f);
+    GXPosition2f32(sLensTex.rS1, sLensTex.rT0);
+    GXPosition3f32(N64_FRAME_WIDTH, N64_FRAME_HEIGHT, 0.0f);
+    GXPosition2f32(1.0f, 1.0f);
+    GXPosition3f32(sLensTex.rS1, sLensTex.rT1, 0.0f);
+    GXPosition3f32(N64_FRAME_HEIGHT, 0.0f, 0.0f);
+    GXPosition3f32(1.0f, sLensTex.rS0, sLensTex.rT1);
+    GXEnd();
+
+    GXPixModeSync();
+    GXSetColorUpdate(1U);
+    GXSetZTexture(GX_ZT_DISABLE, GX_TF_Z24X8, 0U);
+
+    if ((u8) rmode->aa != 0) {
+        GXSetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
+    } else {
+        GXSetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
+    }
+
+    GXSetTexCoordGen2(ganNameTexCoord[1], GX_TG_MTX2x4, GX_TG_TEX0, ganNameTexMtx[1], GX_FALSE, 0x7DU);
+    pFrame->nMode &= 0x0CC00000;
+    pFrame->nModeVtx = -1;
+    frameDrawReset(pFrame, 0xFFFFFFFF);
+}
+
 // matches but data doesn't
 //! TODO: make sFrameObj and cAlpha a static variable in the function
 #ifndef NON_MATCHING
@@ -3120,8 +3281,9 @@ bool frameHackTIMG_Zelda(Frame* pFrame, u64** pnGBI, u32* pnCommandLo, u32* pnCo
 
 bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 nCommandLo, u32 nCommandHi) {
     u32 i;
-    u32* pGBI;
+#if IS_OOT
     s32 pad[2];
+#endif
 
     if (pBuffer->nAddress == pFrame->aBuffer[FBT_DEPTH].nAddress) {
         pFrame->nHackCount += 1;
@@ -3130,7 +3292,8 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
     pFrame->nFrameCIMGCalls += 1;
 
     if ((s32)pFrame->nHackCount > 1) {
-        pGBI = (u32*)&pnGBI[-5];
+        u32* pGBI = (u32*)&pnGBI[-5];
+
         for (i = 0; i < ARRAY_COUNT(sCommandCodes_1702); i++) {
             if (pGBI[i] != sCommandCodes_1702[i] && !(i == 9 && GBI_CHECK)) {
                 break;
@@ -3147,21 +3310,30 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
     }
 
     if ((s32)nCopyFrame != 0) {
-        pGBI = (u32*)&pnGBI[-5];
+        u32* pGBI = (u32*)&pnGBI[-5];
+
         for (i = 0; i < ARRAY_COUNT(sCommandCodes2); i++) {
+#if IS_OOT
             if (pGBI[i] != sCommandCodes2[i]) {
                 break;
             }
+#else
+            if ((i != 9 || pGBI[9] != 0x8078F800) && pGBI[i] != sCommandCodes2[i]) {
+                break;
+            }
+#endif
         }
 
         if (i == ARRAY_COUNT(sCommandCodes2)) {
-#if IS_OOT
             if (!pFrame->bHackPause) {
+#if IS_OOT
                 for (i = 0; i < N64_FRAME_WIDTH * N64_FRAME_HEIGHT; i++) {
                     pFrame->nCopyBuffer[i] = pFrame->nTempBuffer[i];
                 }
-            }
+#else
+                memcpy(pFrame->nCopyBuffer, pFrame->nTempBuffer, N64_FRAME_WIDTH * N64_FRAME_HEIGHT * 2);
 #endif
+            }
             pFrame->bHackPause = true;
             pFrame->nHackCount = 0;
             pFrame->bPauseThisFrame = 1;
