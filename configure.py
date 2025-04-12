@@ -208,6 +208,7 @@ cflags_base = [
     "-sym on",
     "-i include",
     "-i libc",
+    "-i src",
 ]
 
 if config.non_matching:
@@ -279,7 +280,7 @@ config.libs = [
             Object(Linked, "emulator/soundGCN.c"),
             Object(LinkedFor("ce-j"), "emulator/frame.c", asm_processor=True),
             Object(OOT_VERSIONS, "emulator/system.c"),
-            Object(LinkedFor("ce-j"), "emulator/cpu.c", asm_processor=True),
+            Object(OOT_VERSIONS, "emulator/cpu.c"),
             Object(Linked, "emulator/pif.c"),
             Object(Linked, "emulator/ram.c"),
             Object(OOT_VERSIONS, "emulator/rom.c"),
