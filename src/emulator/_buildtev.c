@@ -8,7 +8,7 @@ GXTevColorArg gColorArgs[16] = {
     GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXC, GX_CC_C1,   GX_CC_RASC, GX_CC_C2,  GX_CC_ONE, GX_CC_APREV,
     GX_CC_TEXA,  GX_CC_TEXA, GX_CC_A1,   GX_CC_RASA, GX_CC_A2,   GX_CC_ONE, GX_CC_C0,  GX_CC_ZERO,
 #elif IS_MM
-    GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXC, GX_CC_C1,   GX_CC_RASC, GX_CC_C2,  GX_CC_ONE, GX_CC_APREV,
+    GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXC, GX_CC_C1,   GX_CC_RASC, GX_CC_C2, GX_CC_ONE, GX_CC_APREV,
     GX_CC_TEXA,  GX_CC_TEXA, GX_CC_A1,   GX_CC_RASA, GX_CC_A2,   GX_CC_A0, GX_CC_C0,  GX_CC_ZERO,
 #endif
 };
@@ -85,7 +85,7 @@ void SetColor(u8* stageValues, u32 colorVal, u8 cycle) {
                 } else {
                     stageValues[i] = 0xF;
                 }
-            } 
+            }
 #endif
         }
 

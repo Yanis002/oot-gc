@@ -27,10 +27,9 @@ static u8 ImportantData[112] = {
 };
 // clang-format on
 
-extern u8 special_data[];;
+extern u8 special_data[];
 
 static u16 sCurrButton;
-
 
 #define BUTTON_COMBO_HOLD (PAD_TRIGGER_Z | PAD_TRIGGER_R | PAD_TRIGGER_L)
 
@@ -49,7 +48,7 @@ static void DrawStuff(u8* dataP, s32 y) {
     f32 temp_f2;
     f32 temp_f31;
     s32 temp_r0;
-    u8 *var_r30;
+    u8* var_r30;
     s32 temp_r3;
     s32 temp_r6;
 

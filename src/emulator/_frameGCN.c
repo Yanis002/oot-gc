@@ -3478,7 +3478,8 @@ void frameCopyLensTexture(Frame* pFrame, Rectangle* pRectangle) {
     // } while (var_ctr != 0);
 
     // var_r5[2] = var_r4->unk8;
-    memcpy(sLensTex.lensTexture, OSPhysicalToCached(GXGetTexObjData(&sLensTex.texture.objectTexture)), sizeof(sLensTex.lensTexture));
+    memcpy(sLensTex.lensTexture, OSPhysicalToCached(GXGetTexObjData(&sLensTex.texture.objectTexture)),
+           sizeof(sLensTex.lensTexture));
     GXInitTexObjData(&sLensTex.texture.objectTexture, sLensTex.lensTexture);
 
     sLensTex.rS0 = pRectangle->rS;
@@ -3489,7 +3490,7 @@ void frameCopyLensTexture(Frame* pFrame, Rectangle* pRectangle) {
 }
 
 // non-matching
-const GXColor color = { 0, 0, 255, 255 };
+const GXColor color = {0, 0, 255, 255};
 void WriteZValue(Frame* pFrame, u32* ptr) {
     // Parameters
     // Frame* pFrame; // r27
@@ -3576,7 +3577,7 @@ void WriteZValue(Frame* pFrame, u32* ptr) {
     GXSetColorUpdate(1U);
     GXSetZTexture(GX_ZT_DISABLE, GX_TF_Z24X8, 0U);
 
-    if ((u8) rmode->aa != 0) {
+    if ((u8)rmode->aa != 0) {
         GXSetPixelFmt(GX_PF_RGB565_Z16, GX_ZC_LINEAR);
     } else {
         GXSetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
@@ -5149,7 +5150,8 @@ static bool frameEvent(Frame* pFrame, s32 nEvent, void* pArgument) {
             }
 #endif
 
-            if ((gpSystem->eTypeROM == SRT_ZELDA2) && !xlHeapTake(&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
+            if ((gpSystem->eTypeROM == SRT_ZELDA2) &&
+                !xlHeapTake(&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
                 return false;
             }
             break;

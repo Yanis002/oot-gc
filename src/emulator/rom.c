@@ -956,7 +956,7 @@ static bool romCacheAllBlocks(Rom* pROM, char* szName) {
         }
 
         if (!(iBlock & 0xF)) {
-            romCacheGame_OTHER(pROM, szName, (f32) iBlock / (f32) temp_r28);
+            romCacheGame_OTHER(pROM, szName, (f32)iBlock / (f32)temp_r28);
         }
     }
 

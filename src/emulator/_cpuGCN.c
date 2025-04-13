@@ -6594,7 +6594,7 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
                         break;
                     case 0x04: // sllv
                         pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32
-                                                        << (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
+                                                           << (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
                         break;
                     case 0x06: // srlv
                         pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
@@ -6631,7 +6631,7 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
                         break;
                     case 0x14: // dsllv
                         pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64
-                                                        << (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
+                                                           << (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
                         break;
                     case 0x16: // dsrlv
                         pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
@@ -7834,7 +7834,8 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
                 do {
                     if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
                         nData32 = ((u32)nData8 & 0xFF) << nCount;
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 =
+                            nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
                     }
                     nCount -= 8;
                 } while ((nAddress++ & 3) != 0);
@@ -7867,7 +7868,8 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
                 do {
                     if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
                         nData32 = ((u32)nData8 & 0xFF) << nCount;
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 =
+                            nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
                     }
                     nCount += 8;
                 } while ((nAddress-- & 3) != 0);

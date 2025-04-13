@@ -248,8 +248,8 @@ static bool systemSetupGameRAM(System* pSystem) {
     }
 
     // Ocarina of Time or Majora's Mask
-    if (romTestCode(pROM, "CZLJ") || romTestCode(pROM, "CZLE") || ROM_TEST_OOT_EU
-        || romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE") || ROM_TEST_MM_EU) {
+    if (romTestCode(pROM, "CZLJ") || romTestCode(pROM, "CZLE") || ROM_TEST_OOT_EU || romTestCode(pROM, "NZSJ") ||
+        romTestCode(pROM, "NZSE") || ROM_TEST_MM_EU) {
         switch (nCode) {
 
 #if VERSION == MQ_J
@@ -1019,7 +1019,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 }
             }
 #endif
-        } 
+        }
 
         pCPU->nCompileFlag |= 0x1010;
     } else if (romTestCode(pROM, "NPWE") || ROM_TEST_PW_JP) {
@@ -1277,19 +1277,22 @@ static bool systemSetupGameALL(System* pSystem) {
 
 #if IS_MM
                 strcat(buf1, "z_icon.tpl");
-                if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 && !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
                     return false;
                 }
                 DVDClose(&fileInfo);
                 simulatorUnpackTexPalette((TEXPalette*)mCard.saveIcon);
 
                 strcat(buf2, "z_bnr.tpl");
-                if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 && (simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL) == 0)) {
+                if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
+                    (simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL) == 0)) {
                     return false;
                 }
                 DVDClose(&fileInfo);
                 simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
-                mcardOpen(&mCard, "KIRBY", "Kirby", mCard.saveIcon, mCard.saveBanner, "KIRBY", &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x800);
+                mcardOpen(&mCard, "KIRBY", "Kirby", mCard.saveIcon, mCard.saveBanner, "KIRBY",
+                          &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x800);
                 pCPU->nCompileFlag |= 0x110;
 #endif
             } else if (romTestCode(pROM, "CLBE")) {
@@ -1474,8 +1477,8 @@ static bool systemSetupGameALL(System* pSystem) {
 
                         DVDClose(&fileInfo);
                         simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
-                        mcardOpen(&mCard, "STARFOX", MCARD_FILE_NAME_STARFOX, mCard.saveIcon, mCard.saveBanner, "STARFOX",
-                                  &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x200);
+                        mcardOpen(&mCard, "STARFOX", MCARD_FILE_NAME_STARFOX, mCard.saveIcon, mCard.saveBanner,
+                                  "STARFOX", &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x200);
 
 #if IS_MM
                         if (romTestCode(pROM, "NFXJ")) {
@@ -1668,9 +1671,8 @@ static bool systemSetupGameALL(System* pSystem) {
 
                             DVDClose(&fileInfo);
                             simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
-                            mcardOpen(&mCard, "SLICRADIC", "Slicradic", mCard.saveIcon, mCard.saveBanner,
-                                      "SLICRADIC", &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000,
-                                      0x800);
+                            mcardOpen(&mCard, "SLICRADIC", "Slicradic", mCard.saveIcon, mCard.saveBanner, "SLICRADIC",
+                                      &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x800);
                             if (!cpuSetCodeHack(pCPU, 0x80066884, 0x8C62FF8C, -1)) {
                                 return false;
                             }
