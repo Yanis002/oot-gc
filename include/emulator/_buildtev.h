@@ -2,6 +2,13 @@
 #define _BUILDTEV_H
 
 #include "dolphin.h"
+#include "macros.h"
+
+#if IS_OOT
+#define TEV_NUM 8
+#elif IS_MM
+#define TEV_NUM 9
+#endif
 
 // __anon_0x89C77
 typedef struct TevOrder {
@@ -27,10 +34,10 @@ typedef struct CombineModeTev {
     /* 0x012 */ u8 numTexGen;
     /* 0x013 */ u8 numChan;
     /* 0x014 */ u32 flags;
-    /* 0x018 */ TevOrder tevOrder[8];
-    /* 0x078 */ TevColorOp tevColorOpP[8][2];
-    /* 0x1B8 */ GXTevColorArg tevColorArg[8][4];
-    /* 0x238 */ GXTevAlphaArg tevAlphaArg[8][4];
+    /* 0x018 */ TevOrder tevOrder[TEV_NUM];
+    /* 0x078 */ TevColorOp tevColorOpP[TEV_NUM][2];
+    /* 0x1B8 */ GXTevColorArg tevColorArg[TEV_NUM][4];
+    /* 0x238 */ GXTevAlphaArg tevAlphaArg[TEV_NUM][4];
 } CombineModeTev; // size = 0x2B8
 
 void SetColor(u8* stageValues, u32 colorVal, u8 cycle);

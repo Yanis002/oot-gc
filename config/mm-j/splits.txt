@@ -228,14 +228,14 @@ emulator/_buildtev.c:
 	.text       start:0x800A2D38 end:0x800A6148
 	.data       start:0x800FDC90 end:0x800FDE58
 	.bss        start:0x8013FF20 end:0x80140230
-	.sdata      start:0x801456B0 end:0x801456C8
+	.sdata      start:0x801456B0 end:0x801456C0
 	.sdata2     start:0x80146448 end:0x80146450
 
 emulator/snddvdtrk.c:
 	.text       start:0x800A6148 end:0x800A6EC4
 	.data       start:0x800FDE58 end:0x800FE5E0
 	.bss        start:0x80140230 end:0x80140BC8
-	.sdata      start:0x801456C8 end:0x801456D4
+	.sdata      start:0x801456C0 end:0x801456D4
 	.sbss       start:0x80145A88 end:0x80145A90
 
 emulator/sndspecial.c:

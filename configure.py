@@ -297,7 +297,7 @@ config.libs = [
             Object(Linked, "emulator/library.c"),
             Object(Linked, "emulator/peripheral.c"),
             Object(LinkedFor("ce-j"), "emulator/_frameGCNcc.c", asm_processor=True),
-            Object(OOT_VERSIONS, "emulator/_buildtev.c"),
+            Object(Linked, "emulator/_buildtev.c"),
             Object(NotLinked, "emulator/snddvdtrk.c"),
             Object(NotLinked, "emulator/sndspecial.c"),
         ],
