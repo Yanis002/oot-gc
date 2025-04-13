@@ -63,6 +63,9 @@ GXProjectionType gRealProjectionType;
 FRAME_TEXTURE* gpTexture[8];
 Mtx gTextureMatrix[8];
 Mtx44 gRealProjectionMtx;
+
+//! TODO: move to the proper header
+extern void UpdateDVDTrackList(void);
 #endif
 
 static inline bool frameSetProjection(Frame* pFrame, s32 iHint) {
@@ -84,6 +87,101 @@ static inline bool frameSetProjection(Frame* pFrame, s32 iHint) {
     pFrame->eTypeProjection = pHint->eProjection;
     return true;
 }
+
+#if IS_MM
+static bool frameDrawSetupFog_MarioKart(Frame* pFrame) {
+    GXFogType nFogType;
+    f32 rNear;
+    f32 rFar;
+    u32 nMode;
+    u32 iHint;
+    f32 rFogNear;
+    f32 rFogFar;
+    f32 rFogMin;
+    f32 rFogMax;
+    f32 rMultiplier;
+    f32 dplane;
+    s32 pad[4];
+
+    rMultiplier = (s16)(pFrame->aMode[0] >> 16);
+    iHint = pFrame->iHintProjection;
+
+    if (iHint != -1) {
+        rFar = pFrame->aMatrixHint[pFrame->iHintProjection].rClipFar;
+        rNear = 0.1f * pFrame->aMatrixHint[pFrame->iHintProjection].rClipNear;
+    } else {
+        rFar = 32000.0f;
+        rNear = 1.0f;
+    }
+
+    if (rMultiplier == 0.0f) {
+        GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 1000.0f, pFrame->aColor[0]);
+    } else {
+        f32 dplane = rFar - rNear;
+
+        nFogType = GX_FOG_LIN;
+        rFogNear = rNear;
+        rFogFar = rFar;
+        rFogMin = 0.15f * dplane + rNear;
+        rFogMax = 0.6f * dplane + rNear;
+
+        nMode = pFrame->aMode[4];
+        if (((nMode >> 26) & 3) == 1 || (nMode >> 30) == 3 || ((nMode >> 22) & 3) == 3) {
+            GXSetFog(nFogType, rFogMin, rFogMax, rFogNear, rFogFar, pFrame->aColor[0]);
+        } else {
+            GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 1000.0f, pFrame->aColor[0]);
+        }
+    }
+
+    return true;
+}
+
+static bool frameDrawSetupFog_StarFox(Frame* pFrame) {
+    GXFogType nFogType;
+    f32 rNear;
+    f32 rFar;
+    u32 nMode;
+    u32 iHint;
+    f32 rFogNear;
+    f32 rFogFar;
+    f32 rFogMin;
+    f32 rFogMax;
+    f32 rMultiplier;
+    s32 pad[4];
+
+    rMultiplier = (s16)(pFrame->aMode[0] >> 16);
+    iHint = pFrame->iHintProjection;
+
+    if (iHint != -1) {
+        rFar = pFrame->aMatrixHint[pFrame->iHintProjection].rClipFar;
+        rNear = 0.1f * pFrame->aMatrixHint[pFrame->iHintProjection].rClipNear;
+    } else {
+        rFar = 32000.0f;
+        rNear = 1.0f;
+    }
+
+    if (rMultiplier == 0.0f) {
+        GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 1000.0f, pFrame->aColor[0]);
+    } else {
+        f32 dplane = rFar - rNear;
+
+        nFogType = GX_FOG_LIN;
+        rFogNear = rNear;
+        rFogFar = rFar;
+        rFogMin = 0.1f * dplane + rNear;
+        rFogMax = 0.85f * dplane + rNear;
+
+        nMode = pFrame->aMode[4];
+        if (((nMode >> 26) & 3) == 1 || (nMode >> 30) == 3 || ((nMode >> 22) & 3) == 3) {
+            GXSetFog(nFogType, rFogMin, rFogMax, rFogNear, rFogFar, pFrame->aColor[0]);
+        } else {
+            GXSetFog(GX_FOG_NONE, 0.0f, 0.0f, 0.0f, 1000.0f, pFrame->aColor[0]);
+        }
+    }
+
+    return true;
+}
+#endif
 
 static bool frameDrawSetupFog_Zelda1(Frame* pFrame) {
     GXFogType nFogType;
@@ -156,6 +254,53 @@ static bool frameDrawSetupFog_Zelda1(Frame* pFrame) {
             rFogFar = rFar;
             rFogMin = 0.45f * dplane + rNear;
             rFogMax = dplane + rNear;
+#if IS_MM
+        } else if (gpSystem->eTypeROM == SRT_ZELDA2 && rFar == 12800.0f) {
+            f32 dminmax;
+            f32 rDMinMax;
+            f32 val1;
+            f32 dplane;
+            f32 rNearScale;
+
+            dplane = rFar - rNear;
+
+            nFogType = GX_FOG_LIN;
+            rMultiplier = 128000.0f / rMultiplier;
+            rFogNear = gNearVal = rNear;
+            rFogFar = gFarVal = rFar;
+            rNearScale = -((rOffset * rMultiplier * 0.00390625f) - 500.0f);
+            rDMinMax = rNearScale + rMultiplier;
+            dminmax = rDMinMax - rNearScale;
+
+            if (gRealProjectionType == 0) {
+                rMinimum = -gRealProjectionMtx[4][3] / (((rNearScale - 1000.0f) / 1064.0f) + gRealProjectionMtx[4][2]);
+            } else {
+                rMinimum = (((rNearScale - 1000.0f) / 1064.0f) - gRealProjectionMtx[4][3]) / gRealProjectionMtx[4][2];
+            }
+
+            rOffset = dminmax / 1000.0f;
+            val1 = rOffset;
+
+            if (rOffset > 0.19f) {
+                val1 = 0.19f;
+            } else if (val1 < 0.15f) {
+                val1 = 0.15f;
+            }
+
+            rNearScale = -((dminmax * val1) - rDMinMax);
+            if (rNearScale > 1000.0f) {
+                rNearScale = 1000.0f;
+            }
+
+            if (gRealProjectionType == 0) {
+                rMaximum = -gRealProjectionMtx[4][3] / (((rNearScale - 1000.0f) / 1064.0f) + gRealProjectionMtx[4][2]);
+            } else {
+                rMaximum = (((rNearScale - 1000.0f) / 1064.0f) - gRealProjectionMtx[4][3]) / gRealProjectionMtx[4][2];
+            }
+
+            rFogMin = (((-rMinimum - rNear) / dplane) * dplane) + rNear;
+            rFogMax = (((-rMaximum - rNear) / dplane) * dplane) + rNear;
+#endif
         } else {
             f32 dplane = rFar - rNear;
             f32 rFarScale;
@@ -1366,6 +1511,12 @@ bool frameDrawSetup2D(Frame* pFrame) {
         GXSetViewport(0.0f, 0.0f, pFrame->anSizeX[1], pFrame->anSizeY[1], 0.0f, 1.0f);
         pFrame->nFlag |= 0x10000;
 
+#if IS_MM
+        if (gpSystem->eTypeROM == SRT_ZELDA2 && pFrame->bInBomberNotes) {
+            GXSetViewport(32.0f, 13.0f, pFrame->anSizeX[1], pFrame->anSizeY[1], 0.0f, 1.0f);
+        }
+#endif
+
         if (snScissorChanged) {
             GXSetScissor(snScissorXOrig, snScissorYOrig, snScissorWidth, snScissorHeight);
             snScissorChanged = false;
@@ -1391,6 +1542,7 @@ bool frameDrawSetup2D(Frame* pFrame) {
 static inline void frameSetZMode(Frame* pFrame) {
     u32 mode = pFrame->aMode[FMT_OTHER0];
 
+#if IS_OOT
     if (pFrame->aMode[FMT_GEOMETRY] & 1) {
         if (mode & 0x10) {
             if (mode & 0x20) {
@@ -1405,7 +1557,7 @@ static inline void frameSetZMode(Frame* pFrame) {
                 GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
             }
         }
-    } else if (pFrame->bModifyZBuffer) {
+    } else if (pFrame->bModifyZBuffer == true) {
         if (mode & 0x10) {
             if (mode & 0x20) {
                 GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
@@ -1422,6 +1574,23 @@ static inline void frameSetZMode(Frame* pFrame) {
     } else {
         GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
     }
+#elif IS_MM
+    if (pFrame->aMode[FMT_GEOMETRY] & 1) {
+        if (mode & 0x10) {
+            if (mode & 0x20) {
+                GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+            } else {
+                GXSetZMode(GX_TRUE, GX_LEQUAL, GX_FALSE);
+            }
+        }
+    } else {
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    }
+
+    if (pFrame->bModifyZBuffer == true) {
+        GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
+    }
+#endif
 }
 
 static bool frameDrawSetupSP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 nVertexCount) {
@@ -1447,7 +1616,9 @@ static bool frameDrawSetupSP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 nVe
     f32 scale;
     s32 nCount;
     s32 iIndex;
+#if IS_OOT
     s32 pad;
+#endif
 
     nColors = 0;
     bTextureGen = (pFrame->aMode[FMT_GEOMETRY] & 0xA0) == 0xA0;
@@ -1757,6 +1928,18 @@ static bool frameDrawSetupDP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 ver
                         return false;
                     }
                     break;
+#if IS_MM
+                case SRT_STARFOX:
+                    if (!frameDrawSetupFog_StarFox(pFrame)) {
+                        return false;
+                    }
+                    break;
+                case SRT_MARIOKART:
+                    if (!frameDrawSetupFog_MarioKart(pFrame)) {
+                        return false;
+                    }
+                    break;
+#endif
                 default:
                     if (!frameDrawSetupFog_Default(pFrame)) {
                         return false;
@@ -2748,6 +2931,7 @@ static bool frameDrawRectTexture_Setup(Frame* pFrame, Rectangle* pRectangle) {
             if (frameLoadTile(pFrame, &pTexture[iTile], iTile | (iIndex << 4))) {
                 static bool bSkip;
 
+#if IS_OOT
                 if (gpSystem->eTypeROM == SRT_ZELDA2 && pTexture[iTile]->nAddress == 0x784600 &&
                     pRectangle->nX1 == 1280) {
                     bSkip = true;
@@ -2760,7 +2944,6 @@ static bool frameDrawRectTexture_Setup(Frame* pFrame, Rectangle* pRectangle) {
                         bSkip = true;
                     }
                 }
-
                 if (bSkip) {
                     if (pRectangle->nY1 == 960) {
                         bSkip = false;
@@ -2768,6 +2951,7 @@ static bool frameDrawRectTexture_Setup(Frame* pFrame, Rectangle* pRectangle) {
                     }
                     return true;
                 }
+#endif
 
                 rScaleS = 1.0f / pTexture[iTile]->nSizeX;
                 if (pFrame->aTile[iTile].nShiftS < 11) {
@@ -2871,6 +3055,10 @@ static inline void frameClearModes(Frame* pFrame) {
 bool frameBegin(Frame* pFrame, s32 nCountVertex) {
     s32 i;
     Mtx matrix;
+
+#if IS_MM
+    UpdateDVDTrackList();
+#endif
 
     if (gbFrameBegin) {
         gbFrameBegin = false;
@@ -3330,7 +3518,7 @@ void WriteZValue(Frame* pFrame, u32* ptr) {
     GXSetTevAlphaIn(GX_TEVSTAGE1, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_APREV);
     GXSetTevColor(GX_TEVREG0, color);
     GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD1, GX_TEXMAP1, GX_COLOR_NULL);
-    GXSetTexCoordGen2(ganNameTexCoord[4], GX_TG_MTX2x4, GX_TG_TEX1, ganNameTexMtx[4], GX_FALSE, 0x7D);
+    GXSetTexCoordGen2(ganNameTexCoord[1], GX_TG_MTX2x4, GX_TG_TEX1, ganNameTexMtx[1], GX_FALSE, 0x7D);
     GXSetTevOrder(GX_TEVSTAGE1, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
     GXSetColorUpdate(0U);
     GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
@@ -3378,7 +3566,7 @@ void WriteZValue(Frame* pFrame, u32* ptr) {
         GXSetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
     }
 
-    GXSetTexCoordGen2(ganNameTexCoord[1], GX_TG_MTX2x4, GX_TG_TEX0, ganNameTexMtx[1], GX_FALSE, 0x7DU);
+    GXSetTexCoordGen2(ganNameTexCoord[1], GX_TG_MTX2x4, GX_TG_TEX0, ganNameTexMtx[1], GX_FALSE, 0x7D);
     pFrame->nMode &= 0x0CC00000;
     pFrame->nModeVtx = -1;
     frameDrawReset(pFrame, 0xFFFFFFFF);
@@ -3462,7 +3650,9 @@ static GXTexObj sFrameObj_1660;
 
 void ZeldaDrawFrameShrink(Frame* pFrame, s32 posX, s32 posY, s32 size) {
     Mtx matrix;
+#if IS_OOT
     s32 pad;
+#endif
     f32 nX0;
     f32 nX1;
     f32 nY0;
@@ -3584,8 +3774,55 @@ void ZeldaEraseCamera(void) {
 void ZeldaDrawFrameCamera(Frame* pFrame, void* buffer) {
     Mtx matrix;
     GXColor color;
-    s32 pad[6];
+    f32 nX0; // f31
+    f32 nY0; // f30
+    f32 nX1; // f29
+    f32 nY1; // f28
+    f32 width; // f2
+    f32 height; // f3
     static GXTexObj frameObj;
+
+    nX0 = 80.0f;
+    nY0 = 31.0f;
+    nX1 = 240.0f;
+    nY1 = 143.0f;
+
+#if IS_MM
+    width = 160.0f;
+    height = 112.0f;
+
+    // bug? probably accidental doubles for nX1 and nY1
+    switch (pFrame->bShrinking >> 16) {
+        case 0x0:
+            break;
+        case 0x435:
+            nX0 = 88.0f;
+            nY0 = 40.0f;
+            nX1 = nX0 + width * 0.9025;
+            nY1 = nY0 + height * 0.9025;
+            break;
+        case 0x471:
+            nX0 = 96.0f;
+            nY0 = 49.0f;
+            nX1 = nX0 + width * 0.81;
+            nY1 = nY0 + height * 0.81;
+            break;
+        case 0x4B4:
+            nX0 = 102.0f;
+            nY0 = 56.0f;
+            nX1 = nX0 + width * 0.7224999999999999;
+            nY1 = nY0 + height * 0.7224999999999999;
+            break;
+        case 0x500:
+            nX0 = 111.0f;
+            nY0 = 64.0f;
+            nX1 = nX0 + width * 0.61;
+            nY1 = nY0 + height * 0.64;
+            break;
+        default:
+            break;
+    }
+#endif
 
     frameDrawSetup2D(pFrame);
     color.r = 255;
@@ -3617,13 +3854,13 @@ void ZeldaDrawFrameCamera(Frame* pFrame, void* buffer) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition3f32(80.0f, 31.0f, 0.0f);
+    GXPosition3f32(nX0, nY0, 0.0f);
     GXTexCoord2f32(0.0f, 0.015625f);
-    GXPosition3f32(240.0f, 31.0f, 0.0f);
+    GXPosition3f32(nX1, nY0, 0.0f);
     GXTexCoord2f32(1.0f, 0.015625f);
-    GXPosition3f32(240.0f, 143.0f, 0.0f);
+    GXPosition3f32(nX1, nY1, 0.0f);
     GXTexCoord2f32(1.0f, 0.859375f);
-    GXPosition3f32(80.0f, 143.0f, 0.0f);
+    GXPosition3f32(nX0, nY1, 0.0f);
     GXTexCoord2f32(0.0f, 0.859375f);
     GXEnd();
 
@@ -3675,7 +3912,6 @@ bool frameHackTIMG_Zelda(Frame* pFrame, u64** pnGBI, u32* pnCommandLo, u32* pnCo
 
 bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 nCommandLo, u32 nCommandHi) {
     u32 i;
-    u32* pGBI;
 #if IS_OOT
     s32 pad[2];
 #endif
@@ -3707,9 +3943,10 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
     pFrame->nFrameCIMGCalls += 1;
 
     if ((s32)pFrame->nHackCount > 1) {
-        pGBI = (u32*)&pnGBI[-5];
+        u32* pGBI = (u32*)&pnGBI[-5];
+
         for (i = 0; i < ARRAY_COUNT(sCommandCodes); i++) {
-            if (pGBI[i] != sCommandCodes[i] && !(i == 9 && (pGBI[9] == 0x80383C80 || pGBI[9] == 0x80383AC0))) {
+            if (pGBI[i] != sCommandCodes[i] && !(i == 9 && GBI_CHECK)) {
                 break;
             }
         }
@@ -3724,14 +3961,15 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
     }
 
     if ((s32)nCopyFrame != 0) {
-        pGBI = (u32*)&pnGBI[-5];
+        u32* pGBI = (u32*)&pnGBI[-5];
+
         for (i = 0; i < ARRAY_COUNT(sCommandCodes2); i++) {
 #if IS_OOT
             if (pGBI[i] != sCommandCodes2[i]) {
                 break;
             }
 #elif IS_MM
-            if ((i != 9 || pGBI[9] != 0x8078F800) && pGBI[i] != sCommandCodes2[i]) {
+            if (!(i == 9 && GBI_CHECK) && pGBI[i] != sCommandCodes2[i]) {
                 break;
             }
 #endif
@@ -3775,8 +4013,7 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
         }
     }
 
-    if (((pBuffer->nAddress == 0x42EEC0) || (pBuffer->nAddress == 0x3A9480) || (pBuffer->nAddress == 0x3A92C0)) &&
-        pFrame->bBlurOn && !pFrame->bBlurredThisFrame) {
+    if (ADDRESS_BUFFER_CHECK && pFrame->bBlurOn && !pFrame->bBlurredThisFrame) {
         ZeldaDrawFrameBlur(pFrame, pFrame->nTempBuffer);
         CopyCFB(pFrame->nTempBuffer);
         pFrame->bBlurredThisFrame = true;
@@ -4826,6 +5063,7 @@ static bool frameEvent(Frame* pFrame, s32 nEvent, void* pArgument) {
             pFrame->bPauseThisFrame = false;
             pFrame->bCameFromBomberNotes = false;
             pFrame->bInBomberNotes = false;
+            pFrame->bShrinking = 0;
 
 #if IS_MM
             pFrame->bSnapShot = 0;
