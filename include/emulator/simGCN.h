@@ -76,7 +76,7 @@ extern bool gButtonDownToggle;
 #if IS_OOT
 extern void* gpFrame;
 #elif IS_MM
-extern Frame* gpFrame;
+extern struct Frame* gpFrame;
 #endif
 
 extern void* gpSound;

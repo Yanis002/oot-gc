@@ -279,7 +279,7 @@ config.libs = [
             Object(Linked, "emulator/codeGCN.c"),
             Object(Linked, "emulator/soundGCN.c"),
             Object(OOT_VERSIONS, "emulator/frame.c"),
-            Object(OOT_VERSIONS, "emulator/system.c"),
+            Object(Linked, "emulator/system.c"),
             Object(OOT_VERSIONS, "emulator/cpu.c"),
             Object(Linked, "emulator/pif.c"),
             Object(Linked, "emulator/ram.c"),

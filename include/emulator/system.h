@@ -152,7 +152,9 @@ typedef struct System {
     /* 0x68 */ u64 nAddressBreak;
     /* 0x70 */ SystemObjectType storageDevice;
     /* 0x74 */ u8 anException[16];
+#if IS_OOT
     /* 0x84 */ bool bJapaneseVersion;
+#endif
 } System; // size = 0x88
 
 // __anon_0x3459E
