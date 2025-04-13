@@ -73,7 +73,12 @@ extern bool gDVDResetToggle;
 extern bool gbDisplayedError;
 extern bool gButtonDownToggle;
 
+#if IS_OOT
 extern void* gpFrame;
+#elif IS_MM
+extern Frame* gpFrame;
+#endif
+
 extern void* gpSound;
 extern System* gpSystem;
 

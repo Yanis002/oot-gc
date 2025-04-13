@@ -935,6 +935,35 @@ static bool romCopyUpdate(Rom* pROM) {
     return true;
 }
 
+#if IS_MM
+static bool romCacheAllBlocks(Rom* pROM, char* szName) {
+    s32 iCache;
+    u32 iBlock;
+    u32 iBlockLast;
+
+    u32 temp_r28 = (u32)(pROM->nSize - 1) / 0x2000;
+    iBlockLast = pROM->nTick = temp_r28 + 1;
+
+    for (iBlock = 0; iBlock < iBlockLast; iBlock++) {
+        pROM->aBlock[iBlock].nTickUsed = temp_r28 - iBlock;
+
+        if (!romMakeFreeCache(pROM, &iCache, 0)) {
+            return false;
+        }
+
+        if (!romLoadBlock(pROM, iBlock, iCache, 0)) {
+            return false;
+        }
+
+        if (!(iBlock & 0xF)) {
+            romCacheGame_OTHER(pROM, szName, (f32) iBlock / (f32) temp_r28);
+        }
+    }
+
+    return true;
+}
+#endif
+
 static inline bool romLoadFullOrPartLoop(Rom* pROM) {
     s32 i;
     s32 iCache;
@@ -1314,9 +1343,14 @@ bool romCopyImmediate(Rom* pROM, void* pTarget, s32 nOffsetROM, s32 nSize) {
     s32 nSizeDMA;
     s32 nOffset;
     s32 nOffsetTarget;
+#if IS_OOT
     s32 pad;
+#endif
     u8* pBuffer;
     u8 anBuffer[608];
+#if IS_MM
+    s32 iCache;
+#endif
 
     if (pROM->nSizeCacheRAM == 0) {
         return false;
@@ -1335,10 +1369,24 @@ bool romCopyImmediate(Rom* pROM, void* pTarget, s32 nOffsetROM, s32 nSize) {
 
     if (pROM->eModeLoad == RLM_PART) {
         while (nSize != 0U) {
-            pBlock = &pROM->aBlock[nOffsetROM / 0x2000];
+            nOffsetBlock = nOffsetROM / 0x2000;
+            pBlock = &pROM->aBlock[nOffsetBlock];
+
+#if IS_OOT
             if (pBlock->nSize == 0) {
                 return false;
             }
+#elif IS_MM
+            if (pBlock->nSize == 0) {
+                if (!romMakeFreeCache(pROM, &iCache, 0)) {
+                    return false;
+                }
+
+                if (!romLoadBlock(pROM, nOffsetBlock, iCache, NULL)) {
+                    return false;
+                }
+            }
+#endif
 
             nOffsetBlock = nOffsetROM % 0x2000;
             if ((nSizeCopy = pBlock->nSize - nOffsetBlock) > nSize) {

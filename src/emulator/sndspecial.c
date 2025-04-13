@@ -2,10 +2,8 @@
 #include "dolphin/gx.h"
 #include "dolphin/pad.h"
 #include "dolphin/types.h"
-
-//! TODO: function static
-static GXTexObj texObj_145;
-static GXTexObj texObj2_146;
+#include "emulator/frame.h"
+#include "emulator/simGCN.h"
 
 static u16 sButtonOrder[18] = {
     PAD_BUTTON_UP,   PAD_BUTTON_UP,    PAD_BUTTON_DOWN, PAD_BUTTON_DOWN,  PAD_BUTTON_LEFT, PAD_BUTTON_RIGHT,
@@ -29,10 +27,166 @@ static u8 ImportantData[112] = {
 };
 // clang-format on
 
+extern u8 special_data[];;
+
 static u16 sCurrButton;
-static u16 lastButtons_156;
+
 
 #define BUTTON_COMBO_HOLD (PAD_TRIGGER_Z | PAD_TRIGGER_R | PAD_TRIGGER_L)
+
+static void DrawStuff(u8* dataP, s32 y) {
+    // Parameters
+    // u8* dataP; // r30
+    // s32 y; // r31
+
+    // Local variables
+    s32 i; // r1+0x8
+    s32 length; // r27
+    s32 x; // r7
+    f32 tx; // f3
+    s32 id; // r1+0x8
+
+    f32 temp_f28;
+    f32 temp_f29;
+    f32 temp_f2;
+    f32 temp_f31;
+
+    s32 temp_r0;
+    s32 temp_r3;
+    s32 temp_r6;
+    s32 temp_r7;
+    s32 temp_r7_2;
+    s32 var_r31;
+
+    u8 *var_r30;
+
+    var_r31 = y;
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0U);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA6, 0U);
+    length = *dataP;
+    temp_f31 = 0.016949153f;
+    temp_f28 = 0.0f;
+    var_r30 = dataP + 1;
+    temp_f29 = 1.0f;
+
+loop_4:
+    if ((s32) length > 0) {
+        GXBegin(GX_QUADS, GX_VTXFMT0, (length * 4) & 0xFFFC);
+        i = length;
+        temp_r0 = var_r31 + 8;
+        x = (s32) (0x140 - (length * 8)) / 2;
+        if ((s32) length > 0) {
+            do {
+                temp_r7 = x;
+                temp_r7_2 = x;
+                temp_r3 = x + 8;
+                temp_r6 = *var_r30 - 0x40;
+                var_r30 += 1;
+                x += 8;
+                *(f32 *)0xCC008000 = (f32) temp_r7;
+                *(f32 *)0xCC008000 = (f32) var_r31;
+                tx = (f32) temp_r6 * temp_f31;
+                temp_f2 = tx + temp_f31;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = tx;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = (f32) temp_r3;
+                *(f32 *)0xCC008000 = (f32) var_r31;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = temp_f2;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = (f32) temp_r3;
+                *(f32 *)0xCC008000 = (f32) temp_r0;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = temp_f2;
+                *(f32 *)0xCC008000 = temp_f29;
+                *(f32 *)0xCC008000 = (f32) temp_r7_2;
+                *(f32 *)0xCC008000 = (f32) temp_r0;
+                *(f32 *)0xCC008000 = temp_f28;
+                *(f32 *)0xCC008000 = tx;
+                *(f32 *)0xCC008000 = temp_f29;
+                i -= 1;
+            } while (i != 0);
+        }
+        length = *var_r30;
+        var_r31 += 8;
+        var_r30 += 1;
+        goto loop_4;
+    }
+
+    GXPixModeSync();
+}
+
+static void DrawSpecialScreen() {
+    GXColor color;
+    Mtx matrix;
+    static GXTexObj texObj;
+    static GXTexObj texObj2;
+    s32 pad[12];
+
+    while (frameBeginOK(gpFrame) != 1) {}
+    xlCoreBeforeRender();
+    frameDrawSetup2D(gpFrame);
+
+    // draw background
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    GXSetNumTevStages(1);
+    GXSetNumChans(1);
+    GXSetNumTexGens(0);
+    color.r = 0;
+    color.g = 0;
+    color.b = 0;
+    color.a = 255;
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_ZERO, GX_CC_ZERO, GX_CC_C0);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_KONST);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD_NULL, GX_TEXMAP_NULL, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_NONE, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(0.0f, 0.0f, 0.0f);
+    GXPosition3f32(N64_FRAME_WIDTH, 0.0f, 0.0f);
+    GXPosition3f32(N64_FRAME_WIDTH, N64_FRAME_HEIGHT, 0.0f);
+    GXPosition3f32(0.0f, N64_FRAME_HEIGHT, 0.0f);
+    GXEnd();
+
+    // draw text
+    color.r = 255;
+    color.g = 255;
+    color.b = 255;
+    color.a = 255;
+    GXSetNumTevStages(1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
+    GXSetZCompLoc(GX_TRUE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    GXInitTexObj(&texObj, special_data, 472, 8, GX_TF_I4, GX_CLAMP, GX_CLAMP, GX_FALSE);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    DrawStuff(ImportantData, 30);
+    gpFrame->nMode = 0;
+    gpFrame->nModeVtx = -1;
+    frameDrawReset(gpFrame, 0x5FFED);
+    simulatorDEMODoneRender();
+}
 
 void UpdateSpecial(void) {
     // static u16 lastButtons;
@@ -40,6 +194,7 @@ void UpdateSpecial(void) {
     // Local variables
     u16 buttons; // r30
     u16 pressed; // r5
+    static u16 lastButtons;
 
     // References
     // -> static u16 lastButtons_156;
@@ -49,7 +204,7 @@ void UpdateSpecial(void) {
 
     u16 temp_r3;
 
-    temp_r3 = DemoPad->pst.button & (lastButtons_156 ^ DemoPad->pst.button);
+    temp_r3 = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
     buttons = DemoPad->pst.button;
 
     if ((DemoPad->pst.button & BUTTON_COMBO_HOLD) == BUTTON_COMBO_HOLD) {
@@ -65,11 +220,11 @@ void UpdateSpecial(void) {
     if (sCurrButton == ARRAY_COUNT(sButtonOrder)) {
         do {
             DEMOPadRead();
-            pressed = DemoPad->pst.button & (lastButtons_156 ^ DemoPad->pst.button);
+            pressed = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
             DrawSpecialScreen();
-            lastButtons_156 = pressed;
+            lastButtons = pressed;
         } while (!(pressed & 0x200));
     }
 
-    lastButtons_156 = buttons;
+    lastButtons = buttons;
 }

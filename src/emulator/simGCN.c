@@ -176,7 +176,12 @@ bool gResetBeginFlag = true;
 
 static Code* gpCode;
 
+#if IS_OOT
 void* gpFrame;
+#elif IS_MM
+Frame* gpFrame;
+#endif
+
 void* gpSound;
 System* gpSystem;
 
