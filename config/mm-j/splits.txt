@@ -126,6 +126,7 @@ emulator/system.c:
 	.data       start:0x800F73C8 end:0x800F77A0
 	.bss        start:0x8013FB50 end:0x8013FCC8
 	.sdata      start:0x80144B70 end:0x80144DF0
+	.sbss       start:0x801459A8 end:0x801459B0
 	.sdata2     start:0x801462C8 end:0x801462D8
 
 emulator/cpu.c:
@@ -133,7 +134,7 @@ emulator/cpu.c:
 	.data       start:0x800F77A0 end:0x800F9F30
 	.bss        start:0x8013FCC8 end:0x8013FEE0
 	.sdata      start:0x80144DF0 end:0x801454B8
-	.sbss       start:0x801459A8 end:0x80145A38
+	.sbss       start:0x801459B0 end:0x80145A38
 	.sdata2     start:0x801462D8 end:0x80146308
 
 emulator/pif.c:

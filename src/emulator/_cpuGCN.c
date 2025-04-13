@@ -57,6 +57,8 @@ extern s32 ganMapGPR[32];
 #if IS_MM
 u8 gRegCount;
 u8 gRegList[32];
+
+#include "emulator/_cpuDecodePPC2.c"
 #endif
 
 static inline bool cpuFindBranchOffset(CpuFunction* pFunction, s32* pnOffset, s32 nAddress, s32* anCode) {
@@ -6463,7 +6465,9 @@ static bool cpuExecuteUpdate(Cpu* pCPU, s32* pnAddressGCN, u32 nCount) {
     return true;
 }
 
+#if IS_OOT
 #include "emulator/_cpuDecodePPC2.c"
+#endif
 
 static inline bool cpuCheckInterrupts(Cpu* pCPU) {
     System* pSystem;
@@ -8147,6 +8151,16 @@ static s32 cpuExecuteCall(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddressGC
     return nAddressGCN;
 }
 
+#if IS_OOT
+#if VERSION == MQ_J
+#define LINE_NUM 4721
+#else
+#define LINE_NUM 4725
+#endif
+#elif IS_MM
+#define LINE_NUM 4927
+#endif
+
 /**
  * @brief Recompiles a VR4300 load/store instruction
  *
@@ -8376,7 +8390,7 @@ static s32 cpuExecuteLoadStore(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddr
                 anCode[count++] = 0x90070000 | (iRegisterA << 21) | MIPS_IMM_U16(*opcode);
                 break;
             default:
-                OSPanic("_cpuGCN.c", VERSION == MQ_J ? 4721 : 4725, "");
+                OSPanic("_cpuGCN.c", LINE_NUM, "");
                 break;
         }
     } else {
@@ -8426,6 +8440,18 @@ static s32 cpuExecuteLoadStore(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddr
     ICInvalidateRange(anCode, total * 4);
     return (s32)anCode;
 }
+
+#undef LINE_NUM
+
+#if IS_OOT
+#if VERSION == MQ_J
+#define LINE_NUM 5177
+#else
+#define LINE_NUM 5181
+#endif
+#elif IS_MM
+#define LINE_NUM 5383
+#endif
 
 /**
  * @brief Recompiles a VR4300 load/store instruction on COP1 or doubleword load/store.
@@ -8598,7 +8624,7 @@ static s32 cpuExecuteLoadStoreF(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAdd
                 anCode[count++] = 0x90070000 | (iRegisterA << 21) | (MIPS_IMM_U16(*opcode) + 4);
                 break;
             default:
-                OSPanic("_cpuGCN.c", VERSION == MQ_J ? 5177 : 5181, "");
+                OSPanic("_cpuGCN.c", LINE_NUM, "");
                 break;
         }
     } else {
@@ -8648,6 +8674,8 @@ static s32 cpuExecuteLoadStoreF(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAdd
     ICInvalidateRange(anCode, total * 4);
     return (s32)anCode;
 }
+
+#undef LINE_NUM
 
 /**
  * @brief Generates a call to a virtual-console function from within the dynarec envrionment

@@ -166,6 +166,12 @@ s32 ganMapGPR[32] = {
 
 u32 aHeapTreeFlag[125];
 
+#if IS_MM
+static inline s32 cpuCountTLB(Cpu* pCPU, s32* pnCount);
+
+#include "emulator/_cpuGCN.c"
+#endif
+
 static bool cpuHackHandler(Cpu* pCPU) {
     u32 nSize;
     u32* pnCode;
@@ -316,6 +322,12 @@ bool cpuTestInterrupt(Cpu* pCPU, s32 nMaskIP) {
     return true;
 }
 
+#if IS_OOT
+#define LINE_NUM 923
+#elif IS_MM
+#define LINE_NUM 929
+#endif
+
 bool cpuException(Cpu* pCPU, CpuExceptionCode eCode, s32 nMaskIP) {
     s32 pad[2];
 
@@ -346,7 +358,7 @@ bool cpuException(Cpu* pCPU, CpuExceptionCode eCode, s32 nMaskIP) {
     pCPU->nMode &= ~8;
     if (!(pCPU->nMode & 0x10)) {
         if (!cpuHackHandler(pCPU)) {
-            xlPostText("Exception: #### INTERNAL ERROR #### Cannot match exception-handler!", "cpu.c", 923);
+            xlPostText("Exception: #### INTERNAL ERROR #### Cannot match exception-handler!", "cpu.c", LINE_NUM);
         }
         pCPU->nMode |= 0x10;
     }
@@ -377,6 +389,8 @@ bool cpuException(Cpu* pCPU, CpuExceptionCode eCode, s32 nMaskIP) {
 
     return true;
 }
+
+#undef LINE_NUM
 
 /**
  * @brief Creates a new device and registers memory space for that device.
@@ -792,7 +806,9 @@ bool __cpuBreak(Cpu* pCPU) {
     return true;
 }
 
+#if IS_OOT
 #include "emulator/_cpuGCN.c"
+#endif
 
 /**
  * @brief Maps an object to a cpu device.
@@ -909,6 +925,7 @@ bool cpuSetCodeHack(Cpu* pCPU, s32 nAddress, s32 nOpcodeOld, s32 nOpcodeNew) {
 bool cpuReset(Cpu* pCPU) {
     s32 iRegister;
     s32 iTLB;
+    s32 i;
 
     pCPU->nTick = 0;
     pCPU->nCountCodeHack = 0;
@@ -974,6 +991,7 @@ bool cpuReset(Cpu* pCPU) {
     if (!cpuHeapReset(aHeapTreeFlag, ARRAY_COUNT(aHeapTreeFlag))) {
         return false;
     }
+
     if (gHeapTree == NULL && !xlHeapTake(&gHeapTree, 0x46500 | 0x30000000)) {
         return false;
     }
@@ -983,6 +1001,15 @@ bool cpuReset(Cpu* pCPU) {
     }
 
     pCPU->nCompileFlag = 1;
+
+#if IS_MM
+    gRegCount = 0;
+
+    for (i = 0; i < ARRAY_COUNT(gRegList); i++) {
+        gRegList[i] = 0;
+    }
+#endif
+
     return true;
 }
 
