@@ -46,21 +46,13 @@ static void DrawStuff(u8* dataP, s32 y) {
     f32 tx; // f3
     s32 id; // r1+0x8
 
-    f32 temp_f28;
-    f32 temp_f29;
     f32 temp_f2;
     f32 temp_f31;
-
     s32 temp_r0;
+    u8 *var_r30;
     s32 temp_r3;
     s32 temp_r6;
-    s32 temp_r7;
-    s32 temp_r7_2;
-    s32 var_r31;
 
-    u8 *var_r30;
-
-    var_r31 = y;
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
@@ -68,53 +60,37 @@ static void DrawStuff(u8* dataP, s32 y) {
     GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA6, 0U);
     length = *dataP;
     temp_f31 = 0.016949153f;
-    temp_f28 = 0.0f;
-    var_r30 = dataP + 1;
-    temp_f29 = 1.0f;
 
-loop_4:
-    if ((s32) length > 0) {
+    while (length > 0) {
         GXBegin(GX_QUADS, GX_VTXFMT0, (length * 4) & 0xFFFC);
+        var_r30 = dataP + 1;
         i = length;
-        temp_r0 = var_r31 + 8;
-        x = (s32) (0x140 - (length * 8)) / 2;
-        if ((s32) length > 0) {
-            do {
-                temp_r7 = x;
-                temp_r7_2 = x;
-                temp_r3 = x + 8;
-                temp_r6 = *var_r30 - 0x40;
-                var_r30 += 1;
-                x += 8;
-                *(f32 *)0xCC008000 = (f32) temp_r7;
-                *(f32 *)0xCC008000 = (f32) var_r31;
-                tx = (f32) temp_r6 * temp_f31;
-                temp_f2 = tx + temp_f31;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = tx;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = (f32) temp_r3;
-                *(f32 *)0xCC008000 = (f32) var_r31;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = temp_f2;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = (f32) temp_r3;
-                *(f32 *)0xCC008000 = (f32) temp_r0;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = temp_f2;
-                *(f32 *)0xCC008000 = temp_f29;
-                *(f32 *)0xCC008000 = (f32) temp_r7_2;
-                *(f32 *)0xCC008000 = (f32) temp_r0;
-                *(f32 *)0xCC008000 = temp_f28;
-                *(f32 *)0xCC008000 = tx;
-                *(f32 *)0xCC008000 = temp_f29;
-                i -= 1;
-            } while (i != 0);
+        temp_r6 = N64_FRAME_WIDTH - (length * 8);
+        temp_r0 = y + 8;
+        x = temp_r6 / 2;
+
+        for (i = 0; i < length; i++) {
+            temp_r3 = x + 8;
+            temp_r6 = *var_r30 - 0x40;
+            var_r30 += 1;
+            x += 8;
+            GXPosition2f32(x, y);
+            tx = temp_r6 * temp_f31;
+            temp_f2 = tx + temp_f31;
+            GXPosition2f32(0.0f, tx);
+            GXPosition2f32(0.0f, temp_r3);
+            GXPosition2f32(y, 0.0f);
+            GXPosition2f32(temp_f2, 0.0f);
+            GXPosition2f32(temp_r3, temp_r0);
+            GXPosition2f32(0.0f, temp_f2);
+            GXPosition2f32(1.0f, x);
+            GXPosition2f32(temp_r0, 0.0f);
+            GXPosition2f32(tx, 1.0f);
         }
+
         length = *var_r30;
-        var_r31 += 8;
+        y += 8;
         var_r30 += 1;
-        goto loop_4;
     }
 
     GXPixModeSync();
@@ -194,6 +170,7 @@ void UpdateSpecial(void) {
     // Local variables
     u16 buttons; // r30
     u16 pressed; // r5
+    s32 pad;
     static u16 lastButtons;
 
     // References
@@ -215,15 +192,21 @@ void UpdateSpecial(void) {
         }
     } else {
         sCurrButton = 0;
+        buttons = 0;
     }
 
     if (sCurrButton == ARRAY_COUNT(sButtonOrder)) {
-        do {
+        while (true) {
             DEMOPadRead();
             pressed = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
             DrawSpecialScreen();
-            lastButtons = pressed;
-        } while (!(pressed & 0x200));
+
+            if (pressed & 0x200) {
+                break;
+            }
+
+            lastButtons = buttons;
+        }
     }
 
     lastButtons = buttons;
