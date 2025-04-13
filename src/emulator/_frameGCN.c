@@ -55,6 +55,23 @@ bool gNoSwapBuffer = false;
 
 static s32 gnCountMapHack;
 
+#if VERSION == MQ_J
+//! TODO: move to the appropriate header once it's figured out
+extern u16 gnCameraBuffer[];
+extern u16 gnCopyBuffer[];
+extern u16 gnTempBuffer[];
+#endif
+
+#if VERSION == MQ_J
+#define CAMERA_BUFFER gnCameraBuffer
+#define COPY_BUFFER gnCopyBuffer
+#define TEMP_BUFFER gnTempBuffer
+#else
+#define CAMERA_BUFFER pFrame->nCameraBuffer
+#define COPY_BUFFER pFrame->nCopyBuffer
+#define TEMP_BUFFER pFrame->nTempBuffer
+#endif
+
 #if IS_MM
 f32 gFarVal;
 f32 gNearVal;
@@ -2778,7 +2795,7 @@ static bool frameDrawRectTexture(Frame* pFrame, Rectangle* pRectangle) {
         if (pRectangle->nX0 == 0 && pRectangle->nY0 == 0 && pRectangle->nX1 == 1308 && pRectangle->nY1 == 20) {
             if (pFrame->aBuffer[FBT_IMAGE].nAddress != 0x3B5000 && pFrame->aBuffer[FBT_IMAGE].nAddress != 0x3DA800 &&
                 !pFrame->bBackBufferDrawn) {
-                ZeldaDrawFrameNoBlend(pFrame, pFrame->nTempBuffer);
+                ZeldaDrawFrameNoBlend(pFrame, TEMP_BUFFER);
                 pFrame->bBackBufferDrawn = true;
                 nCounter = 0;
             }
@@ -2938,7 +2955,7 @@ static bool frameDrawRectTexture_Setup(Frame* pFrame, Rectangle* pRectangle) {
                     if (!pFrame->bPauseBGDrawn) {
                         cTempAlpha = pFrame->cBlurAlpha;
                         pFrame->cBlurAlpha = 220;
-                        ZeldaDrawFrame(pFrame, pFrame->nCopyBuffer);
+                        ZeldaDrawFrame(pFrame, COPY_BUFFER);
                         pFrame->cBlurAlpha = cTempAlpha;
                         pFrame->bPauseBGDrawn = true;
                         bSkip = true;
@@ -3145,8 +3162,7 @@ bool frameEnd(Frame* pFrame) {
 
 #if IS_OOT
     if (gpSystem->eTypeROM == SRT_DRMARIO && pFrame->bGrabbedFrame) {
-        pData = pFrame->nTempBuffer;
-        CopyCFB(pData);
+        CopyCFB(TEMP_BUFFER);
         pFrame->bGrabbedFrame = false;
     }
 #endif
@@ -3979,7 +3995,7 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
             if (!pFrame->bHackPause) {
 #if IS_OOT
                 for (i = 0; i < N64_FRAME_WIDTH * N64_FRAME_HEIGHT; i++) {
-                    pFrame->nCopyBuffer[i] = pFrame->nTempBuffer[i];
+                    COPY_BUFFER[i] = TEMP_BUFFER[i];
                 }
 #elif IS_MM
                 memcpy(pFrame->nCopyBuffer, pFrame->nTempBuffer, N64_FRAME_WIDTH * N64_FRAME_HEIGHT * 2);
@@ -4006,16 +4022,16 @@ bool frameHackCIMG_Zelda2(Frame* pFrame, FrameBuffer* pBuffer, u64* pnGBI, u32 n
                 pFrame->bShrinking |= 0x10;
             }
             if (!pFrame->bBlurOn && (pFrame->bShrinking & 0xF0) == 0) {
-                CopyCFB(pFrame->nTempBuffer);
+                CopyCFB(TEMP_BUFFER);
             }
         } else if (!pFrame->bBlurOn) {
-            CopyCFB(pFrame->nTempBuffer);
+            CopyCFB(TEMP_BUFFER);
         }
     }
 
     if (ADDRESS_BUFFER_CHECK && pFrame->bBlurOn && !pFrame->bBlurredThisFrame) {
-        ZeldaDrawFrameBlur(pFrame, pFrame->nTempBuffer);
-        CopyCFB(pFrame->nTempBuffer);
+        ZeldaDrawFrameBlur(pFrame, TEMP_BUFFER);
+        CopyCFB(TEMP_BUFFER);
         pFrame->bBlurredThisFrame = true;
     }
 
@@ -4185,7 +4201,7 @@ bool frameHackCIMG_Zelda2_Camera(Frame* pFrame, FrameBuffer* pBuffer, u32 nComma
 #endif
 
         if ((pFrame->bSnapShot & 0xF00) != 0) {
-            ZeldaDrawFrameCamera(pFrame, pFrame->nCameraBuffer);
+            ZeldaDrawFrameCamera(pFrame, CAMERA_BUFFER);
             pFrame->bSnapShot &= ~0xF00;
             return true;
         }
@@ -4198,7 +4214,7 @@ bool frameHackCIMG_Zelda2_Camera(Frame* pFrame, FrameBuffer* pBuffer, u32 nComma
 
         // possible bug? probably meant to be ``pFrame->bSnapShot & 0xF00``
         if ((pFrame->bSnapShot & 0xF0) != 0) {
-            ZeldaCopyCamera(pFrame->nCameraBuffer);
+            ZeldaCopyCamera(CAMERA_BUFFER);
             pFrame->bSnapShot &= ~0xF00;
         }
 
@@ -4283,7 +4299,7 @@ bool frameHackTIMG_Panel(Frame* pFrame, FrameBuffer* pBuffer) {
 
     if (pBuffer->nAddress >= 0x358800 && pBuffer->nAddress <= 0x37B800) {
         if (pBuffer->nFormat == 0 && pBuffer->nWidth == 1 && pBuffer->nSize == 2) {
-            pBuffer->pData = pFrame->nTempBuffer + ((((s32)(pBuffer->nAddress + 0xFFCA7800) / 2) + 0x8C0));
+            pBuffer->pData = TEMP_BUFFER + ((((s32)(pBuffer->nAddress + 0xFFCA7800) / 2) + 0x8C0));
             return true;
         }
 
@@ -4334,7 +4350,7 @@ bool frameHackCIMG_Panel(Rdp* pRDP, Frame* pFrame, FrameBuffer* pBuffer, u64** p
         pFrame->bFrameOn = true;
 #endif
 
-        FR = pFrame->nTempBuffer;
+        FR = TEMP_BUFFER;
         pBuffer = &pFrame->aBuffer[FBT_IMAGE];
 
         nCommandHi = GBI_COMMAND_HI(&pnGBI[7]);
