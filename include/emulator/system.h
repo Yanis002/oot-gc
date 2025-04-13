@@ -189,6 +189,7 @@ typedef struct SystemRomConfig {
 extern u32 nTickMultiplier;
 extern f32 fTickScale;
 extern u32 gnFlagZelda;
+extern SystemRomConfig gSystemRomConfigurationList[1];
 
 bool systemCopyROM(System* pSystem, s32 nOffsetRAM, s32 nOffsetROM, s32 nSize, SystemCopyCallbackFunc pCallback);
 bool systemSetMode(System* pSystem, SystemMode eMode);
