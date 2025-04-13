@@ -164,40 +164,29 @@ static void DrawSpecialScreen() {
 }
 
 void UpdateSpecial(void) {
-    // static u16 lastButtons;
-
-    // Local variables
-    u16 buttons; // r30
-    u16 pressed; // r5
+    u16 buttons;
+    u16 pressed;
     s32 pad;
     static u16 lastButtons;
 
-    // References
-    // -> static u16 lastButtons_156;
-    // -> struct __anon_0x94E61 DemoPad[4];
-    // -> static u16 sCurrButton;
-    // -> static u16 sButtonOrder[18];
-
-    u16 temp_r3;
-
-    temp_r3 = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
+    pressed = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
     buttons = DemoPad->pst.button;
 
     if ((DemoPad->pst.button & BUTTON_COMBO_HOLD) == BUTTON_COMBO_HOLD) {
-        if (temp_r3 == sButtonOrder[sCurrButton]) {
+        if (pressed == sButtonOrder[sCurrButton]) {
             sCurrButton += 1;
-        } else if (temp_r3 != 0) {
+        } else if (pressed != 0) {
             sCurrButton = 0;
         }
     } else {
         sCurrButton = 0;
-        buttons = 0;
     }
 
     if (sCurrButton == ARRAY_COUNT(sButtonOrder)) {
         while (true) {
             DEMOPadRead();
             pressed = DemoPad->pst.button & (lastButtons ^ DemoPad->pst.button);
+            buttons = DemoPad->pst.button;
             DrawSpecialScreen();
 
             if (pressed & 0x200) {

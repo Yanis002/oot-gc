@@ -808,7 +808,6 @@ static bool mcardWriteConfigAsynch(MemCard* pMCard) {
 }
 
 OOT_INLINE bool mcardWriteTimePrepareWriteBuffer(MemCard* pMCard) {
-
     char dateString[32];
     s32 checksum;
 
@@ -855,6 +854,7 @@ OOT_INLINE bool mcardWriteTimePrepareWriteBuffer(MemCard* pMCard) {
 
 #if IS_MM
     NO_INLINE();
+    PAD_STACK();
 #endif
     return true;
 }
@@ -2353,8 +2353,9 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
         if (size == 0x80) {
             bool var_r31 = 0;
             s32 display = mcardSaveDisplay;
+            u32 addr = address;
 
-            if ((display != 0) && (display != 0x17) && (display != 0x18)) {
+            if (display != 0 && display != 0x17 && display != 0x18) {
                 mcardOneTime = 1;
             }
 
@@ -2366,20 +2367,20 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
                     }
                     mcardSaveDisplay = 0;
                 }
-            } else if (address == 0xFFFF8000 || (address + 0xFFFF0000 == 0)) {
+            } else if (address == 0x8000 || (address + 0xFFFF0000 == 0)) {
                 if (display == 0x12) {
                     ZeldaEraseCamera();
                     mcardLoadZelda2Camera(pMCard, address);
                 }
-            } else if (address == 0xFF80 || (u32)address == 0x7F80) {
-                if ((display == 0x10) || (display == 0x12) || (display == 0x17)) {
+            } else if (address == 0xFF80 || addr == 0x7F80) {
+                if (display == 0x10 || display == 0x12 || display == 0x17) {
                     var_r31 = 1;
                     if ((mcardOneTime == 0) && (display == 0x17)) {
                         var_r31 = 0;
                     }
                     mcardSaveDisplay = 0;
                 }
-            } else if (address == 0xBF80 || (u32)address == 0x3F80) {
+            } else if (address == 0xBF80 || addr == 0x3F80) {
                 if (display == 0x10) {
                     mcardSaveDisplay = 0;
                     var_r31 = 1;
@@ -2396,7 +2397,7 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
                     mcardSaveDisplay = 0;
                     var_r31 = 1;
                 }
-            } else if (address == 0xFFFF8000 && display == 0x18) {
+            } else if (address == 0x8000 && display == 0x18) {
                 if (toggle2 == 0) {
                     toggle2 += 1;
                 } else {
@@ -2554,6 +2555,9 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
         }
     }
 
+#if IS_MM
+    PAD_STACK();
+#endif
     return true;
 }
 

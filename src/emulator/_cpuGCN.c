@@ -6501,6 +6501,29 @@ static inline bool cpuExecuteCacheInstruction(Cpu* pCPU) {
 #if IS_MM
 #define MIPS_UNK(inst) (((inst) >> 13) & 0xF8)
 extern s32 mcardSaveDisplay;
+
+static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
+    // Parameters
+    // struct _CPU* pCPU; // r25
+    // s32 nAddressN64; // r26
+
+    // Local variables
+    s32 bFlag; // r24
+    u32 nOpcode; // r27
+    u32* opcode; // r1+0x748
+    u32 nAddress; // r1+0x18
+    char acLine[1024]; // r1+0x340
+    char acSpace[16]; // r1+0x330
+    char szText[8][64]; // r1+0x130
+    char acAddress[256]; // r1+0x30
+    s32 nTarget; // r24
+
+    // References
+    // -> static char* gaszNameGPR[32];
+    // -> static char* gaszNameFPR[32];
+    // -> static char* gaszNameCP1[32];
+    // -> static char* gaszNameCP0[32];
+}
 #endif
 
 static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddressGCN) {
