@@ -452,5 +452,6 @@ void ZeldaDrawFrameBlur(Frame* pFrame, u16* pData);
 void CopyZValue(u32* ptr);
 void frameCopyLensTexture(Frame* pFrame, Rectangle* pRectangle);
 void WriteZValue(Frame* pFrame, u32* ptr);
+void ZeldaEraseCamera();
 
 #endif

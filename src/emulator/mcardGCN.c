@@ -2343,6 +2343,197 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
         } else if (size == 0x1450 && toggle2 == false) {
             toggle2 = true;
         }
+#if IS_MM
+    } else if (gpSystem->eTypeROM == SRT_ZELDA2) {
+        //! TODO: fake match
+        for (i = (u64)((u32)address / BLOCK_DATA_SIZE);
+            i < (u32)(address + size + BLOCK_DATA_SIZE - 1) / BLOCK_DATA_SIZE; i++) {
+            pMCard->file.game.writtenBlocks[i] = true;
+        }
+
+        if (size == 0x80) {
+            bool var_r31 = 0;
+            s32 display = mcardSaveDisplay;
+
+            if ((display != 0) && (display != 0x17) && (display != 0x18)) {
+                mcardOneTime = 1;
+            }
+
+            if (address == 0x3F80 || address == 0x7F80) {
+                if ((display == 0x1A) || (display == 0x11) || ((display - 0x14) <= 3U)) {
+                    var_r31 = 1;
+                    if ((mcardOneTime == 0) && (display == 0x17)) {
+                        var_r31 = 0;
+                    }
+                    mcardSaveDisplay = 0;
+                }
+            } else if (address == 0xFFFF8000 || (address + 0xFFFF0000 == 0)) {
+                if (display == 0x12) {
+                    ZeldaEraseCamera();
+                    mcardLoadZelda2Camera(pMCard, address);
+                }
+            } else if (address == 0xFF80 || (u32)address == 0x7F80) {
+                if ((display == 0x10) || (display == 0x12) || (display == 0x17)) {
+                    var_r31 = 1;
+                    if ((mcardOneTime == 0) && (display == 0x17)) {
+                        var_r31 = 0;
+                    }
+                    mcardSaveDisplay = 0;
+                }
+            } else if (address == 0xBF80 || (u32)address == 0x3F80) {
+                if (display == 0x10) {
+                    mcardSaveDisplay = 0;
+                    var_r31 = 1;
+                    if (address == 0xBF80) {
+                        DCInvalidateRange(pMCard->file.game.buffer + 0xC000, 0x3FFFU);
+                        memcpy(pMCard->file.game.buffer + 0xC000, pMCard->file.game.buffer + 0x8000, 0x3FFF);
+                    } else {
+                        DCInvalidateRange(pMCard->file.game.buffer + 0x14000, 0x3FFFU);
+                        memcpy(pMCard->file.game.buffer + 0x14000, pMCard->file.game.buffer + 0x10000, 0x3FFF);
+                    }
+                }
+            } else if ((address == 0x1F80) || (address == 0x5F80)) {
+                if (display == 0x19) {
+                    mcardSaveDisplay = 0;
+                    var_r31 = 1;
+                }
+            } else if (address == 0xFFFF8000 && display == 0x18) {
+                if (toggle2 == 0) {
+                    toggle2 += 1;
+                } else {
+                    mcardSaveDisplay = 0;
+                    var_r31 = 1;
+                    switch (((s32*)pMCard->file.game.buffer)[0x6000] & 0xF) {
+                        case 0:
+                            OSSetSoundMode(OS_SOUND_MODE_STEREO);
+                            break;
+                        case 1:
+                            OSSetSoundMode(OS_SOUND_MODE_MONO);
+                            break;
+                        case 2:
+                            OSSetSoundMode(OS_SOUND_MODE_STEREO);
+                            break;
+                        case 3:
+                            OSSetSoundMode(OS_SOUND_MODE_STEREO);
+                            break;
+                    }
+                    toggle2 = 0;
+                }
+            }
+
+            if (var_r31 != 0) {
+                pMCard->saveToggle = true;
+                pMCard->wait = false;
+                simulatorRumbleStop(0);
+                mcardOpenDuringGame(pMCard);
+                if (pMCard->saveToggle == true) {
+                    if (!mcardUpdate()) {
+                        return false;
+                    }
+                }
+            }
+        }
+    } else if (gpSystem->eTypeROM == SRT_MARIO) {
+        if (size == 8) {
+            if (mcardNewStart && address == 0x1F8) {
+                toggle2++;
+
+                if (toggle2 == 5) {
+                    mcardNewStart = 0;
+                }
+            }
+
+            if (mcardNewStart == 0) {
+                if (mcardEmpty != 0) {
+                    mcardEmpty = 0;
+                } else {
+                    switch (address) {
+                        case 0x68:
+                        case 0xD8:
+                        case 0x148:
+                        case 0x1B8:
+                        case 0x1F8:
+                            pMCard->saveToggle = true;
+                            pMCard->wait = false;
+                            simulatorRumbleStop(0);
+                            mcardOpenDuringGame(pMCard);
+                            if (pMCard->saveToggle == true) {
+                                if (!mcardUpdate()) {
+                                    return false;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    } else if (gpSystem->eTypeROM == SRT_MARIOKART) {
+        if (size == 8) {
+            if (mcardNewStart == 1 && address == 0x1F8) {
+                mcardNewStart = 0;
+            }
+
+            if (mcardNewStart == 0) {
+                if (mcardEmpty != 0) {
+                    mcardEmpty = 0;
+                } else {
+                    switch (address) {
+                        case 0x1B8:
+                        case 0x1F0:
+                        case 0x1F8:
+                            pMCard->saveToggle = true;
+                            pMCard->wait = false;
+                            simulatorRumbleStop(0);
+                            mcardOpenDuringGame(pMCard);
+                            if (pMCard->saveToggle == true) {
+                                if (!mcardUpdate()) {
+                                    return false;
+                                }
+                            }
+                            break;
+                        default:
+                            break;
+                    }
+                }
+            }
+        }
+    } else if (gpSystem->eTypeROM == SRT_STARFOX) {
+        if (size == 8 && address == 0x1F8) {
+            if (mcardEmpty != 0) {
+                mcardEmpty = 0;
+            } else {
+                pMCard->saveToggle = true;
+                pMCard->wait = false;
+                simulatorRumbleStop(0);
+                mcardOpenDuringGame(pMCard);
+                if (pMCard->saveToggle == true) {
+                    if (!mcardUpdate()) {
+                        return false;
+                    }
+                }
+            }
+        }
+    } else if (gpSystem->eTypeROM == SRT_PILOTWING) {
+        if (size == 8) {
+            if (address == 0xF8 || address == 0x1F8) {
+                if (mcardEmpty != 0) {
+                    mcardEmpty = 0;
+                } else {
+                    pMCard->saveToggle = true;
+                    pMCard->wait = false;
+                    simulatorRumbleStop(0);
+                    mcardOpenDuringGame(pMCard);
+                    if (pMCard->saveToggle == true) {
+                        if (!mcardUpdate()) {
+                            return false;
+                        }
+                    }
+                }
+            }
+        }
+#endif
     } else {
         if (pMCard->saveToggle == true) {
             simulatorRumbleStop(0);
@@ -2352,6 +2543,9 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
         } else {
             pMCard->saveToggle = true;
             pMCard->wait = false;
+#if IS_MM
+            simulatorRumbleStop(0);
+#endif
             mcardOpenDuringGame(pMCard);
             if (pMCard->saveToggle == true) {
                 if (!mcardUpdate()) {
@@ -2360,6 +2554,7 @@ bool mcardWrite(MemCard* pMCard, s32 address, s32 size, char* data) {
             }
         }
     }
+
     return true;
 }
 
@@ -3510,6 +3705,7 @@ static bool mcardLoadZelda2Camera(MemCard* pMCard, u32 address) {
         return false;
     }
 
+    NO_INLINE();
     return true;
 }
 #endif
