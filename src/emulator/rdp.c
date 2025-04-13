@@ -387,7 +387,7 @@ bool rdpParseGBI(Rdp* pRDP, u64** ppnGBI, RspUCodeType eTypeUCode) {
 
 #if IS_MM
             if (gpSystem->eTypeROM == SRT_ZELDA2 && (pFrame->aTile[iTile].nX0 >> 2) == 144 &&
-                (pFrame->aTile[iTile].nY0 >> 2) == 175 && (pFrame->aTile[iTile].nX1 >> 2) == 104 &&
+                (pFrame->aTile[iTile].nX1 >> 2) == 175 && (pFrame->aTile[iTile].nY0 >> 2) == 104 &&
                 (pFrame->aTile[iTile].nY1 >> 2) == 135) {
                 CopyAndConvertCFB(pFrame->aBuffer[FBT_IMAGE].pData);
             }

@@ -284,7 +284,7 @@ config.libs = [
             Object(Linked, "emulator/pif.c"),
             Object(Linked, "emulator/ram.c"),
             Object(OOT_VERSIONS, "emulator/rom.c"),
-            Object(OOT_VERSIONS, "emulator/rdp.c"),
+            Object(Linked, "emulator/rdp.c"),
             Object(Linked, "emulator/rdb.c"),
             Object(LinkedFor("ce-j"), "emulator/rsp.c", asm_processor=True),
             Object(Linked, "emulator/mips.c"),
