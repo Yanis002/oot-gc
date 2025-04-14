@@ -1,5 +1,5 @@
 # See config.example.yml for documentation.
-name: oot-gc
+name: mm-gc
 object_base: orig/mm-j
 object: files/tgcmj/120903_majora.tgc:sys/main.dol
 hash: 089548a8ac6e446c77e0e4c9c3f21d7ce2b6fea6
