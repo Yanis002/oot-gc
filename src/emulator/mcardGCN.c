@@ -3607,57 +3607,33 @@ static void convert_i8i5(void* i8buf, void* i5buf, u32 num) {
     }
 }
 
-inline int inline_fn(u32 arg0, u32 arg1) { return (arg0 * 0xFF) - arg1; }
-
 static void convert_i5i8(void* i5buf, void* i8buf, u32 num) {
-    // Parameters
-    // void* i5buf; // r1+0x0
-    // void* i8buf; // r4
-    // u32 num; // r1+0x8
-
-    // Local variables
-    const u8* i5ptr; // r6
-    u8* i8ptr; // r4
-    s32 bitcnt; // r1+0x0
-    s32 bitcnt2; // r7
-    u32 bits; // r8
-    u32 i; // r1+0x0
-    u32 c1; // r5
-
-    int new_var;
-    int new_var2;
-    u32 new_var3;
-    int new_var4;
+    const u8* i5ptr;
+    u8* i8ptr;
+    s32 bitcnt;
+    s32 bitcnt2;
+    u32 bits;
+    u32 i;
+    u32 c1;
 
     i8ptr = i8buf;
     i5ptr = i5buf;
-    bits = *i5ptr;
+    bits = *i5ptr++;
     bitcnt = 8;
-    i5ptr++;
 
     for (i = 0; i < num; i++) {
-        new_var2 = *i5ptr;
         bitcnt2 = bitcnt - 5;
 
         if (bitcnt2 > 0) {
-            bitcnt2 = bits >> bitcnt2;
+            c1 = bits >> bitcnt2;
         } else {
             c1 = bits << (-bitcnt2);
-            bits = (*i5ptr) >> bitcnt2;
-            bitcnt2 = bits;
-            bits = bitcnt2;
+            bits = *i5ptr++;
             bitcnt2 += 8;
-            bits = (c1 | (bits >> bitcnt2));
-            c1 = bits;
-            i5ptr++;
+            c1 = c1 | (bits >> bitcnt2);
         }
 
-        c1 = 0x1F;
-        c1 = bits & c1;
-        new_var3 = c1;
-        new_var = 0xFF;
-        new_var4 = new_var;
-        *i8ptr = ((inline_fn(new_var3, new_var3 * new_var) >> ((0, new_var4))) + (new_var3 * new_var4)) / 31;
+        *i8ptr = (c1 & 0x1F) * 255 / 31;
         bitcnt = bitcnt2;
         i8ptr++;
     }
