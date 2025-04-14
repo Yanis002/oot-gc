@@ -71,7 +71,7 @@ static void __DEMOInitMem() {
     void* arenaHi = OSGetArenaHi();
     unsigned long fbSize = ((u16)(rmode->fbWidth + 15) & 0xFFF0) * rmode->xfbHeight * 2;
 
-#if IS_CE
+#if IS_CE || IS_MM
     allocatedFrameBufferSize = fbSize;
 #endif
 
@@ -264,7 +264,7 @@ void __DEMODiagnoseHang(void) {
 }
 
 void DEMOReInit(GXRenderModeObj* mode) {
-#if IS_CE
+#if IS_CE || IS_MM
     s32 pad;
 #endif
     GXFifoObj tmpobj;

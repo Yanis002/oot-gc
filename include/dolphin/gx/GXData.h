@@ -181,7 +181,7 @@ typedef struct _GXData {
     // Flags
     /* 0x4F0 0x5A8 */ GXBool inDispList;
     /* 0x4F1 0x5A9 */ GXBool dlSaveContext;
-#if IS_CE
+#if IS_CE || IS_MM
     /*  N/A  0x5AA */ GXBool abtWaitPECopy;
 #endif
     /* 0x4F2 0x5AB */ u8 dirtyVAT;

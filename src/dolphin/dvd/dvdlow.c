@@ -413,7 +413,7 @@ WEAK DVDLowCallback DVDLowClearCallback() {
     old = Callback;
     Callback = NULL;
 
-#if IS_CE
+#if IS_CE || IS_MM
     WaitingCoverClose = false;
 #endif
 

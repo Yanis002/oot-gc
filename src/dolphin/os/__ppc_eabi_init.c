@@ -15,7 +15,7 @@ ASM void __init_hardware(void){
     mflr r31
     bl __OSPSInit
 
-#if IS_CE
+#if IS_CE || IS_MM
     bl __OSFPRInit
 #endif
 

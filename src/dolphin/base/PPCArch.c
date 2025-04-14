@@ -93,7 +93,7 @@ _spin:
 #endif // clang-format on
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 
 ASM void PPCMtmmcr0(register u32 newMmcr0){
 #ifdef __MWERKS__ // clang-format off

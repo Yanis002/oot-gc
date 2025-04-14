@@ -27,7 +27,7 @@ void* __cpReg = NULL;
 void* __peReg = NULL;
 void* __memReg = NULL;
 
-#if IS_CE
+#if IS_CE || IS_MM
 static u16 DefaultTexData[] ATTRIBUTE_ALIGN(32) = {
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
     0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF, 0xFFFF,
@@ -52,7 +52,7 @@ static GXVtxAttrFmtList GXDefaultVATList[] = {
 
 static f32 GXDefaultProjData[] = {1.0f, 0.0f, 1.0f, 0.0f, -1.0f, -2.0f, 0.0f};
 
-#if IS_CE
+#if IS_CE || IS_MM
 static u32 GXTexRegionAddrTable[] = {
     0x00000, 0x10000, 0x20000, 0x30000, 0x40000, 0x50000, 0x60000, 0x70000, 0x08000, 0x18000, 0x28000, 0x38000,
     0x48000, 0x58000, 0x68000, 0x78000, 0x00000, 0x90000, 0x20000, 0xB0000, 0x40000, 0x98000, 0x60000, 0xB8000,
@@ -118,7 +118,7 @@ static GXTlutRegion* __GXDefaultTlutRegionCallback(u32 tlut) {
     return &gx->TlutRegions[tlut];
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 bool __GXShutdown(bool final) {
     static u32 peCount;
     static OSTime time;
@@ -178,7 +178,7 @@ bool __GXShutdown(bool final) {
 #endif
 
 GXFifoObj* GXInit(void* base, u32 size) {
-#if IS_CE
+#if IS_CE|| IS_MM
     static u32 resetFuncRegistered = 0;
 #endif
     u32 i;
@@ -189,7 +189,7 @@ GXFifoObj* GXInit(void* base, u32 size) {
     gx->inDispList = GX_FALSE;
     gx->dlSaveContext = GX_TRUE;
 
-#if IS_CE
+#if IS_CE || IS_MM
     gx->abtWaitPECopy = GX_TRUE;
 #endif
 
@@ -209,7 +209,7 @@ GXFifoObj* GXInit(void* base, u32 size) {
     GXSetCPUFifo(&FifoObj);
     GXSetGPFifo(&FifoObj);
 
-#if IS_CE
+#if IS_CE || IS_MM
     if (!resetFuncRegistered) {
         OSRegisterResetFunction(&GXResetFuncInfo);
         resetFuncRegistered = 1;
@@ -262,7 +262,7 @@ GXFifoObj* GXInit(void* base, u32 size) {
 
     SET_REG_FIELD(gx->cpTex, 2, 7, 0);
 
-#if IS_CE
+#if IS_CE || IS_MM
     gx->zScale = 1.6777216E7f;
     gx->zOffset = 0.0f;
 #endif
@@ -384,7 +384,7 @@ GXFifoObj* GXInit(void* base, u32 size) {
 void __GXInitGX(void) {
     GXRenderModeObj* renderObj;
 
-#if IS_CE
+#if IS_CE || IS_MM
     GXTexObj texObj;
 #endif
 
@@ -502,7 +502,7 @@ void __GXInitGX(void) {
     GXSetTexRegionCallback(__GXDefaultTexRegionCallback);
     GXSetTlutRegionCallback(__GXDefaultTlutRegionCallback);
 
-#if IS_CE
+#if IS_CE || IS_MM
     GXInitTexObj(&texObj, DefaultTexData, 4, 4, GX_TF_IA8, GX_CLAMP, GX_CLAMP, GX_FALSE);
     GXLoadTexObj(&texObj, GX_TEXMAP0);
     GXLoadTexObj(&texObj, GX_TEXMAP1);

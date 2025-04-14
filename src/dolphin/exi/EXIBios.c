@@ -201,7 +201,7 @@ bool EXISync(s32 chan) {
                 CompleteTransfer(chan);
 
                 if (__OSGetDIConfig() != 0xFF ||
-#if IS_CE
+#if IS_CE || IS_MM
                     ((OSGetConsoleType() & 0xF0000000) == OS_CONSOLE_TDEV) ||
 #endif
                     exi->immLen != 4 || (REG(chan, 0) & 0x00000070) != (EXI_FREQ_1M << 4) ||
@@ -644,7 +644,7 @@ s32 EXIGetID(s32 chan, u32 dev, u32* id) {
     s32 startTime;
     bool enabled;
 
-#if IS_CE
+#if IS_CE || IS_MM
     bool interrupt;
 
     if (chan == 0 && dev == 2 && IDSerialPort1) {
@@ -670,7 +670,7 @@ s32 EXIGetID(s32 chan, u32 dev, u32* id) {
         startTime = __EXIProbeStartTime[chan];
     }
 
-#if IS_CE
+#if IS_CE || IS_MM
     interrupt = OSDisableInterrupts();
 #endif
 
@@ -688,7 +688,7 @@ s32 EXIGetID(s32 chan, u32 dev, u32* id) {
         EXIUnlock(chan);
     }
 
-#if IS_CE
+#if IS_CE || IS_MM
     OSRestoreInterrupts(interrupt);
 #endif
 
@@ -716,7 +716,7 @@ static char unused2[] = "Memory Card 123";
 static char unused3[] = "Memory Card 251";
 static char unused4[] = "Memory Card 507";
 
-#if IS_CE
+#if IS_CE || IS_MM
 static char unused5[] = "Memory Card 1019";
 static char unused6[] = "Memory Card 2043";
 #endif
@@ -725,7 +725,7 @@ static char unused7[] = "USB Adapter";
 static char unused8[] = "Net Card";
 static char unused9[] = "Artist Ether";
 
-#if IS_CE
+#if IS_CE || IS_MM
 static char unused10[] = "Broadband Adapter";
 #endif
 

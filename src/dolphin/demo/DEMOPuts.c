@@ -49,7 +49,7 @@ void DEMOSetupScrnSpc(s32 width, s32 height, f32 depth) {
     Mtx mMtx;
     f32 top = 0.0f;
 
-#if IS_CE
+#if IS_CE || IS_MM
     if (DEMOGetRenderModeObj()->field_rendering && !VIGetNextField()) {
         top = -0.667f;
     } else {

@@ -37,7 +37,7 @@ void GXAdjustForOverscan(GXRenderModeObj* rIn, GXRenderModeObj* rOut, u16 horiz,
     u16 ver2 = vert * 2;
     u32 verf;
 
-#if IS_CE
+#if IS_CE || IS_MM
     u32 viTVMode;
 #endif
 
@@ -45,7 +45,7 @@ void GXAdjustForOverscan(GXRenderModeObj* rIn, GXRenderModeObj* rOut, u16 horiz,
         *rOut = *rIn;
     }
 
-#if IS_CE
+#if IS_CE || IS_MM
     viTVMode = rIn->viTVmode & 3;
 #endif
 

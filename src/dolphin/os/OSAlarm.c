@@ -12,7 +12,7 @@ extern bool __DVDTestAlarm(OSAlarm* alarm);
 static void DecrementerExceptionHandler(__OSException exception, OSContext* context);
 static bool OnReset(bool final);
 
-#if IS_CE
+#if IS_CE || IS_MM
 static OSResetFunctionInfo ResetFunctionInfo = {
     OnReset,
     0xFFFFFFFF,
@@ -25,7 +25,7 @@ void OSInitAlarm(void) {
     if (__OSGetExceptionHandler(8) != DecrementerExceptionHandler) {
         AlarmQueue.head = AlarmQueue.tail = NULL;
         __OSSetExceptionHandler(8, DecrementerExceptionHandler);
-#if IS_CE
+#if IS_CE || IS_MM
         OSRegisterResetFunction(&ResetFunctionInfo);
 #endif
     }
@@ -187,7 +187,7 @@ static ASM void DecrementerExceptionHandler(register __OSException exception, re
 #endif // clang-format on
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 static bool OnReset(bool final) {
     OSAlarm* alarm;
     OSAlarm* next;

@@ -24,7 +24,7 @@ typedef struct SramControlBlock {
 
 static SramControlBlock Scb ATTRIBUTE_ALIGN(32);
 
-#if IS_CE
+#if IS_CE || IS_MM
 u16 OSGetGbsMode(void);
 void OSSetGbsMode(u16 mode);
 #endif
@@ -91,7 +91,7 @@ void __OSInitSram(void) {
     Scb.locked = Scb.enabled = false;
     Scb.sync = ReadSram(Scb.sram);
     Scb.offset = RTC_SRAM_SIZE;
-#if IS_CE
+#if IS_CE || IS_MM
     OSSetGbsMode(OSGetGbsMode());
 #endif
 }
@@ -137,7 +137,7 @@ static bool UnlockSram(bool commit, u32 offset) {
             Scb.offset = offset;
         }
 
-#if IS_CE
+#if IS_CE || IS_MM
         if (Scb.offset <= 20) {
             // this seems to work? esp. since we have GbsMode functions when prime doesn't
             // wacky tho
@@ -225,7 +225,7 @@ void OSSetWirelessID(s32 channel, u16 id) {
     __OSUnlockSramEx(false);
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 u16 OSGetGbsMode(void) {
     OSSramEx* sram;
     u16 id;

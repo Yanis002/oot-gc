@@ -305,6 +305,18 @@ void GXInitTexObjLOD(GXTexObj* obj, GXTexFilter minFilter, GXTexFilter maxFilter
     GX_SET_REG(internal->mode1, reg2, 16, 23);
 }
 
+#if IS_MM
+
+void GXInitTexObjData(GXTexObj* obj, void* image_ptr) {
+    u32 imageBase;
+    GXTexObjPriv* t = (GXTexObjPriv*)obj;
+
+    imageBase = ((u32)image_ptr >> 5) & 0x01FFFFFF;
+    SET_REG_FIELD(t->image3, 21, 0, imageBase);
+}
+
+#endif
+
 void* GXGetTexObjData(GXTexObj* tex_obj) {
     GXTexObjPriv* t = (GXTexObjPriv*)tex_obj;
     return (void*)(GET_REG_FIELD(t->image3, 21, 0) << 5);
@@ -321,7 +333,7 @@ GXBool GXGetTexObjMipMap(GXTexObj* obj) {
 }
 
 void GXLoadTexObjPreLoaded(GXTexObj* obj, GXTexRegion* region, GXTexMapID map) {
-#if IS_CE
+#if IS_CE || IS_MM
     u8 stackManipulation[0x18];
 #endif
 
@@ -556,7 +568,7 @@ void __GXSetSUTexRegs(void) {
 void __GXSetTmemConfig(u32 config) {
     switch (config) {
 
-#if IS_CE
+#if IS_CE || IS_MM
         case 2:
             GX_BP_LOAD_REG(0x8C0d8000);
             GX_BP_LOAD_REG(0x900DC000);

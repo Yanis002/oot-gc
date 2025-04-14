@@ -189,7 +189,7 @@ void GXLoadTexMtxImm(const Mtx mtx, u32 id, GXTexMtxType type) {
     }
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 void __GXSetViewport(void) {
     f32 sx;
     f32 sy;

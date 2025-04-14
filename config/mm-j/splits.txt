@@ -568,7 +568,7 @@ dolphin/card/CARDBios.c:
 	.data       start:0x80101AB8 end:0x80101B20
 	.bss        start:0x801424D0 end:0x80142720
 	.sdata      start:0x80145808 end:0x80145810
-	.sbss       start:0x80145E78 end:0x80145E88
+	.sbss       start:0x80145E78 end:0x80145E80
 
 dolphin/card/CARDUnlock.c:
 	.text       start:0x800C81CC end:0x800C942C
@@ -621,7 +621,7 @@ dolphin/thp/THPDec.c:
 	.data       start:0x80101CC0 end:0x80101D00
 	.bss        start:0x80142720 end:0x80142850
 	.sdata      start:0x80145820 end:0x80145828
-	.sbss       start:0x80145E88 end:0x80145F98
+	.sbss       start:0x80145E80 end:0x80145F98
 	.sdata2     start:0x801465A8 end:0x801465C8
 
 dolphin/thp/THPAudio.c:
