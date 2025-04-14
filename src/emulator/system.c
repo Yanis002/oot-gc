@@ -195,24 +195,24 @@ u32 gnFlagZelda;
 #define Z_ICON_PATH buf1
 #define Z_BNR_PATH buf2
 #define ROM_TEST_OOT_EU romTestCode(pROM, "NZLP")
-#define ROM_TEST_MM_EU romTestCode(pROM, "NZSP")
 #else
 #define Z_ICON_PATH "TPL/z_icon.tpl"
 #define Z_BNR_PATH "TPL/z_bnr.tpl"
 #define ROM_TEST_OOT_EU false
-#define ROM_TEST_MM_EU false
 #endif
 
 #if IS_MM
-#define ROM_TEST_MM_US romTestCode(pROM, "NZSE")
 #define ROM_TEST_PW_JP romTestCode(pROM, "NPWJ")
+#define ROM_TEST_MM_US romTestCode(pROM, "NZSE")
+#define ROM_TEST_MM_EU romTestCode(pROM, "NZSP")
 #define ROM_TEST_MK64_JP romTestCode(pROM, "NKTJ")
 #define ROM_TEST_KIRBY_JP romTestCode(pROM, "NK4J")
 #define MCARD_FILE_NAME_STARFOX "Starfox 64"
 #define MCARD_FILE_NAME_MK64 "Mario Kart 64"
 #else
-#define ROM_TEST_MM_US false
 #define ROM_TEST_PW_JP false
+#define ROM_TEST_MM_US false
+#define ROM_TEST_MM_EU false
 #define ROM_TEST_MK64_JP false
 #define ROM_TEST_KIRBY_JP false
 #define MCARD_FILE_NAME_STARFOX "Starfox"

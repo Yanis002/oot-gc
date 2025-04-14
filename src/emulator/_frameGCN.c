@@ -1574,7 +1574,7 @@ static inline void frameSetZMode(Frame* pFrame) {
                 GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);
             }
         }
-    } else if (pFrame->bModifyZBuffer == true) {
+    } else if (pFrame->bModifyZBuffer) {
         if (mode & 0x10) {
             if (mode & 0x20) {
                 GXSetZMode(GX_TRUE, GX_LEQUAL, GX_TRUE);
