@@ -5,6 +5,9 @@
  * instead of being compiled separately.
  */
 #include "emulator/cpu.h"
+#include "emulator/simGCN.h"
+#include "stdio.h"
+#include "string.h"
 
 static inline bool cpuNoBranchTo(CpuFunction* pFunction, s32 addressN64);
 static inline bool cpuCutStoreLoad(Cpu* pCPU, s32 currentAddress, s32 source);
@@ -57,8 +60,6 @@ extern s32 ganMapGPR[32];
 #if IS_MM
 u8 gRegCount;
 u8 gRegList[32];
-
-#include "emulator/_cpuDecodePPC2.c"
 #endif
 
 static inline bool cpuFindBranchOffset(CpuFunction* pFunction, s32* pnOffset, s32 nAddress, s32* anCode) {
@@ -256,13 +257,14 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
     s32 nTemp2;
     s32 nTemp3;
     bool update;
+    s32 reg;
     s32 iUpdate;
     s32 nTarget;
     s32 var_r24;
     s32 var_r22;
     bool var_r17;
     bool var_r3;
-    u8 pad2[0x54];
+    u8 pad2[0x50];
 
     bFlag = true;
     prev = 0;
@@ -2731,6 +2733,14 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                     }
                     break;
                 case 0x0F: // lui
+#if IS_MM
+                    if (gpSystem->eTypeROM == SRT_ZELDA2 && MIPS_IMM_U16(nOpcode) == 0x8100) {
+                        gRegCount = gRegCount + 1;
+                        reg = MIPS_RT(nOpcode);
+                        gRegList[reg] = 1;
+                        break;
+                    }
+#endif
                     if (!ramGetSize(SYSTEM_RAM(pCPU->pHost), &nSize)) {
                         return false;
                     }
@@ -4820,6 +4830,8 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                         }
                     }
                     if (gpSystem->eTypeROM == SRT_ZELDA2) {
+
+#if IS_OOT
                         if (nOpcode == 0x8FBF0014 && nOpcodePrev == 0 && nOpcodeNext == 0x27BD0018) {
                             if (nAddress == 0x8018570C || nAddress == 0x8018628C || nAddress == 0x8017FB5C ||
                                 nAddress == 0x8018624C || nAddress == 0x801C0F14 || nAddress == 0x801B9DF4 ||
@@ -4833,6 +4845,12 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                         } else if (nOpcode == 0x8FBF001C && nOpcodePrev == 0x248419C4 && nOpcodeNext == 0x8FB00018) {
                             pCPU->nFlagCODE |= 2;
                         }
+#elif IS_MM
+                        if (nOpcode == 0x8FBF0014 && nOpcodePrev == 0x24E40014 && nOpcodeNext == 0x27BD0018) {
+                            pCPU->nFlagCODE |= 2;
+                        }
+#endif
+
                     } else if (gpSystem->eTypeROM == SRT_MARIOPARTY1) {
                         if (nOpcode == 0x8C9F0004 && nOpcodePrev == 0x8C9D0000 && nOpcodeNext == 0x8C900008) {
                             pCPU->nFlagCODE |= 2;
@@ -5123,6 +5141,14 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                     pCPU->nFlagRAM &= ~(1 << MIPS_RT(nOpcode));
                     break;
                 case 0x28: // sb
+#if IS_MM
+                    if (gpSystem->eTypeROM == SRT_ZELDA2 && gRegCount != 0 && (MIPS_IMM_U16(nOpcode) == 0x0 && gRegList[MIPS_RS(nOpcode)] != 0)) {
+                        gRegCount--;
+                        reg = MIPS_RS(nOpcode);
+                        gRegList[reg] = 0;
+                        break;
+                    }
+#endif
                     if (pCPU->nFlagRAM & (1 << MIPS_RS(nOpcode))) {
                         if ((iRegisterB = ganMapGPR[MIPS_RT(nOpcode)]) & 0x100) {
                             iRegisterB = 6;
@@ -6030,6 +6056,7 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
     } else {
         return false;
     }
+
 }
 
 /**
@@ -6374,7 +6401,7 @@ static bool cpuNextInstruction(Cpu* pCPU, s32 addressN64, s32 opcode, s32* anCod
             return false;
         default:
             OSReport("ERROR in cpuNextInstruction() with opcode %p at %p\n", opcode, addressN64);
-            OSPanic("_cpuGCN.c", 3621, "");
+            OSPanic("_cpuGCN.c", IS_MM ? 3650 : 3621, "");
             break;
     }
 
@@ -6399,9 +6426,12 @@ static bool cpuExecuteUpdate(Cpu* pCPU, s32* pnAddressGCN, u32 nCount) {
         return false;
     }
 
+#if IS_OOT
     if (pSystem->eTypeROM == SRT_DRMARIO) {
         eModeUpdate = pSystem->bException ? RUM_NONE : RUM_IDLE;
-    } else {
+    } else 
+#endif
+    {
         eModeUpdate = ((pCPU->nMode & 0x80) && !pSystem->bException) ? RUM_IDLE : RUM_NONE;
     }
     if (!rspUpdate(SYSTEM_RSP(pSystem), eModeUpdate)) {
@@ -6465,9 +6495,7 @@ static bool cpuExecuteUpdate(Cpu* pCPU, s32* pnAddressGCN, u32 nCount) {
     return true;
 }
 
-#if IS_OOT
 #include "emulator/_cpuDecodePPC2.c"
-#endif
 
 static inline bool cpuCheckInterrupts(Cpu* pCPU) {
     System* pSystem;
@@ -6499,7 +6527,6 @@ static inline bool cpuExecuteCacheInstruction(Cpu* pCPU) {
 }
 
 #if IS_MM
-#define MIPS_UNK(inst) (((inst) >> 13) & 0xF8)
 extern s32 mcardSaveDisplay;
 
 static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
@@ -6523,6 +6550,1810 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
     // -> static char* gaszNameFPR[32];
     // -> static char* gaszNameCP1[32];
     // -> static char* gaszNameCP0[32];
+
+    int sVar2;
+    s32 uVar3;
+    char* pcVar4;
+    u32 uVar8;
+    int iVar7;
+    u32 uVar6;
+    s32 uVar5;
+
+    szText[0][0x0] = '\0';
+    szText[1][0x0] = '\0';
+    szText[2][0x0] = '\0';
+    szText[3][0x0] = '\0';
+    szText[4][0x0] = '\0';
+    szText[5][0x0] = '\0';
+    szText[6][0x0] = '\0';
+    szText[7][0x0] = '\0';
+
+    ramGetBuffer(SYSTEM_RAM(pCPU->pHost), &opcode, nAddressN64, NULL);
+    nOpcode = *opcode;
+
+    switch (nOpcode >> 0x1A) {
+        case 0x0:
+            switch (nOpcode & 0x3F) {
+                case 0x0:
+                    if (nOpcode == 0x0) {
+                        strcpy(szText[0], "NOP");
+                    } else {
+                        strcpy(szText[0], "SLL");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    }
+                    break;
+                case 0x2:
+                    strcpy(szText[0], "SRL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3:
+                    strcpy(szText[0], "SRA");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x4:
+                    strcpy(szText[0], "SLLV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x6:
+                    strcpy(szText[0], "SRLV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x7:
+                    strcpy(szText[0], "SRAV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x8:
+                    strcpy(szText[0], "JR");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x9:
+                    strcpy(szText[0], "JALR");
+                    // uVar6 = MIPS_RD(nOpcode);
+                    if (MIPS_RD(nOpcode) == 0x1F) {
+                        strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    } else {
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    }
+                    break;
+                case 0xC:
+                    strcpy(szText[0], "SYSCALL");
+                    break;
+                case 0xD:
+                    strcpy(szText[0], "BREAK");
+                    break;
+                case 0xF:
+                    strcpy(szText[0], "SYNC");
+                    break;
+                case 0x10:
+                    strcpy(szText[0], "MFHI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    break;
+                case 0x11:
+                    strcpy(szText[0], "MTHI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x12:
+                    strcpy(szText[0], "MFLO");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    break;
+                case 0x13:
+                    strcpy(szText[0], "MTLO");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x14:
+                    strcpy(szText[0], "DSLLV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x16:
+                    strcpy(szText[0], "DSRLV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x17:
+                    strcpy(szText[0], "DSRAV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    break;
+                case 0x18:
+                    strcpy(szText[0], "MULT");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x19:
+                    strcpy(szText[0], "MULTU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1A:
+                    strcpy(szText[0], "DIV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1B:
+                    strcpy(szText[0], "DIVU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1C:
+                    strcpy(szText[0], "DMULT");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1D:
+                    strcpy(szText[0], "DMULTU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1E:
+                    strcpy(szText[0], "DDIV");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x1F:
+                    strcpy(szText[0], "DDIVU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x20:
+                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
+                        strcpy(szText[0], "MOV");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        uVar8 = MIPS_RT(nOpcode);
+                        if (uVar8 == 0x0) {
+                            pcVar4 = gaszNameGPR[uVar6];
+                        } else {
+                            pcVar4 = gaszNameGPR[uVar8];
+                        }
+                        strcpy(szText[2], pcVar4);
+                    } else {
+                        strcpy(szText[0], "ADD");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[uVar6]);
+                        strcpy(szText[3], gaszNameGPR[uVar8]);
+                    }
+                    break;
+                case 0x21:
+                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
+                        strcpy(szText[0], "MOV");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        if (uVar6 == 0x0) {
+                            pcVar4 = gaszNameGPR[MIPS_RT(nOpcode)];
+                        } else {
+                            pcVar4 = gaszNameGPR[uVar6];
+                        }
+                        strcpy(szText[2], pcVar4);
+                    } else {
+                        strcpy(szText[0], "ADDU");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[uVar6]);
+                        strcpy(szText[3], gaszNameGPR[uVar8]);
+                    }
+                    break;
+                case 0x22:
+                    strcpy(szText[0], "SUB");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x23:
+                    strcpy(szText[0], "SUBU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x24:
+                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
+                        strcpy(szText[0], "ZERO");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    } else {
+                        strcpy(szText[0], "AND");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[uVar6]);
+                        strcpy(szText[3], gaszNameGPR[uVar8]);
+                    }
+                    break;
+                case 0x25:
+                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
+                        strcpy(szText[0], "MOV");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        if (uVar6 == 0x0) {
+                            pcVar4 = gaszNameGPR[MIPS_RT(nOpcode)];
+                        } else {
+                            pcVar4 = gaszNameGPR[uVar6];
+                        }
+                        strcpy(szText[2], pcVar4);
+                    } else {
+                        strcpy(szText[0], "OR");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[uVar6]);
+                        strcpy(szText[3], gaszNameGPR[uVar8]);
+                    }
+                    break;
+                case 0x26:
+                    uVar8 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_RT(nOpcode);
+                    if (uVar8 == uVar6) {
+                        strcpy(szText[0], "ZERO");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    } else {
+                        strcpy(szText[0], "XOR");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                        strcpy(szText[2], gaszNameGPR[uVar6]);
+                        strcpy(szText[3], gaszNameGPR[uVar8]);
+                    }
+                    break;
+                case 0x27:
+                    strcpy(szText[0], "NOR");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2A:
+                    strcpy(szText[0], "SLT");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2B:
+                    strcpy(szText[0], "SLTU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2C:
+                    strcpy(szText[0], "DADD");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2D:
+                    strcpy(szText[0], "DADDU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2E:
+                    strcpy(szText[0], "DSUB");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x2F:
+                    strcpy(szText[0], "DSUBU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x30:
+                    strcpy(szText[0], "TGE");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x31:
+                    strcpy(szText[0], "TGEU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x32:
+                    strcpy(szText[0], "TLT");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x33:
+                    strcpy(szText[0], "TLTU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x34:
+                    strcpy(szText[0], "TEQ");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x36:
+                    strcpy(szText[0], "TNE");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    break;
+                case 0x38:
+                    strcpy(szText[0], "DSLL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3A:
+                    strcpy(szText[0], "DSRL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3B:
+                    strcpy(szText[0], "DSRA");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3C:
+                    strcpy(szText[0], "DSLL32");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3E:
+                    strcpy(szText[0], "DSRL32");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+                    break;
+                case 0x3F:
+                    strcpy(szText[0], "DSRA32");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
+                    strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+                    sprintf(szText[3], "%d", MIPS_SA(nOpcode));
+            }
+            break;
+        case 0x1:
+            switch (MIPS_RT(nOpcode)) {
+                case 0x0:
+                    strcpy(szText[0], "BLTZ");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x1:
+                    strcpy(szText[0], "BGEZ");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x2:
+                    strcpy(szText[0], "BLTZL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x3:
+                    strcpy(szText[0], "BGEZL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x8:
+                    strcpy(szText[0], "TGEI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0x9:
+                    strcpy(szText[0], "TGEIU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0xA:
+                    strcpy(szText[0], "TLTI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0xB:
+                    strcpy(szText[0], "TLTIU");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0xC:
+                    strcpy(szText[0], "TEQI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0xE:
+                    strcpy(szText[0], "TNEI");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    break;
+                case 0x10:
+                    strcpy(szText[0], "BLTZAL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x11:
+                    strcpy(szText[0], "BGEZAL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x12:
+                    strcpy(szText[0], "BLTZALL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    break;
+                case 0x13:
+                    strcpy(szText[0], "BGEZALL");
+                    strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            }
+            break;
+        case 0x2:
+            strcpy(szText[0], "J");
+            sprintf(szText[1], "%x", nAddressN64 + 0x4 & 0xF0000000 | (nOpcode & 0x3FFFFFF) << 0x2);
+            break;
+        case 0x3:
+            strcpy(szText[0], "JAL");
+            sprintf(szText[1], "%x", nAddressN64 + 0x4 & 0xF0000000 | (nOpcode & 0x3FFFFFF) << 0x2);
+            break;
+        case 0x4:
+            uVar6 = nOpcode >> 0x15 & 0x1F;
+            uVar8 = MIPS_RT(nOpcode);
+            if (uVar6 == uVar8) {
+                strcpy(szText[0], "BRA");
+                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            } else {
+                strcpy(szText[0], "BEQ");
+                strcpy(szText[1], gaszNameGPR[uVar6]);
+                strcpy(szText[2], gaszNameGPR[uVar8]);
+                sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            }
+            break;
+        case 0x5:
+            strcpy(szText[0], "BNE");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x6:
+            strcpy(szText[0], "BLEZ");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x7:
+            strcpy(szText[0], "BGTZ");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x8:
+            if (nOpcode == 0x0) {
+                strcpy(szText[0], "MOV");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            } else {
+                strcpy(szText[0], "ADDI");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                sprintf(szText[3], "%04x", (int)nOpcode);
+            }
+            break;
+        case 0x9:
+            if (nOpcode == 0x0) {
+                strcpy(szText[0], "MOV");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            } else {
+                strcpy(szText[0], "ADDIU");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+                sprintf(szText[3], "%04x", (int)nOpcode);
+            }
+            break;
+        case 0xA:
+            strcpy(szText[0], "SLTI");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[3], "%04x", (int)nOpcode);
+            break;
+        case 0xB:
+            strcpy(szText[0], "SLTIU");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[3], "%04x", (int)nOpcode);
+            break;
+        case 0xC:
+            uVar6 = nOpcode >> 0x15 & 0x1F;
+            if (uVar6 == 0x0) {
+                strcpy(szText[0], "ZERO?");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            } else {
+                strcpy(szText[0], "ANDI");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[uVar6]);
+                sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+            }
+            break;
+        case 0xD:
+            uVar6 = nOpcode >> 0x15 & 0x1F;
+            if (uVar6 == 0x0) {
+                strcpy(szText[0], "MOVI");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                sprintf(szText[2], "%04x", nOpcode & 0xFFFF);
+            } else {
+                strcpy(szText[0], "ORI");
+                strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                strcpy(szText[2], gaszNameGPR[uVar6]);
+                sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+            }
+            break;
+        case 0xE:
+            strcpy(szText[0], "XORI");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+            break;
+        case 0xF:
+            strcpy(szText[0], "LUI");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", nOpcode & 0xFFFF);
+            break;
+        case 0x10:
+            switch (nOpcode & 0x3F) {
+                default:
+                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    switch (uVar6) {
+                        case 0x0:
+                            strcpy(szText[0], "MFC0");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameCP0[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x1:
+                            strcpy(szText[0], "DMFC0");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameCP0[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x4:
+                            strcpy(szText[0], "MTC0");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameCP0[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x5:
+                            strcpy(szText[0], "DMTC0");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameGPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x8:
+                            if (uVar6 == 0x2) {
+                                strcpy(szText[0], "BC0FL");
+                                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                            } else if (uVar6 < 0x2) {
+                                if (uVar6 == 0x0) {
+                                    strcpy(szText[0], "BC0F");
+                                    sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                                } else {
+                                    strcpy(szText[0], "BC0T");
+                                    sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                                }
+                            } else if (uVar6 < 0x4) {
+                                strcpy(szText[0], "BC0TL");
+                                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                            }
+                    }
+                    break;
+                case 0x1:
+                    strcpy(szText[0], "TLBR");
+                    break;
+                case 0x2:
+                    strcpy(szText[0], "TLBWI");
+                    break;
+                case 0x5:
+                    strcpy(szText[0], "TLBWR");
+                    break;
+                case 0x8:
+                    strcpy(szText[0], "TLBP");
+                    break;
+                case 0x18:
+                    strcpy(szText[0], "ERET");
+            }
+            break;
+        case 0x11:
+            if (((nOpcode & 0x7FF) == 0x0) && (uVar6 = nOpcode >> 0x15 & 0x1F, uVar6 < 0x10)) {
+                switch (uVar6) {
+                    case 0x0:
+                        strcpy(szText[0], "MFC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                        break;
+                    case 0x1:
+                        strcpy(szText[0], "DMFC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                        break;
+                    case 0x2:
+                        strcpy(szText[0], "CFC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
+                        break;
+                    case 0x4:
+                        strcpy(szText[0], "MTC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                        break;
+                    case 0x5:
+                        strcpy(szText[0], "DMTC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                        break;
+                    case 0x6:
+                        strcpy(szText[0], "CTC1");
+                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
+                }
+            } else {
+                uVar6 = nOpcode >> 0x15 & 0x1F;
+                if (uVar6 == 0x8) {
+                    uVar6 = MIPS_RT(nOpcode);
+                    if (uVar6 == 0x2) {
+                        strcpy(szText[0], "BC1FL");
+                        sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    } else if (uVar6 < 0x2) {
+                        if (uVar6 == 0x0) {
+                            strcpy(szText[0], "BC1F");
+                            sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                        } else {
+                            strcpy(szText[0], "BC1T");
+                            sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                        }
+                    } else if (uVar6 < 0x4) {
+                        strcpy(szText[0], "BC1TL");
+                        sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    }
+                } else if (uVar6 == 0x14) {
+                    switch (nOpcode & 0x3F) {
+                        case 0x0:
+                            strcpy(szText[0], "ADD");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x1:
+                            strcpy(szText[0], "SUB");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x2:
+                            strcpy(szText[0], "MUL");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3:
+                            strcpy(szText[0], "DIV");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x4:
+                            strcpy(szText[0], "SQRT");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x5:
+                            strcpy(szText[0], "ABS");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x6:
+                            strcpy(szText[0], "MOVE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x7:
+                            strcpy(szText[0], "NEG");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x8:
+                            strcpy(szText[0], "ROUND.L");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x9:
+                            strcpy(szText[0], "TRUNC.L");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xA:
+                            strcpy(szText[0], "CEIL.L");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xB:
+                            strcpy(szText[0], "FLOOR.L");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xC:
+                            strcpy(szText[0], "ROUND.W");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xD:
+                            strcpy(szText[0], "TRUNC.W");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xE:
+                            strcpy(szText[0], "CEIL.W");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xF:
+                            strcpy(szText[0], "FLOOR.W");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x20:
+                            strcpy(szText[0], "CVT.S");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x21:
+                            strcpy(szText[0], "CVT.D");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x24:
+                            strcpy(szText[0], "CVT.W");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x25:
+                            strcpy(szText[0], "CVT.L");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x30:
+                            strcpy(szText[0], "C.F");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x31:
+                            strcpy(szText[0], "C.UN");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x32:
+                            strcpy(szText[0], "C.EQ");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x33:
+                            strcpy(szText[0], "C.UEQ");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x34:
+                            strcpy(szText[0], "C.OLT");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x35:
+                            strcpy(szText[0], "C.ULT");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x36:
+                            strcpy(szText[0], "C.OLE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x37:
+                            strcpy(szText[0], "C.ULE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x38:
+                            strcpy(szText[0], "C.SF");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x39:
+                            strcpy(szText[0], "C.NGLE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3A:
+                            strcpy(szText[0], "C.SEQ");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3B:
+                            strcpy(szText[0], "C.NGL");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3C:
+                            strcpy(szText[0], "C.LT");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3D:
+                            strcpy(szText[0], "C.NGE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3E:
+                            strcpy(szText[0], "C.LE");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3F:
+                            strcpy(szText[0], "C.NGT");
+                            strcat(szText[0], ".W");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                    }
+                } else if (uVar6 < 0x14) {
+                    if (uVar6 == 0x11) {
+                        switch (nOpcode & 0x3F) {
+                            case 0x0:
+                                strcpy(szText[0], "ADD");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x1:
+                                strcpy(szText[0], "SUB");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x2:
+                                strcpy(szText[0], "MUL");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3:
+                                strcpy(szText[0], "DIV");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x4:
+                                strcpy(szText[0], "SQRT");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x5:
+                                strcpy(szText[0], "ABS");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x6:
+                                strcpy(szText[0], "MOVE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x7:
+                                strcpy(szText[0], "NEG");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x8:
+                                strcpy(szText[0], "ROUND.L");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x9:
+                                strcpy(szText[0], "TRUNC.L");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xA:
+                                strcpy(szText[0], "CEIL.L");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xB:
+                                strcpy(szText[0], "FLOOR.L");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xC:
+                                strcpy(szText[0], "ROUND.W");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xD:
+                                strcpy(szText[0], "TRUNC.W");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xE:
+                                strcpy(szText[0], "CEIL.W");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xF:
+                                strcpy(szText[0], "FLOOR.W");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x20:
+                                strcpy(szText[0], "CVT.S");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x21:
+                                strcpy(szText[0], "CVT.D");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x24:
+                                strcpy(szText[0], "CVT.W");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x25:
+                                strcpy(szText[0], "CVT.L");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x30:
+                                strcpy(szText[0], "C.F");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x31:
+                                strcpy(szText[0], "C.UN");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x32:
+                                strcpy(szText[0], "C.EQ");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x33:
+                                strcpy(szText[0], "C.UEQ");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x34:
+                                strcpy(szText[0], "C.OLT");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x35:
+                                strcpy(szText[0], "C.ULT");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x36:
+                                strcpy(szText[0], "C.OLE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x37:
+                                strcpy(szText[0], "C.ULE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x38:
+                                strcpy(szText[0], "C.SF");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x39:
+                                strcpy(szText[0], "C.NGLE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3A:
+                                strcpy(szText[0], "C.SEQ");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3B:
+                                strcpy(szText[0], "C.NGL");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3C:
+                                strcpy(szText[0], "C.LT");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3D:
+                                strcpy(szText[0], "C.NGE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3E:
+                                strcpy(szText[0], "C.LE");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3F:
+                                strcpy(szText[0], "C.NGT");
+                                strcat(szText[0], ".D");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                        }
+                    } else {
+                        switch (nOpcode & 0x3F) {
+                            case 0x0:
+                                strcpy(szText[0], "ADD");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x1:
+                                strcpy(szText[0], "SUB");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x2:
+                                strcpy(szText[0], "MUL");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3:
+                                strcpy(szText[0], "DIV");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x4:
+                                strcpy(szText[0], "SQRT");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x5:
+                                strcpy(szText[0], "ABS");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x6:
+                                strcpy(szText[0], "MOVE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x7:
+                                strcpy(szText[0], "NEG");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x8:
+                                strcpy(szText[0], "ROUND.L");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x9:
+                                strcpy(szText[0], "TRUNC.L");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xA:
+                                strcpy(szText[0], "CEIL.L");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xB:
+                                strcpy(szText[0], "FLOOR.L");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xC:
+                                strcpy(szText[0], "ROUND.W");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xD:
+                                strcpy(szText[0], "TRUNC.W");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xE:
+                                strcpy(szText[0], "CEIL.W");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0xF:
+                                strcpy(szText[0], "FLOOR.W");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x20:
+                                strcpy(szText[0], "CVT.S");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x21:
+                                strcpy(szText[0], "CVT.D");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x24:
+                                strcpy(szText[0], "CVT.W");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x25:
+                                strcpy(szText[0], "CVT.L");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                break;
+                            case 0x30:
+                                strcpy(szText[0], "C.F");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x31:
+                                strcpy(szText[0], "C.UN");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x32:
+                                strcpy(szText[0], "C.EQ");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x33:
+                                strcpy(szText[0], "C.UEQ");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x34:
+                                strcpy(szText[0], "C.OLT");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x35:
+                                strcpy(szText[0], "C.ULT");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x36:
+                                strcpy(szText[0], "C.OLE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x37:
+                                strcpy(szText[0], "C.ULE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x38:
+                                strcpy(szText[0], "C.SF");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x39:
+                                strcpy(szText[0], "C.NGLE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3A:
+                                strcpy(szText[0], "C.SEQ");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3B:
+                                strcpy(szText[0], "C.NGL");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3C:
+                                strcpy(szText[0], "C.LT");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3D:
+                                strcpy(szText[0], "C.NGE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3E:
+                                strcpy(szText[0], "C.LE");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
+                            case 0x3F:
+                                strcpy(szText[0], "C.NGT");
+                                strcat(szText[0], ".S");
+                                strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                                strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                        }
+                    }
+                } else if (uVar6 < 0x16) {
+                    switch (nOpcode & 0x3F) {
+                        case 0x0:
+                            strcpy(szText[0], "ADD");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x1:
+                            strcpy(szText[0], "SUB");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x2:
+                            strcpy(szText[0], "MUL");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3:
+                            strcpy(szText[0], "DIV");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[3], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x4:
+                            strcpy(szText[0], "SQRT");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x5:
+                            strcpy(szText[0], "ABS");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x6:
+                            strcpy(szText[0], "MOVE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x7:
+                            strcpy(szText[0], "NEG");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x8:
+                            strcpy(szText[0], "ROUND.L");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x9:
+                            strcpy(szText[0], "TRUNC.L");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xA:
+                            strcpy(szText[0], "CEIL.L");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xB:
+                            strcpy(szText[0], "FLOOR.L");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xC:
+                            strcpy(szText[0], "ROUND.W");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xD:
+                            strcpy(szText[0], "TRUNC.W");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xE:
+                            strcpy(szText[0], "CEIL.W");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0xF:
+                            strcpy(szText[0], "FLOOR.W");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x20:
+                            strcpy(szText[0], "CVT.S");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x21:
+                            strcpy(szText[0], "CVT.D");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x24:
+                            strcpy(szText[0], "CVT.W");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x25:
+                            strcpy(szText[0], "CVT.L");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_SA(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x30:
+                            strcpy(szText[0], "C.F");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x31:
+                            strcpy(szText[0], "C.UN");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x32:
+                            strcpy(szText[0], "C.EQ");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x33:
+                            strcpy(szText[0], "C.UEQ");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x34:
+                            strcpy(szText[0], "C.OLT");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x35:
+                            strcpy(szText[0], "C.ULT");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x36:
+                            strcpy(szText[0], "C.OLE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x37:
+                            strcpy(szText[0], "C.ULE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x38:
+                            strcpy(szText[0], "C.SF");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x39:
+                            strcpy(szText[0], "C.NGLE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3A:
+                            strcpy(szText[0], "C.SEQ");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3B:
+                            strcpy(szText[0], "C.NGL");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3C:
+                            strcpy(szText[0], "C.LT");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3D:
+                            strcpy(szText[0], "C.NGE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3E:
+                            strcpy(szText[0], "C.LE");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
+                        case 0x3F:
+                            strcpy(szText[0], "C.NGT");
+                            strcat(szText[0], ".L");
+                            strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                    }
+                }
+            }
+            break;
+        case 0x12:
+            strcpy(szText[0], "COP2");
+            strcpy(szText[1], "????");
+            break;
+        case 0x13:
+            strcpy(szText[0], "COP3");
+            strcpy(szText[1], "????");
+            break;
+        case 0x14:
+            uVar6 = nOpcode >> 0x15 & 0x1F;
+            uVar8 = MIPS_RT(nOpcode);
+            if (uVar6 == uVar8) {
+                strcpy(szText[0], "BRAL");
+                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            } else {
+                strcpy(szText[0], "BEQL");
+                strcpy(szText[1], gaszNameGPR[uVar6]);
+                strcpy(szText[2], gaszNameGPR[uVar8]);
+                sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            }
+            break;
+        case 0x15:
+            strcpy(szText[0], "BNEL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x16:
+            strcpy(szText[0], "BLEZL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x17:
+            strcpy(szText[0], "BGTZL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            break;
+        case 0x18:
+            strcpy(szText[0], "DADDI");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[3], "%04x", (int)nOpcode);
+            break;
+        case 0x19:
+            strcpy(szText[0], "DADDIU");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
+            sprintf(szText[3], "%04x", (int)nOpcode);
+            break;
+        case 0x1A:
+            strcpy(szText[0], "LDL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x1B:
+            strcpy(szText[0], "LDR");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x1F:
+            iVar7 = (int)nOpcode;
+            if (iVar7 > 0x0 && SYSTEM_LIBRARY(pCPU->pHost)->nCountFunction <= iVar7) {
+                strcpy(szText[0], "LIBRARY");
+                sprintf(szText[1], "\'%s\'", SYSTEM_LIBRARY(pCPU->pHost)->aFunction[iVar7 * 0x4C]);
+            } else {
+                strcpy(szText[0], "???");
+            }
+            break;
+        case 0x20:
+            strcpy(szText[0], "LB");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x21:
+            strcpy(szText[0], "LH");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x22:
+            strcpy(szText[0], "LWL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x23:
+            strcpy(szText[0], "LW");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x24:
+            strcpy(szText[0], "LBU");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x25:
+            strcpy(szText[0], "LHU");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x26:
+            strcpy(szText[0], "LWR");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x27:
+            strcpy(szText[0], "LWU");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x28:
+            strcpy(szText[0], "SB");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x29:
+            strcpy(szText[0], "SH");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2A:
+            strcpy(szText[0], "SWL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2B:
+            strcpy(szText[0], "SW");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2C:
+            strcpy(szText[0], "SDL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2D:
+            strcpy(szText[0], "SDR");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2E:
+            strcpy(szText[0], "SWR");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x2F:
+            strcpy(szText[0], "CACHE");
+            break;
+        case 0x30:
+            strcpy(szText[0], "LL");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x31:
+            strcpy(szText[0], "LWC1");
+            strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x34:
+            strcpy(szText[0], "LLD");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x35:
+            strcpy(szText[0], "LDC1");
+            strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x37:
+            strcpy(szText[0], "LD");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x38:
+            strcpy(szText[0], "SC");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x39:
+            strcpy(szText[0], "SWC1");
+            strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x3C:
+            strcpy(szText[0], "SCD");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x3D:
+            strcpy(szText[0], "SDC1");
+            strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        case 0x3F:
+            strcpy(szText[0], "SD");
+            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
+            break;
+        default:
+            break;
+    }
+
+    strcpy(acSpace, "        ");
+    sVar2 = strlen(szText[0]);
+    acSpace[0x8 - sVar2] = '\0';
+    bFlag = szText[3][0x0] != '(';
+
+    if (!bFlag) {
+        strcpy(szText[3], szText[3] + 0x1);
+    }
+
+    sprintf(acAddress, "0x%08x  ", nAddressN64);
+
+    if (szText[3][0x0] == '\0') {
+        uVar3 = ' ';
+    } else if (bFlag) {
+        uVar3 = ',';
+    } else {
+        uVar3 = '(';
+    }
+
+    if (szText[2][0x0] != '\0') {
+        uVar5 = ',';
+    } else {
+        uVar5 = ' ';
+    }
+
+    sprintf(acLine, "%s   %08x      %s%s%s%c%s%c%s%c", acAddress, nOpcode, szText[0], acSpace, szText[1], uVar5,
+            szText[2], uVar3, szText[3], ' ');
+    OSReport("%s\n", acLine);
+    return true;
 }
 #endif
 
@@ -6538,6 +8369,10 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
     s32 pad2;
     CpuDevice** apDevice;
     u8* aiDevice;
+#if IS_MM
+    s32 reg;
+    s32 value;
+#endif
     s32 iEntry;
     s32 nCount;
     s8 nData8;
@@ -6571,26 +8406,27 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
 
 #if IS_MM
     if (gpSystem->eTypeROM == SRT_ZELDA2) {
-        if (nOpcode == 0xC4007F00) {
-            gRegCount += 1;
+        if (MIPS_UNK(nOpcode) == 0x3C008100) {
+            gRegCount++;
             gRegList[MIPS_RT(nOpcode)] = 1;
-        } else if (gRegCount != 0 && nOpcode == 0x60000000) {
-            if (gRegList[MIPS_RS(nOpcode)] != 0) {
-                s32 GPR;
+        } else if (gRegCount != 0 && MIPS_UNK(nOpcode) == 0xA0000000) {
+            value = MIPS_RS(nOpcode);
 
-                gRegCount -= 1;
-                gRegList[MIPS_RS(nOpcode)] = 0;
+            if (gRegList[value] != 0) {
 
-                GPR = pCPU->aGPR[MIPS_UNK(nOpcode)].s32;
-                if (GPR == 0x00) {
+                gRegCount--;
+                gRegList[value] = 0;
+
+                reg = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                if (reg == 0x00) {
                     simulatorPlayMovie();
-                } else if (GPR == 0x01) {
+                } else if (reg == 0x01) {
                     romReloadRange(pCPU);
-                } else if ((GPR >= 0x10) && (GPR <= 0x19)) {
-                    mcardSaveDisplay = GPR;
-                } else if (GPR == 0x1A) {
-                    mcardSaveDisplay = GPR;
-                } else if ((GPR >= 0x30) && (GPR <= 0x31)) {
+                } else if (reg >= 0x10 && reg <= 0x19) {
+                    mcardSaveDisplay = reg;
+                } else if (reg == 0x1A) {
+                    mcardSaveDisplay = reg;
+                } else if (reg >= 0x30 && reg <= 0x31) {
                     mcardSaveCamera();
                 } else {
                     soundPlayOcarinaTune(pCPU);

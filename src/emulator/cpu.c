@@ -168,8 +168,6 @@ u32 aHeapTreeFlag[125];
 
 #if IS_MM
 static inline s32 cpuCountTLB(Cpu* pCPU, s32* pnCount);
-
-#include "emulator/_cpuGCN.c"
 #endif
 
 static bool cpuHackHandler(Cpu* pCPU) {
@@ -806,9 +804,7 @@ bool __cpuBreak(Cpu* pCPU) {
     return true;
 }
 
-#if IS_OOT
 #include "emulator/_cpuGCN.c"
-#endif
 
 /**
  * @brief Maps an object to a cpu device.

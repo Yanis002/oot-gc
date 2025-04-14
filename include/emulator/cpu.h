@@ -18,6 +18,7 @@
 #define MIPS_IMM_S16(inst) ((s16)((inst) & 0xFFFF))
 #define MIPS_IMM_U16(inst) ((u16)((inst) & 0xFFFF))
 #define MIPS_TARGET(inst) ((inst) & 0x3FFFFFF)
+#define MIPS_UNK(inst) ((inst) & ~0x3FF0000)
 
 #define MIPS_FMT(inst) (((inst) >> 21) & 0x1F)
 #define MIPS_FT(inst) (((inst) >> 16) & 0x1F)
