@@ -138,44 +138,38 @@ static u16 sCurrButton;
 #define BUTTON_COMBO_HOLD (PAD_TRIGGER_Z | PAD_TRIGGER_R | PAD_TRIGGER_L)
 
 static void DrawStuff(u8* dataP, s32 y) {
-    // Parameters
-    // u8* dataP; // r30
-    // s32 y; // r31
-
-    // Local variables
-    s32 i; // r1+0x8
-    s32 length; // r27
-    s32 x; // r7
-    f32 tx; // f3
-    s32 id; // r1+0x8
-    s32 pad;
+    s32 i;
+    s32 length;
+    s32 x;
+    f32 tx;
+    s32 id;
+    f32 xscale;
 
     GXClearVtxDesc();
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_RGBA6, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_POS_XYZ, GX_RGBA6, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
     length = *dataP++;
 
     while (length > 0) {
-        GXBegin(GX_QUADS, GX_VTXFMT0, (length * 4) & 0xFFFC);
+        GXBegin(GX_QUADS, GX_VTXFMT0, length * 4);
         x = (N64_FRAME_WIDTH - length * 8) / 2;
 
         for (i = 0; i < length; i++) {
             id = *dataP++;
+            xscale = 1.0f / 59.0f;
+            tx = (id - 0x40) * xscale;
 
-            GXPosition2f32(x, y);
-            tx = (id - 0x40) * 0.016949153f;
-            GXPosition2f32(0.0f, tx);
-            GXPosition2f32(0.0f, x + 8);
-            GXPosition2f32(y, 0.0f);
-            GXPosition2f32(tx + 0.016949153f, 0.0f);
-            GXPosition2f32(x + 8, y + 8);
-            GXPosition2f32(0.0f, tx + 0.016949153f);
-            GXPosition2f32(1.0f, x);
-            GXPosition2f32(y + 8, 0.0f);
-            GXPosition2f32(tx, 1.0f);
+            GXPosition3f32(x, y, 0.0f);
+            GXTexCoord2f32(tx, 0.0f);
+            GXPosition3f32(x + 8, y, 0.0f);
+            GXTexCoord2f32(tx + xscale, 0.0f);
+            GXPosition3f32(x + 8, y + 8, 0.0f);
+            GXTexCoord2f32(tx + xscale, 1.0f);
+            GXPosition3f32(x, y + 8, 0.0f);
+            GXTexCoord2f32(tx, 1.0f);
             x += 8;
         }
 
