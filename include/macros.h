@@ -32,8 +32,18 @@
 
 #if IS_OOT
 #define OOT_INLINE static inline
+#define OOT_STATIC static
 #else
 #define OOT_INLINE static
+#define OOT_STATIC
+#endif
+
+#if IS_MM
+#define MM_INLINE static inline
+#define MM_STATIC static
+#else
+#define MM_INLINE static
+#define MM_STATIC
 #endif
 
 // Adds no-ops to increase a function's size, preventing automatic inlining

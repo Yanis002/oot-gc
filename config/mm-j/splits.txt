@@ -50,7 +50,7 @@ emulator/simGCN.c:
 	.rodata     start:0x800DF1A0 end:0x800DF230
 	.data       start:0x800E79E0 end:0x800F62C0
 	.bss        start:0x80102820 end:0x80107AC0
-	.sdata      start:0x80144AAC end:0x80144AC0
+	.sdata      start:0x801449F8 end:0x80144AC0
 	.sbss       start:0x80145890 end:0x801458D0
 	.sdata2     start:0x80145FF8 end:0x80146038
 
