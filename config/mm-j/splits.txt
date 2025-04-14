@@ -631,8 +631,103 @@ dolphin/tex/texPalette.c:
 	.text       start:0x800D50E8 end:0x800D51CC
 	.sdata2     start:0x801465C8 end:0x801465D0
 
+metrotrk/mainloop.c:
+	.text       start:0x800D51CC end:0x800D5334
+
+metrotrk/nubevent.c:
+	.text       start:0x800D5334 end:0x800D5590
+	.bss        start:0x80142850 end:0x80142878
+
+metrotrk/nubinit.c:
+	.text       start:0x800D5590 end:0x800D5724
+	.rodata     start:0x800DF410 end:0x800DF430
+	.bss        start:0x80142878 end:0x80142880
+
+metrotrk/msg.c:
+	.text       start:0x800D5724 end:0x800D574C
+
+metrotrk/msgbuf.c:
+	.text       start:0x800D574C end:0x800D5F94
+	.bss        start:0x80142880 end:0x80144230
+
+metrotrk/serpoll.c:
+	.text       start:0x800D5F94 end:0x800D615C
+	.bss        start:0x80144230 end:0x80144248
+
+metrotrk/usr_put.c:
+	.text       start:0x800D615C end:0x800D6160
+
+metrotrk/dispatch.c:
+	.text       start:0x800D6160 end:0x800D61F8
+	.data       start:0x80101D00 end:0x80101D88
+	.bss        start:0x80144248 end:0x80144250
+
+metrotrk/msghndlr.c:
+	.text       start:0x800D61F8 end:0x800D7464
+
+metrotrk/support.c:
+	.text       start:0x800D7464 end:0x800D78E0
+
+metrotrk/mutex_TRK.c:
+	.text       start:0x800D78E0 end:0x800D78F8
+
+metrotrk/notify.c:
+	.text       start:0x800D78F8 end:0x800D79D0
+
+metrotrk/flush_cache.c:
+	.text       start:0x800D79D0 end:0x800D7A08
+
+metrotrk/targimpl.c:
+	.text       start:0x800D7A08 end:0x800D8FE4
+	.rodata     start:0x800DF430 end:0x800DF480
+	.data       start:0x80101D88 end:0x80101DB8
+	.bss        start:0x80144250 end:0x801447D0
+
 metrotrk/mem_TRK.c:
 	.init       start:0x80003458 end:0x8000347C
 
 metrotrk/__exception.c:
 	.init       start:0x8000347C end:0x800053B0
+
+metrotrk/dolphin_trk.c:
+	.init       start:0x800053B0 end:0x800053D0
+	.text       start:0x800D8FE4 end:0x800D91D8
+	.data       start:0x80101DB8 end:0x80101DF8
+
+metrotrk/mpc_7xx_603e.c:
+	.text       start:0x800D91D8 end:0x800D9548
+
+metrotrk/main_TRK.c:
+	.text       start:0x800D9548 end:0x800D9598
+	.bss        start:0x801447D0 end:0x801447D8
+
+metrotrk/dolphin_trk_glue.c:
+	.text       start:0x800D9598 end:0x800D98F0
+	.data       start:0x80101DF8 end:0x80101E18
+
+metrotrk/targcont.c:
+	.text       start:0x800D98F0 end:0x800D9924
+
+runtime/__va_arg.c:
+	.text       start:0x800D9924 end:0x800D9A18
+
+runtime/global_destructor_chain.c:
+	.text       start:0x800D9A18 end:0x800D9A60
+	.dtors      start:0x800DF180 end:0x800DF184
+	.sbss       start:0x80145F98 end:0x80145FA0
+
+runtime/runtime.c:
+	.text       start:0x800D9A60 end:0x800DA170
+	.rodata     start:0x800DF480 end:0x800DF498
+
+runtime/__mem.c:
+	.init       start:0x800053D0 end:0x80005514
+
+debugger/AmcExi2Stubs.c:
+	.text       start:0x800DE68C end:0x800DE6BC
+
+debugger/DebuggerDriver.c:
+	.text       start:0x800DE6BC end:0x800DF13C
+
+debugger/odenotstub.c:
+	.text       start:0x800DF13C end:0x800DF144
