@@ -705,6 +705,9 @@ metrotrk/dolphin_trk_glue.c:
 	.text       start:0x800D9598 end:0x800D98F0
 	.data       start:0x80101DF8 end:0x80101E18
 
+libc/ansi_files.c:
+	.data       start:0x80101E18 end:0x80101EF0
+
 metrotrk/targcont.c:
 	.text       start:0x800D98F0 end:0x800D9924
 
@@ -720,8 +723,126 @@ runtime/runtime.c:
 	.text       start:0x800D9A60 end:0x800DA170
 	.rodata     start:0x800DF480 end:0x800DF498
 
-runtime/__mem.c:
-	.init       start:0x800053D0 end:0x80005514
+libc/abort_exit.c:
+	.text       start:0x800DA170 end:0x800DA27C
+	.bss        start:0x801447D8 end:0x801449D8
+	.sbss       start:0x80145FA0 end:0x80145FB8
+
+libc/errno.c:
+	.sbss       start:0x80145FB8 end:0x80145FC0
+
+libc/ansi_fp.c:
+	.text       start:0x800DA27C end:0x800DA630
+	.rodata     start:0x800DF498 end:0x800DF520
+	.sdata2     start:0x801465D0 end:0x801465F8
+
+libc/buffer_io.c:
+	.text       start:0x800DA630 end:0x800DA730
+
+libc/critical_regions.ppc_eabi.c:
+	.text       start:0x800DA730 end:0x800DA734
+
+libc/ctype.c:
+	.text       start:0x800DA734 end:0x800DA784
+	.rodata     start:0x800DF520 end:0x800DF820
+
+libc/direct_io.c:
+	.text       start:0x800DA784 end:0x800DAA60
+
+libc/mbstring.c:
+	.text       start:0x800DAA60 end:0x800DAA9C
+
+libc/mem.c:
+	.text       start:0x800DAA9C end:0x800DABE8
+
+libc/mem_funcs.c:
+	.text       start:0x800DABE8 end:0x800DAEC4
+
+libc/misc_io.c:
+	.text       start:0x800DAEC4 end:0x800DAEC8
+
+libc/printf.c:
+	.text       start:0x800DAEC8 end:0x800DC8CC
+	.rodata     start:0x800DF820 end:0x800DF830
+	.data       start:0x80101EF0 end:0x80102110
+	.sdata      start:0x80145828 end:0x80145830
+	.sdata2     start:0x801465F8 end:0x80146600
+
+libc/scanf.c:
+	.text       start:0x800DC8CC end:0x800DC95C
+
+libc/string.c:
+	.text       start:0x800DC95C end:0x800DCC34
+	.sdata      start:0x80145830 end:0x80145838
+
+libc/strtoul.c:
+	.text       start:0x800DCC34 end:0x800DD040
+	.data       start:0x80102110 end:0x80102158
+
+libc/float.c:
+	.data       start:0x80102158 end:0x80102160
+
+libc/uart_console_io.c:
+	.text       start:0x800DD040 end:0x800DD1C0
+	.sbss       start:0x80145FC0 end:0x80145FC8
+
+libc/wchar_io.c:
+	.text       start:0x800DD1C0 end:0x800DD240
+
+libc/e_asin.c:
+	.text       start:0x800DD240 end:0x800DD248
+
+libc/e_pow.c:
+	.text       start:0x800DD248 end:0x800DDA80
+	.rodata     start:0x800DF830 end:0x800DF860
+	.sdata2     start:0x80146600 end:0x80146710
+
+libc/fminmaxdim.c:
+	.text       start:0x800DDA80 end:0x800DDB00
+
+libc/s_ceil.c:
+	.text       start:0x800DDB00 end:0x800DDC68
+	.sdata2     start:0x80146710 end:0x80146720
+
+libc/s_copysign.c:
+	.text       start:0x800DDC68 end:0x800DDC94
+
+libc/s_floor.c:
+	.text       start:0x800DDC94 end:0x800DDE00
+	.sdata2     start:0x80146720 end:0x80146730
+
+libc/s_frexp.c:
+	.text       start:0x800DDE00 end:0x800DDE9C
+	.sdata2     start:0x80146730 end:0x80146738
+
+libc/s_ldexp.c:
+	.text       start:0x800DDE9C end:0x800DE014
+	.sdata2     start:0x80146738 end:0x80146760
+
+libc/w_pow.c:
+	.text       start:0x800DE014 end:0x800DE034
+
+libc/hyperbolicsf.c:
+	.text       start:0x800DE034 end:0x800DE03C
+
+libc/log10f.c:
+	.text       start:0x800DE03C end:0x800DE210
+	.rodata     start:0x800DF860 end:0x800DF870
+	.sdata2     start:0x80146760 end:0x80146780
+
+libc/trigf.c:
+	.text       start:0x800DE210 end:0x800DE5FC
+	.ctors      start:0x800DF160 end:0x800DF164
+	.rodata     start:0x800DF870 end:0x800DF880
+	.data       start:0x80102160 end:0x80102170
+	.sdata2     start:0x80146780 end:0x80146798
+
+libc/common_float_tables.c:
+	.data       start:0x80102170 end:0x801021B8
+
+libc/math_inlines.c:
+	.text       start:0x800DE5FC end:0x800DE68C
+	.sdata2     start:0x80146798 end:0x801467B0
 
 debugger/AmcExi2Stubs.c:
 	.text       start:0x800DE68C end:0x800DE6BC
@@ -731,3 +852,6 @@ debugger/DebuggerDriver.c:
 
 debugger/odenotstub.c:
 	.text       start:0x800DF13C end:0x800DF144
+
+runtime/__mem.c:
+	.init       start:0x800053D0 end:0x80005514
