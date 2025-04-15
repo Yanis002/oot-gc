@@ -12,6 +12,7 @@
 
 static bool romMakeFreeCache(Rom* pROM, s32* piCache, RomCacheType eType);
 static bool romSetBlockCache(Rom* pROM, s32 iBlock, RomCacheType eType);
+static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress);
 
 _XL_OBJECTTYPE gClassROM = {
     "ROM",
@@ -935,7 +936,31 @@ static bool romCopyUpdate(Rom* pROM) {
     return true;
 }
 
-#if IS_MM
+#if IS_OOT
+//! TODO: can szName arg work?
+static bool romCacheAllBlocks(Rom* pROM) {
+    s32 iCache;
+    s32 iBlock;
+    u32 iBlockLast;
+
+    u32 temp_r27 = (u32)(pROM->nSize - 1) / 0x2000;
+    iBlockLast = pROM->nTick = temp_r27 + 1;
+
+    for (iBlock = 0; iBlock < iBlockLast; iBlock++) {
+        pROM->aBlock[iBlock].nTickUsed = temp_r27 - iBlock;
+
+        if (!romMakeFreeCache(pROM, &iCache, RCT_RAM)) {
+            return false;
+        }
+
+        if (!romLoadBlock(pROM, iBlock, iCache, NULL)) {
+            return false;
+        }
+    }
+
+    return true;
+}
+#elif IS_MM
 static bool romCacheAllBlocks(Rom* pROM, char* szName) {
     s32 iCache;
     u32 iBlock;
@@ -947,11 +972,11 @@ static bool romCacheAllBlocks(Rom* pROM, char* szName) {
     for (iBlock = 0; iBlock < iBlockLast; iBlock++) {
         pROM->aBlock[iBlock].nTickUsed = temp_r28 - iBlock;
 
-        if (!romMakeFreeCache(pROM, &iCache, 0)) {
+        if (!romMakeFreeCache(pROM, &iCache, RCT_RAM)) {
             return false;
         }
 
-        if (!romLoadBlock(pROM, iBlock, iCache, 0)) {
+        if (!romLoadBlock(pROM, iBlock, iCache, NULL)) {
             return false;
         }
 
@@ -960,37 +985,33 @@ static bool romCacheAllBlocks(Rom* pROM, char* szName) {
         }
     }
 
+    NO_INLINE();
     return true;
 }
 #endif
 
-static inline bool romLoadFullOrPartLoop(Rom* pROM) {
-    s32 i;
-    s32 iCache;
-    u32 temp_r27;
-    u32 temp_r30;
-
-    temp_r27 = (u32)(pROM->nSize - 1) / 0x2000;
-    temp_r30 = pROM->nTick = temp_r27 + 1;
-
-    for (i = 0; i < temp_r30; i++) {
-        pROM->aBlock[i].nTickUsed = temp_r27 - i;
-
-        if (!romMakeFreeCache(pROM, &iCache, RCT_RAM)) {
-            return false;
-        }
-
-        if (!romLoadBlock(pROM, i, iCache, NULL)) {
-            return false;
-        }
-    }
-
-    return true;
-}
-
 static bool romLoadFullOrPart(Rom* pROM) {
     tXL_FILE* pFile;
     s32 pad;
+
+#if IS_MM
+    // s32 iBlock;
+    // s32 nLoad;
+    // s32 nStep;
+    // s32 iData;
+    // u32 nData;
+    char szName[10];
+
+    if (romTestCode(pROM, "NSME") || romTestCode(pROM, "NSMJ")) {
+        strcpy(szName, "mario_j.tpl");
+    } else if (romTestCode(pROM, "NKTE") || romTestCode(pROM, "NKTJ")) {
+        strcpy(szName, "kart_j.tpl");
+    } else if (romTestCode(pROM, "NFXE") || romTestCode(pROM, "NFXJ")) {
+        strcpy(szName, "sf64_j.tpl");
+    } else {
+        strcpy(szName, " ");
+    }
+#endif
 
     if ((s32)pROM->nSize > pROM->nSizeCacheRAM) {
         s32 i;
@@ -1012,9 +1033,15 @@ static bool romLoadFullOrPart(Rom* pROM) {
             pROM->anBlockCachedARAM[i] = 0;
         }
 
-        if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romLoadFullOrPartLoop(pROM)) {
+#if IS_OOT
+        if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romCacheAllBlocks(pROM)) {
             return false;
         }
+#elif IS_MM
+        if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romCacheAllBlocks(pROM, szName)) {
+            return false;
+        }
+#endif
     } else {
         s32 i;
         u32 temp_r28;
@@ -1040,7 +1067,12 @@ static bool romLoadFullOrPart(Rom* pROM) {
 
                 xlFileGet(pFile, (void*)((u32)pROM->pBuffer + i), (s32)temp_r28);
                 i += temp_r28;
+
+#if IS_OOT
                 simulatorShowLoad(0, pROM->acNameFile, (f32)i / (f32)pROM->nSize);
+#elif IS_MM
+                romCacheGame_OTHER(pROM, szName, (f32)i / (f32)pROM->nSize);
+#endif
             }
         }
 
