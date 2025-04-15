@@ -6551,13 +6551,12 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
     // -> static char* gaszNameCP1[32];
     // -> static char* gaszNameCP0[32];
 
-    int sVar2;
     s32 uVar3;
     char* pcVar4;
     u32 uVar8;
     int iVar7;
     u32 uVar6;
-    s32 uVar5;
+    s32 pad[4];
 
     szText[0][0x0] = '\0';
     szText[1][0x0] = '\0';
@@ -6571,7 +6570,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
     ramGetBuffer(SYSTEM_RAM(pCPU->pHost), &opcode, nAddressN64, NULL);
     nOpcode = *opcode;
 
-    switch (nOpcode >> 0x1A) {
+    switch (MIPS_OP(nOpcode)) {
         case 0x0:
             switch (nOpcode & 0x3F) {
                 case 0x0:
@@ -6712,7 +6711,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                     strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
                     break;
                 case 0x20:
-                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_FMT(nOpcode);
                     if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6731,7 +6730,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                     }
                     break;
                 case 0x21:
-                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_FMT(nOpcode);
                     if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6761,7 +6760,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                     strcpy(szText[3], gaszNameGPR[MIPS_RT(nOpcode)]);
                     break;
                 case 0x24:
-                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_FMT(nOpcode);
                     if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
                         strcpy(szText[0], "ZERO");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6773,7 +6772,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                     }
                     break;
                 case 0x25:
-                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_FMT(nOpcode);
                     if ((uVar6 == 0x0) || (uVar8 = MIPS_RT(nOpcode), uVar8 == 0x0)) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6791,7 +6790,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                     }
                     break;
                 case 0x26:
-                    uVar8 = nOpcode >> 0x15 & 0x1F;
+                    uVar8 = MIPS_FMT(nOpcode);
                     uVar6 = MIPS_RT(nOpcode);
                     if (uVar8 == uVar6) {
                         strcpy(szText[0], "ZERO");
@@ -6917,113 +6916,114 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                 case 0x0:
                     strcpy(szText[0], "BLTZ");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x1:
                     strcpy(szText[0], "BGEZ");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x2:
                     strcpy(szText[0], "BLTZL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x3:
                     strcpy(szText[0], "BGEZL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x8:
                     strcpy(szText[0], "TGEI");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0x9:
                     strcpy(szText[0], "TGEIU");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0xA:
                     strcpy(szText[0], "TLTI");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0xB:
                     strcpy(szText[0], "TLTIU");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0xC:
                     strcpy(szText[0], "TEQI");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0xE:
                     strcpy(szText[0], "TNEI");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%04x", (int)nOpcode);
+                    sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
                     break;
                 case 0x10:
                     strcpy(szText[0], "BLTZAL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x11:
                     strcpy(szText[0], "BGEZAL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x12:
                     strcpy(szText[0], "BLTZALL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
                     break;
                 case 0x13:
                     strcpy(szText[0], "BGEZALL");
                     strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-                    sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                    sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                    break;
             }
             break;
         case 0x2:
             strcpy(szText[0], "J");
-            sprintf(szText[1], "%x", nAddressN64 + 0x4 & 0xF0000000 | (nOpcode & 0x3FFFFFF) << 0x2);
+            sprintf(szText[1], "%x", (nAddressN64 & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2));
             break;
         case 0x3:
             strcpy(szText[0], "JAL");
-            sprintf(szText[1], "%x", nAddressN64 + 0x4 & 0xF0000000 | (nOpcode & 0x3FFFFFF) << 0x2);
+            sprintf(szText[1], "%x", (nAddressN64 & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2));
             break;
         case 0x4:
-            uVar6 = nOpcode >> 0x15 & 0x1F;
+            uVar6 = MIPS_FMT(nOpcode);
             uVar8 = MIPS_RT(nOpcode);
             if (uVar6 == uVar8) {
                 strcpy(szText[0], "BRA");
-                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             } else {
                 strcpy(szText[0], "BEQ");
                 strcpy(szText[1], gaszNameGPR[uVar6]);
                 strcpy(szText[2], gaszNameGPR[uVar8]);
-                sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                sprintf(szText[3], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             }
             break;
         case 0x5:
             strcpy(szText[0], "BNE");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[3], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x6:
             strcpy(szText[0], "BLEZ");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x7:
             strcpy(szText[0], "BGTZ");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x8:
-            if (nOpcode == 0x0) {
+            if (MIPS_IMM_S16(nOpcode) == 0x0) {
                 strcpy(szText[0], "MOV");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
                 strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
@@ -7031,11 +7031,11 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                 strcpy(szText[0], "ADDI");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
                 strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-                sprintf(szText[3], "%04x", (int)nOpcode);
+                sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
             }
             break;
         case 0x9:
-            if (nOpcode == 0x0) {
+            if (MIPS_IMM_S16(nOpcode) == 0x0) {
                 strcpy(szText[0], "MOV");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
                 strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
@@ -7043,61 +7043,76 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                 strcpy(szText[0], "ADDIU");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
                 strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-                sprintf(szText[3], "%04x", (int)nOpcode);
+                sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
             }
             break;
         case 0xA:
             strcpy(szText[0], "SLTI");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[3], "%04x", (int)nOpcode);
+            sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
             break;
         case 0xB:
             strcpy(szText[0], "SLTIU");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[3], "%04x", (int)nOpcode);
+            sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
             break;
         case 0xC:
-            uVar6 = nOpcode >> 0x15 & 0x1F;
-            if (uVar6 == 0x0) {
+            // uVar6 = MIPS_FMT(nOpcode);
+            if (MIPS_FMT(nOpcode) == 0x0) {
                 strcpy(szText[0], "ZERO?");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             } else {
                 strcpy(szText[0], "ANDI");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                strcpy(szText[2], gaszNameGPR[uVar6]);
-                sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+                strcpy(szText[2], gaszNameGPR[MIPS_FMT(nOpcode)]);
+                sprintf(szText[3], "%04x", MIPS_IMM_U16(nOpcode));
             }
             break;
         case 0xD:
-            uVar6 = nOpcode >> 0x15 & 0x1F;
-            if (uVar6 == 0x0) {
+            // uVar6 = MIPS_FMT(nOpcode);
+            if (MIPS_FMT(nOpcode) == 0x0) {
                 strcpy(szText[0], "MOVI");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                sprintf(szText[2], "%04x", nOpcode & 0xFFFF);
+                sprintf(szText[2], "%04x", MIPS_IMM_U16(nOpcode));
             } else {
                 strcpy(szText[0], "ORI");
                 strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                strcpy(szText[2], gaszNameGPR[uVar6]);
-                sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+                strcpy(szText[2], gaszNameGPR[MIPS_FMT(nOpcode)]);
+                sprintf(szText[3], "%04x", MIPS_IMM_U16(nOpcode));
             }
             break;
         case 0xE:
             strcpy(szText[0], "XORI");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[3], "%04x", nOpcode & 0xFFFF);
+            sprintf(szText[3], "%04x", MIPS_IMM_U16(nOpcode));
             break;
         case 0xF:
             strcpy(szText[0], "LUI");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", nOpcode & 0xFFFF);
+            sprintf(szText[2], "%04x", MIPS_IMM_U16(nOpcode));
             break;
         case 0x10:
             switch (nOpcode & 0x3F) {
+                case 0x1:
+                    strcpy(szText[0], "TLBR");
+                    break;
+                case 0x2:
+                    strcpy(szText[0], "TLBWI");
+                    break;
+                case 0x5:
+                    strcpy(szText[0], "TLBWR");
+                    break;
+                case 0x8:
+                    strcpy(szText[0], "TLBP");
+                    break;
+                case 0x18:
+                    strcpy(szText[0], "ERET");
+                    break;
                 default:
-                    uVar6 = nOpcode >> 0x15 & 0x1F;
+                    uVar6 = MIPS_FMT(nOpcode);
                     switch (uVar6) {
                         case 0x0:
                             strcpy(szText[0], "MFC0");
@@ -7120,90 +7135,93 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                             strcpy(szText[2], gaszNameGPR[MIPS_RD(nOpcode)]);
                             break;
                         case 0x8:
-                            if (uVar6 == 0x2) {
-                                strcpy(szText[0], "BC0FL");
-                                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                            } else if (uVar6 < 0x2) {
-                                if (uVar6 == 0x0) {
+                            switch (uVar6) {
+                                case 0:
                                     strcpy(szText[0], "BC0F");
-                                    sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                                } else {
+                                    sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                                    break;
+                                case 1:
                                     strcpy(szText[0], "BC0T");
-                                    sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                                }
-                            } else if (uVar6 < 0x4) {
-                                strcpy(szText[0], "BC0TL");
-                                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                                    sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                                    break;
+                                case 2:
+                                    strcpy(szText[0], "BC0FL");
+                                    sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                                    break;
+                                case 3:
+                                    strcpy(szText[0], "BC0TL");
+                                    sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                                    break;
+                                default:
+                                    break;
                             }
+                        break;
                     }
                     break;
-                case 0x1:
-                    strcpy(szText[0], "TLBR");
-                    break;
-                case 0x2:
-                    strcpy(szText[0], "TLBWI");
-                    break;
-                case 0x5:
-                    strcpy(szText[0], "TLBWR");
-                    break;
-                case 0x8:
-                    strcpy(szText[0], "TLBP");
-                    break;
-                case 0x18:
-                    strcpy(szText[0], "ERET");
             }
             break;
         case 0x11:
-            if (((nOpcode & 0x7FF) == 0x0) && (uVar6 = nOpcode >> 0x15 & 0x1F, uVar6 < 0x10)) {
-                switch (uVar6) {
-                    case 0x0:
-                        strcpy(szText[0], "MFC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
-                        break;
-                    case 0x1:
-                        strcpy(szText[0], "DMFC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
-                        break;
-                    case 0x2:
-                        strcpy(szText[0], "CFC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
-                        break;
-                    case 0x4:
-                        strcpy(szText[0], "MTC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
-                        break;
-                    case 0x5:
-                        strcpy(szText[0], "DMTC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
-                        break;
-                    case 0x6:
-                        strcpy(szText[0], "CTC1");
-                        strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-                        strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
+            if (MIPS_OP(nOpcode)) {
+                uVar6 = MIPS_FMT(nOpcode);
+
+                if (uVar6 < 0x10) {
+                    switch (uVar6) {
+                        case 0x0:
+                            strcpy(szText[0], "MFC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x1:
+                            strcpy(szText[0], "DMFC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x2:
+                            strcpy(szText[0], "CFC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x4:
+                            strcpy(szText[0], "MTC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x5:
+                            strcpy(szText[0], "DMTC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameFPR[MIPS_RD(nOpcode)]);
+                            break;
+                        case 0x6:
+                            strcpy(szText[0], "CTC1");
+                            strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
+                            strcpy(szText[2], gaszNameCP1[MIPS_RD(nOpcode)]);
+                            break;
+                        default:
+                            break;
+                    
+                    }
                 }
             } else {
-                uVar6 = nOpcode >> 0x15 & 0x1F;
-                if (uVar6 == 0x8) {
-                    uVar6 = MIPS_RT(nOpcode);
-                    if (uVar6 == 0x2) {
-                        strcpy(szText[0], "BC1FL");
-                        sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                    } else if (uVar6 < 0x2) {
-                        if (uVar6 == 0x0) {
+                uVar6 = MIPS_FMT(nOpcode);
+
+                if (uVar6 == 8) {
+                    switch (MIPS_RT(nOpcode)) {
+                        case 0:
                             strcpy(szText[0], "BC1F");
-                            sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                        } else {
+                            sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                            break;
+                        case 1:
                             strcpy(szText[0], "BC1T");
-                            sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
-                        }
-                    } else if (uVar6 < 0x4) {
-                        strcpy(szText[0], "BC1TL");
-                        sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                            sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                            break;
+                        case 2:
+                            strcpy(szText[0], "BC1FL");
+                            sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                            break;
+                        case 3:
+                            strcpy(szText[0], "BC1TL");
+                            sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
+                            break;
                     }
                 } else if (uVar6 == 0x14) {
                     switch (nOpcode & 0x3F) {
@@ -7426,6 +7444,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                             strcat(szText[0], ".W");
                             strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
                             strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
                     }
                 } else if (uVar6 < 0x14) {
                     if (uVar6 == 0x11) {
@@ -7649,6 +7668,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                                 strcat(szText[0], ".D");
                                 strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
                                 strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
                         }
                     } else {
                         switch (nOpcode & 0x3F) {
@@ -7871,9 +7891,10 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                                 strcat(szText[0], ".S");
                                 strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
                                 strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                                break;
                         }
                     }
-                } else if (uVar6 < 0x16) {
+                } else {
                     switch (nOpcode & 0x3F) {
                         case 0x0:
                             strcpy(szText[0], "ADD");
@@ -8094,6 +8115,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
                             strcat(szText[0], ".L");
                             strcpy(szText[1], gaszNameFPR[MIPS_RD(nOpcode)]);
                             strcpy(szText[2], gaszNameFPR[MIPS_RT(nOpcode)]);
+                            break;
                     }
                 }
             }
@@ -8107,155 +8129,155 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
             strcpy(szText[1], "????");
             break;
         case 0x14:
-            uVar6 = nOpcode >> 0x15 & 0x1F;
+            uVar6 = MIPS_FMT(nOpcode);
             uVar8 = MIPS_RT(nOpcode);
             if (uVar6 == uVar8) {
                 strcpy(szText[0], "BRAL");
-                sprintf(szText[1], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                sprintf(szText[1], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             } else {
                 strcpy(szText[0], "BEQL");
                 strcpy(szText[1], gaszNameGPR[uVar6]);
                 strcpy(szText[2], gaszNameGPR[uVar8]);
-                sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+                sprintf(szText[3], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             }
             break;
         case 0x15:
             strcpy(szText[0], "BNEL");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[3], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[3], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x16:
             strcpy(szText[0], "BLEZL");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x17:
             strcpy(szText[0], "BGTZL");
             strcpy(szText[1], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[2], "%x", nAddressN64 + nOpcode * 0x4 + 0x4);
+            sprintf(szText[2], "%x", (MIPS_IMM_S16(nOpcode) << 2) + nAddressN64);
             break;
         case 0x18:
             strcpy(szText[0], "DADDI");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[3], "%04x", (int)nOpcode);
+            sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
             break;
         case 0x19:
             strcpy(szText[0], "DADDIU");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
             strcpy(szText[2], gaszNameGPR[MIPS_RS(nOpcode)]);
-            sprintf(szText[3], "%04x", (int)nOpcode);
+            sprintf(szText[3], "%04x", MIPS_IMM_S16(nOpcode));
+            break;
+        case 0x1F:
+            iVar7 = MIPS_IMM_S16(nOpcode);
+            if (iVar7 >= 0x0 && SYSTEM_LIBRARY(pCPU->pHost)->nCountFunction < iVar7) {
+                strcpy(szText[0], "LIBRARY");
+                sprintf(szText[1], "\'%s\'", SYSTEM_LIBRARY(pCPU->pHost)->aFunction[iVar7].szName);
+            } else {
+                strcpy(szText[0], "???");
+            }
             break;
         case 0x1A:
             strcpy(szText[0], "LDL");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x1B:
             strcpy(szText[0], "LDR");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
-            break;
-        case 0x1F:
-            iVar7 = (int)nOpcode;
-            if (iVar7 > 0x0 && SYSTEM_LIBRARY(pCPU->pHost)->nCountFunction <= iVar7) {
-                strcpy(szText[0], "LIBRARY");
-                sprintf(szText[1], "\'%s\'", SYSTEM_LIBRARY(pCPU->pHost)->aFunction[iVar7 * 0x4C]);
-            } else {
-                strcpy(szText[0], "???");
-            }
             break;
         case 0x20:
             strcpy(szText[0], "LB");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x21:
             strcpy(szText[0], "LH");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x22:
             strcpy(szText[0], "LWL");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x23:
             strcpy(szText[0], "LW");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x24:
             strcpy(szText[0], "LBU");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x25:
             strcpy(szText[0], "LHU");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x26:
             strcpy(szText[0], "LWR");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x27:
             strcpy(szText[0], "LWU");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x28:
             strcpy(szText[0], "SB");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x29:
             strcpy(szText[0], "SH");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2A:
             strcpy(szText[0], "SWL");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2B:
             strcpy(szText[0], "SW");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2C:
             strcpy(szText[0], "SDL");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2D:
             strcpy(szText[0], "SDR");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2E:
             strcpy(szText[0], "SWR");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x2F:
@@ -8264,61 +8286,61 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
         case 0x30:
             strcpy(szText[0], "LL");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x31:
             strcpy(szText[0], "LWC1");
             strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x34:
             strcpy(szText[0], "LLD");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x35:
             strcpy(szText[0], "LDC1");
             strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x37:
             strcpy(szText[0], "LD");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x38:
             strcpy(szText[0], "SC");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x39:
             strcpy(szText[0], "SWC1");
             strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x3C:
             strcpy(szText[0], "SCD");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x3D:
             strcpy(szText[0], "SDC1");
             strcpy(szText[1], gaszNameFPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         case 0x3F:
             strcpy(szText[0], "SD");
             strcpy(szText[1], gaszNameGPR[MIPS_RT(nOpcode)]);
-            sprintf(szText[2], "%04x", (int)nOpcode);
+            sprintf(szText[2], "%04x", MIPS_IMM_S16(nOpcode));
             sprintf(szText[3], "(%s)", gaszNameGPR[MIPS_RS(nOpcode)]);
             break;
         default:
@@ -8326,31 +8348,23 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 nAddressN64) {
     }
 
     strcpy(acSpace, "        ");
-    sVar2 = strlen(szText[0]);
-    acSpace[0x8 - sVar2] = '\0';
-    bFlag = szText[3][0x0] != '(';
+    acSpace[0x8 - strlen(szText[0])] = '\0';
 
-    if (!bFlag) {
+    if (szText[3][0x0] == '(') {
         strcpy(szText[3], szText[3] + 0x1);
     }
 
     sprintf(acAddress, "0x%08x  ", nAddressN64);
 
-    if (szText[3][0x0] == '\0') {
+    if (szText[3][0x0] != '\0') {
         uVar3 = ' ';
-    } else if (bFlag) {
+    } else if (szText[3][0x0] != '(') {
         uVar3 = ',';
     } else {
         uVar3 = '(';
     }
 
-    if (szText[2][0x0] != '\0') {
-        uVar5 = ',';
-    } else {
-        uVar5 = ' ';
-    }
-
-    sprintf(acLine, "%s   %08x      %s%s%s%c%s%c%s%c", acAddress, nOpcode, szText[0], acSpace, szText[1], uVar5,
+    sprintf(acLine, "%s   %08x      %s%s%s%c%s%c%s%c", acAddress, nOpcode, szText[0], acSpace, szText[1], szText[2][0x0] != '\0' ? ',' : ' ',
             szText[2], uVar3, szText[3], ' ');
     OSReport("%s\n", acLine);
     return true;
