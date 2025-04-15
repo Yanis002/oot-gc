@@ -52,8 +52,8 @@
 #elif IS_MM
 #define MCARD_FILE_NAME "ZELDA1"
 #define MCARD_FILE_NAME_MM "ZELDA2"
-#define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ"
-#define MCARD_COMMENT_MM "ゼルダコレクション"
+#define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ" // "The Legend of Zelda: Ocarina of Time GC"
+#define MCARD_COMMENT_MM "ゼルダコレクション" // "Zelda Collection"
 #define MCARD_FILE_SIZE 0xC000
 #endif
 

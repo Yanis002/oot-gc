@@ -147,6 +147,7 @@ extern u8 gitalian_mesgOK[];
 #endif // IS_EU
 
 extern s16 Vert_s16[];
+extern s16 Vert_s16Bar[12];
 extern u32 Colors_u32[];
 extern u8 TexCoords_u8[];
 

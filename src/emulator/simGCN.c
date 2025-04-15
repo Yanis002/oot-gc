@@ -262,16 +262,16 @@ bool gbReset;
         GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);                              \
         width = tpl->descriptorArray->textureHeader->width / 2;                                       \
         height = tpl->descriptorArray->textureHeader->height / 2;                                     \
-        width2 = (N64_FRAME_WIDTH - width) / 2;                                                         \
-        height2 = (N64_FRAME_HEIGHT - height) / 2;                                                      \
+        nX0 = (N64_FRAME_WIDTH - width) / 2;                                                         \
+        nY0 = (N64_FRAME_HEIGHT - height) / 2;                                                      \
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);                                                             \
-        GXPosition3f32(width2, height2, 0.0f);                                                              \
+        GXPosition3f32(nX0, nY0, 0.0f);                                                              \
         GXTexCoord2f32(0.0f, 0.0f);                                                             \
-        GXPosition3f32(width2 + width, height2, 0.0f);                                                      \
+        GXPosition3f32(nX0 + width, nY0, 0.0f);                                                      \
         GXTexCoord2f32(1.0f, 0.0f);                                                             \
-        GXPosition3f32(width2 + width, height2 + height, 0.0f);                                             \
+        GXPosition3f32(nX0 + width, nY0 + height, 0.0f);                                             \
         GXTexCoord2f32(1.0f, 1.0f);                                                             \
-        GXPosition3f32(width2, height2 + height, 0.0f);                                                     \
+        GXPosition3f32(nX0, nY0 + height, 0.0f);                                                     \
         GXTexCoord2f32(0.0f, 1.0f);                                                             \
         GXEnd();                                                                                      \
         GXPixModeSync();                                                                              \
@@ -654,8 +654,7 @@ bool simulatorDrawImage(TEXPalette* tpl, s32 nX0, s32 nY0, bool drawBar, s32 per
     Mtx matrix; // r1+0x5C
     s32 width; // r23
     s32 height; // r22
-    s32 width2;
-    s32 height2;
+    s32 pad;
     Mtx g2DviewMtx = {
         {1.0f, 0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f, 0.0f},
@@ -859,8 +858,8 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
     Mtx matrix; // r1+0x38
     s32 width; // r21
     s32 height; // r27
-    s32 width2; // r21
-    s32 height2; // r27
+    s32 nX0; // r21
+    s32 nY0; // r27
 
     static GXTexObj texObj1;
     static GXTexObj texObj2;
@@ -1154,8 +1153,8 @@ bool simulatorDrawOKImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Message
     Mtx matrix; // r1+0x2C
     s32 width; // r23
     s32 height; // r22
-    s32 width2; // r23
-    s32 height2; // r22
+    s32 nX0; // r23
+    s32 nY0; // r22
 
     static GXTexObj texObj1;
     static GXTexObj texObj2;
