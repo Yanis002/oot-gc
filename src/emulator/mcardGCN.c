@@ -3639,12 +3639,11 @@ static void convert_i5i8(void* i5buf, void* i8buf, u32 num) {
     }
 }
 
-bool mcardSaveCamera(void) {
+bool mcardSaveCamera(s32 value) {
     Frame* pFrame;
     void* i8Buffer;
     void* i5Buffer;
     u8* ptr;
-    s32 pad;
 
     pFrame = SYSTEM_FRAME(gpSystem);
     ptr = &((u8*)SYSTEM_RAM(gpSystem)->pBuffer)[0x001EE900];

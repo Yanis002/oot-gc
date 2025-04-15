@@ -176,6 +176,6 @@ bool mcardOpen(MemCard* pMCard, char* fileName, char* comment, char* icon, char*
 bool mcardOpenDuringGame(MemCard* pMCard);
 bool mcardStore(MemCard* pMCard);
 bool mcardUpdate(void);
-bool mcardSaveCamera(void);
+bool mcardSaveCamera(s32 value);
 
 #endif

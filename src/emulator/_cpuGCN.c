@@ -2735,7 +2735,7 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                 case 0x0F: // lui
 #if IS_MM
                     if (gpSystem->eTypeROM == SRT_ZELDA2 && MIPS_IMM_U16(nOpcode) == 0x8100) {
-                        gRegCount = gRegCount + 1;
+                        gRegCount++;
                         reg = MIPS_RT(nOpcode);
                         gRegList[reg] = 1;
                         break;
@@ -8371,7 +8371,7 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
     u8* aiDevice;
 #if IS_MM
     s32 reg;
-    s32 value;
+    int value;
 #endif
     s32 iEntry;
     s32 nCount;
@@ -8385,6 +8385,11 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
     s32 pad3[2];
 
     restore = 0;
+
+#if IS_MM
+    skipDecode = 0;
+#endif
+
     nTick = OSGetTick();
     if (pCPU->nWaitPC != 0) {
         pCPU->nMode |= 8;
@@ -8410,24 +8415,23 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
             gRegCount++;
             gRegList[MIPS_RT(nOpcode)] = 1;
         } else if (gRegCount != 0 && MIPS_UNK(nOpcode) == 0xA0000000) {
-            value = MIPS_RS(nOpcode);
+            reg = MIPS_RS(nOpcode);
 
-            if (gRegList[value] != 0) {
-
+            if (gRegList[reg] != 0) {
                 gRegCount--;
-                gRegList[value] = 0;
+                gRegList[reg] = 0;
 
-                reg = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                if (reg == 0x00) {
+                value = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                if (value == 0x00) {
                     simulatorPlayMovie();
-                } else if (reg == 0x01) {
+                } else if (value == 0x01) {
                     romReloadRange(pCPU);
-                } else if (reg >= 0x10 && reg <= 0x19) {
-                    mcardSaveDisplay = reg;
-                } else if (reg == 0x1A) {
-                    mcardSaveDisplay = reg;
-                } else if (reg >= 0x30 && reg <= 0x31) {
-                    mcardSaveCamera();
+                } else if (value >= 0x10 && value <= 0x19) {
+                    mcardSaveDisplay = value;
+                } else if (value == 0x1A) {
+                    mcardSaveDisplay = value;
+                } else if (value >= 0x30 && value <= 0x31) {
+                    mcardSaveCamera(value);
                 } else {
                     soundPlayOcarinaTune(pCPU);
                 }
