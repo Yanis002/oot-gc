@@ -1635,9 +1635,10 @@ static bool frameDrawSetupSP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 nVe
     s32 iIndex;
 #if IS_OOT
     s32 pad;
-#endif
 
     nColors = 0;
+#endif
+    
     bTextureGen = (pFrame->aMode[FMT_GEOMETRY] & 0xA0) == 0xA0;
 
     if (pFrame->nFlag & 0x10000) {
@@ -1718,19 +1719,41 @@ static bool frameDrawSetupSP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 nVe
                 eTypeProjection = GX_PERSPECTIVE;
             }
             if (eTypeProjection == GX_PERSPECTIVE) {
+#if IS_OOT
                 C_MTXPerspective(matrixProjection, 30.0f, 4.0f / 3.0f, 0.1f * rNear, rFar);
+#elif IS_MM
+                C_MTXPerspective(matrixProjection, 30.0f, 4.0f / 3.0f, 0.1f * rNear, rFar);
+#endif
             } else {
                 rNear = -rFar;
                 C_MTXOrtho(matrixProjection, (f32)pFrame->anSizeY[0] / 2.0, -(f32)pFrame->anSizeY[0] / 2.0,
                            -(f32)pFrame->anSizeX[0] / 2.0, (f32)pFrame->anSizeX[0] / 2.0, rNear, rFar);
             }
-
             rValue23 = matrixProjection[2][3];
             if ((pFrame->aMode[FMT_OTHER0] & 0xC00) == 0xC00 && eTypeProjection == GX_PERSPECTIVE) {
                 rValue23 = -((0.0015f * rNear) - rValue23);
             }
+
+#if IS_MM
+            if (eTypeProjection == GX_PERSPECTIVE) {
+                gNearVal = matrix44[2][3] * ((matrix44[2][2] + 1.0f) / (matrix44[2][3] - 1.0f) - 1.0f) * 0.5f;
+                gFarVal = gNearVal * ((matrix44[2][2] - 1.0f) / (matrix44[2][2] + 1.0f) + 1.0f);
+            } else {
+                gNearVal = (matrix44[2][3] + 1.0f) / matrix44[2][2];
+                gFarVal = (matrix44[2][3] - 1.0f) / matrix44[2][2];
+            }
+#endif
+
             matrix44[2][2] = matrixProjection[2][2];
             matrix44[2][3] = rValue23;
+
+#if IS_MM
+            memcpy(gRealProjectionMtx, matrix44, sizeof(Mtx44));
+            C_MTXPerspective(matrix44, 30.0f, 4.0f / 3.0f, 0.1f * rNear, rFar);
+            gRealProjectionMtx[2][2] = matrixProjection[2][2];
+            gRealProjectionMtx[2][3] = matrixProjection[2][3];
+            gRealProjectionType = eTypeProjection;
+#endif
 
             GXSetProjection(matrix44, eTypeProjection);
         }
@@ -2827,6 +2850,17 @@ static bool frameDrawRectTexture(Frame* pFrame, Rectangle* pRectangle) {
     rY0 = (pRectangle->nY0 + 3) >> 2;
     rY1 = (pRectangle->nY1 + 3) >> 2;
 
+#if IS_MM
+    if (gpSystem->eTypeROM == SRT_ZELDA2) {
+        if (rX1 - rX0 <= 1.0 || rY1 - rY0 <= 1.0) {
+            rX0 = 0.25 * ((pRectangle->nX0 >> 2));
+            rX1 = 0.25 * ((pRectangle->nX1 >> 2));
+            rY0 = 0.25 * ((pRectangle->nY0 >> 2));
+            rY1 = 0.25 * ((pRectangle->nY1 >> 2));
+        }
+    }
+#endif
+
     // TODO: regalloc hacks
     (void)pRectangle->nY0;
     if (gpSystem->eTypeROM == SRT_ZELDA1) {
@@ -2859,8 +2893,9 @@ static bool frameDrawRectTexture(Frame* pFrame, Rectangle* pRectangle) {
         rT1 += 1.0f;
     }
 
-#if IS_OOT
     rDepth = 0.0f;
+
+#if IS_OOT
     if (pFrame->bOverrideDepth) {
         rDepth = -1001.0;
     }
@@ -3186,15 +3221,25 @@ bool frameEnd(Frame* pFrame) {
 
         pFrame->nLastFrameZSets = pFrame->nZBufferSets;
         pFrame->nZBufferSets = 0;
-
         pFrame->bPauseBGDrawn = false;
+
+#if IS_OOT
         GXSetZTexture(GX_ZT_DISABLE, GX_TF_Z24X8, 0);
 
         if ((pFrame->bShrinking & 0xF) == 0) {
             pFrame->bShrinking &= ~0xFFFF;
         }
         pFrame->bShrinking &= ~0xFF;
-        pFrame->bSnapShot = false;
+        pFrame->bSnapShot = 0;
+#elif IS_MM
+        pFrame->bShrinking = 0;
+
+        if ((u32)pFrame->bSnapShot & ~0xFFFF) {
+            pFrame->bSnapShot |= 0x10;
+        } else {
+            pFrame->bSnapShot = 0;
+        }
+#endif
     }
 
 #if IS_OOT
@@ -3519,7 +3564,7 @@ void WriteZValue(Frame* pFrame, u32* ptr) {
     GXSetNumChans(0);
     GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
     GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
-    GXPeekZ(0, 0, &x);
+    GXPeekZ(0, 0, (u32*)&x);
 
     if (x == 1) {
         GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_C0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_ZERO);
@@ -3555,22 +3600,23 @@ void WriteZValue(Frame* pFrame, u32* ptr) {
     GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
     GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
     GXSetVtxDesc(GX_VA_TEX1, GX_DIRECT);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA6, 0);
-    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_RGBA6, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX1, GX_TEX_ST, GX_F32, 0);
 
     GXBegin(GX_QUADS, GX_VTXFMT0, 4);
-    GXPosition2f32(0.0f, 0.0f);
     GXPosition3f32(0.0f, 0.0f, 0.0f);
-    GXPosition2f32(sLensTex.rS0, sLensTex.rT0);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXTexCoord2f32(sLensTex.rS0, sLensTex.rT0);
     GXPosition3f32(N64_FRAME_WIDTH, 0.0f, 0.0f);
-    GXPosition2f32(1.0f, 0.0f);
-    GXPosition2f32(sLensTex.rS1, sLensTex.rT0);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXTexCoord2f32(sLensTex.rS1, sLensTex.rT0);
     GXPosition3f32(N64_FRAME_WIDTH, N64_FRAME_HEIGHT, 0.0f);
-    GXPosition2f32(1.0f, 1.0f);
-    GXPosition3f32(sLensTex.rS1, sLensTex.rT1, 0.0f);
-    GXPosition3f32(N64_FRAME_HEIGHT, 0.0f, 0.0f);
-    GXPosition3f32(1.0f, sLensTex.rS0, sLensTex.rT1);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXTexCoord2f32(sLensTex.rS1, sLensTex.rT1);
+    GXPosition3f32(0.0f, N64_FRAME_HEIGHT, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXTexCoord2f32(sLensTex.rS0, sLensTex.rT1);
     GXEnd();
 
     GXPixModeSync();
