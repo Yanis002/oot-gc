@@ -135,8 +135,6 @@ u8 TexCoords_u8[] ATTRIBUTE_ALIGN(32) = {
 };
 
 static f32 gOrthoMtx[4][4] ATTRIBUTE_ALIGN(32);
-static u32 gContMap[4][GCN_BTN_COUNT];
-static char* gaszArgument[8];
 
 u32 gmsg_ld01Size = 0x3E20;
 u32 gmsg_ld02Size = 0x3E20;
@@ -259,21 +257,22 @@ bool gbReset;
         GXClearVtxDesc();                                                                             \
         GXSetVtxDesc(GX_VA_POS, GX_DIRECT);                                                           \
         GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);                                                          \
-        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_TEX_ST, GX_RGBA6, 0);                               \
-        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_RGBA6, 0);                              \
+                                                                                                      \
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);                              \
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);                              \
         width = tpl->descriptorArray->textureHeader->width / 2;                                       \
         height = tpl->descriptorArray->textureHeader->height / 2;                                     \
-        width2 = N64_FRAME_WIDTH - width / 2;                                                         \
-        height2 = N64_FRAME_HEIGHT - height / 2;                                                      \
+        width2 = (N64_FRAME_WIDTH - width) / 2;                                                         \
+        height2 = (N64_FRAME_HEIGHT - height) / 2;                                                      \
         GXBegin(GX_QUADS, GX_VTXFMT0, 4);                                                             \
-        GXPosition2f32(width2, height2);                                                              \
-        GXPosition3f32(0.0f, 0.0f, 0.0f);                                                             \
-        GXPosition2f32(width2 + width, height2);                                                      \
-        GXPosition3f32(0.0f, 1.0f, 0.0f);                                                             \
-        GXPosition2f32(width2 + width, height2 + height);                                             \
-        GXPosition3f32(0.0f, 1.0f, 1.0f);                                                             \
-        GXPosition2f32(width2, height2 + height);                                                     \
-        GXPosition3f32(0.0f, 0.0f, 1.0f);                                                             \
+        GXPosition3f32(width2, height2, 0.0f);                                                              \
+        GXTexCoord2f32(0.0f, 0.0f);                                                             \
+        GXPosition3f32(width2 + width, height2, 0.0f);                                                      \
+        GXTexCoord2f32(1.0f, 0.0f);                                                             \
+        GXPosition3f32(width2 + width, height2 + height, 0.0f);                                             \
+        GXTexCoord2f32(1.0f, 1.0f);                                                             \
+        GXPosition3f32(width2, height2 + height, 0.0f);                                                     \
+        GXTexCoord2f32(0.0f, 1.0f);                                                             \
         GXEnd();                                                                                      \
         GXPixModeSync();                                                                              \
     }
@@ -655,13 +654,13 @@ bool simulatorDrawImage(TEXPalette* tpl, s32 nX0, s32 nY0, bool drawBar, s32 per
     Mtx matrix; // r1+0x5C
     s32 width; // r23
     s32 height; // r22
+    s32 width2;
+    s32 height2;
     Mtx g2DviewMtx = {
         {1.0f, 0.0f, 0.0f, 0.0f},
         {0.0f, 1.0f, 0.0f, 0.0f},
         {0.0f, 0.0f, 1.0f, -1.0f},
     };
-    s32 width2;
-    s32 height2;
 #endif
 
     while (frameBeginOK(gpFrame) != true) {}
@@ -1784,6 +1783,8 @@ void simulatorResetAndPlayMovie(void) {
     }
 }
 
+static u32 gContMap[4][GCN_BTN_COUNT];
+
 bool simulatorSetControllerMap(u32* mapData, s32 channel) {
     s32 i;
 
@@ -2271,6 +2272,8 @@ static bool simulatorDrawCursor(s32 nX, s32 nY) {
 
     return true;
 }
+
+static char* gaszArgument[8];
 
 static bool simulatorParseArguments(void) {
     s32 iArgument;
