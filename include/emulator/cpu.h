@@ -17,6 +17,7 @@
 #define MIPS_FUNCT(inst) ((inst) & 0x3F)
 #define MIPS_IMM_S16(inst) ((s16)((inst) & 0xFFFF))
 #define MIPS_IMM_U16(inst) ((u16)((inst) & 0xFFFF))
+#define MIPS_IMM_U16_2(inst) ((u16)((inst) & 0xFFFFF))
 #define MIPS_TARGET(inst) ((inst) & 0x3FFFFFF)
 #define MIPS_UNK(inst) ((inst) & ~0x3FF0000)
 
