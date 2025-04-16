@@ -3685,7 +3685,10 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
                     bReturn = false;
                     if ((nOpcode & 0xFFFF0000) != 0x27BD0000) {
                         xlPostText("TestFunction: INTERNAL ERROR: osViSwapBuffer: No ADDIU opcode: 0x%08x", "library.c",
-                                   VERSION == MM_J ? 7043 : VERSION == MM_U ? 7052 : 6971, nOpcode);
+                                   VERSION == MM_J   ? 7043
+                                   : VERSION == MM_U ? 7052
+                                                     : 6971,
+                                   nOpcode);
                     } else {
                         pLibrary->nAddStackSwap = MIPS_IMM_S16(nOpcode);
                     }

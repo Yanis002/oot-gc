@@ -3059,8 +3059,8 @@ bool mcardOpen(MemCard* pMCard, char* fileName, char* comment, char* icon, char*
                     return true;
                 }
             } else {
-                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c", LN(3696, 3710, 4308, 4130),
-                           command);
+                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c",
+                           LN(3696, 3710, 4308, 4130), command);
                 pMCard->saveToggle = false;
                 mcardGameSetNoSave(pMCard, gameSize);
                 return true;
@@ -3233,8 +3233,8 @@ bool mcardOpen(MemCard* pMCard, char* fileName, char* comment, char* icon, char*
                 mcardGameSetNoSave(pMCard, gameSize);
                 return true;
             } else {
-                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c", LN(3892, 3941, 4543, 4365),
-                           command);
+                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c",
+                           LN(3892, 3941, 4543, 4365), command);
                 pMCard->saveToggle = false;
                 mcardGameSetNoSave(pMCard, gameSize);
                 return true;
@@ -3409,8 +3409,8 @@ bool mcardOpenDuringGame(MemCard* pMCard) {
                     return true;
                 }
             } else {
-                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c", LN(4122, 4171, 4773, 4595),
-                           command);
+                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c",
+                           LN(4122, 4171, 4773, 4595), command);
                 pMCard->saveToggle = false;
                 return true;
             }
@@ -3581,8 +3581,8 @@ bool mcardOpenDuringGame(MemCard* pMCard) {
                 pMCard->saveToggle = false;
                 return true;
             } else {
-                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c", LN(4320, 4387, 4989, 4811),
-                           command);
+                xlPostText("Invalid Memory Card Command %d - Assuming Go To Game", "mcardGCN.c",
+                           LN(4320, 4387, 4989, 4811), command);
                 pMCard->saveToggle = false;
                 return true;
             }

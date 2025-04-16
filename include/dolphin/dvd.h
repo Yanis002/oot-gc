@@ -4,16 +4,16 @@
 #include "dolphin/types.h"
 
 #define DVD_ASSERTMSGLINE(line, cond, msg) \
-    if (!(cond)) \
-        OSPanic(__FILE__, line, msg)
+    if (!(cond))                           \
+    OSPanic(__FILE__, line, msg)
 
 #define DVD_ASSERTMSG1LINE(line, cond, msg, arg1) \
-    if (!(cond)) \
-        OSPanic(__FILE__, line, msg, arg1)
+    if (!(cond))                                  \
+    OSPanic(__FILE__, line, msg, arg1)
 
 #define DVD_ASSERTMSG2LINE(line, cond, msg, arg1, arg2) \
-    if (!(cond)) \
-        OSPanic(__FILE__, line, msg, arg1, arg2)
+    if (!(cond))                                        \
+    OSPanic(__FILE__, line, msg, arg1, arg2)
 
 // DVD Commands
 #define DVD_COMMAND_NONE 0

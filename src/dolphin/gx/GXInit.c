@@ -178,7 +178,7 @@ bool __GXShutdown(bool final) {
 #endif
 
 GXFifoObj* GXInit(void* base, u32 size) {
-#if IS_CE|| IS_MM
+#if IS_CE || IS_MM
     static u32 resetFuncRegistered = 0;
 #endif
     u32 i;

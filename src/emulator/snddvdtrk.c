@@ -141,7 +141,8 @@ static void DVDTrackFadeOutUpdate(void) {
 
         gDVDTrackList.state = TRACK_STOPPING_STREAM;
 
-        if ((gDVDTrackList.error.bytes[0] == 0 && gDVDTrackList.error.bytes[1] == 0) && gDVDTrackList.error.bytes[3] != 0) {
+        if ((gDVDTrackList.error.bytes[0] == 0 && gDVDTrackList.error.bytes[1] == 0) &&
+            gDVDTrackList.error.bytes[3] != 0) {
             DVDClose(&gDVDTrackList.playingFileInfo);
             AISetStreamPlayState(0);
             gDVDTrackList.state = TRACK_NOTHING;
@@ -194,13 +195,14 @@ void InitDVDTrackList(void) {
     }
 }
 
-s32 AddDVDTrack(char* filename) {    
+s32 AddDVDTrack(char* filename) {
     if (gDVDTrackList.numTracks >= ARRAY_COUNT(gDVDTrackList.playOrder)) {
         return -1;
-    } 
-    
+    }
+
     strncpy(gDVDTrackList.filenames[gDVDTrackList.numTracks], filename, 0x20);
-    gDVDTrackList.fileIDs[gDVDTrackList.numTracks] = DVDConvertPathToEntrynum(gDVDTrackList.filenames[gDVDTrackList.numTracks]);
+    gDVDTrackList.fileIDs[gDVDTrackList.numTracks] =
+        DVDConvertPathToEntrynum(gDVDTrackList.filenames[gDVDTrackList.numTracks]);
 
     return gDVDTrackList.numTracks++;
 }
@@ -260,13 +262,11 @@ void PlayDVDTrack(s32 songID, s32 volume, s32 fadeTime, s32 flags) {
                 volume = 255;
             }
 
-            if (
-                (
-                ((gDVDTrackList.nextState.trackID >= 0
-                || uVar1 != gDVDTrackList.curState.trackID) 
-                || volume != gDVDTrackList.curState.volume)
-                || (((gDVDTrackList.state < TRACK_PREPARE_STREAM || (gDVDTrackList.state > TRACK_FADE_IN_STREAM)) && gDVDTrackList.state != TRACK_PAUSING_STREAM)))
-                || gDVDTrackList.stopTrack != 0) {
+            if ((((gDVDTrackList.nextState.trackID >= 0 || uVar1 != gDVDTrackList.curState.trackID) ||
+                  volume != gDVDTrackList.curState.volume) ||
+                 (((gDVDTrackList.state < TRACK_PREPARE_STREAM || (gDVDTrackList.state > TRACK_FADE_IN_STREAM)) &&
+                   gDVDTrackList.state != TRACK_PAUSING_STREAM))) ||
+                gDVDTrackList.stopTrack != 0) {
 
                 gDVDTrackList.fadeInfo.startVol = 127;
                 gDVDTrackList.fadeInfo.curVol = 127;
@@ -444,7 +444,9 @@ static void DVDTrackVolume(s32 newVolume, s32 fadeTime) {
 
 // Erased
 static void SetDVDTrackVolume(void) {
-    s32 volume = (((((gDVDTrackList.volume * *gDVDVolumeP) >> 7) * gDVDTrackList.fadeInOutVolume) >> 7) * gDVDTrackList.fadeInfo.curVol) >> 7;
+    s32 volume = (((((gDVDTrackList.volume * *gDVDVolumeP) >> 7) * gDVDTrackList.fadeInOutVolume) >> 7) *
+                  gDVDTrackList.fadeInfo.curVol) >>
+                 7;
 
     AISetStreamVolLeft(volume);
     AISetStreamVolRight(volume);

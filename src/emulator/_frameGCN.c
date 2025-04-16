@@ -1638,7 +1638,7 @@ static bool frameDrawSetupSP(Frame* pFrame, s32* pnColors, bool* pbFlag, s32 nVe
 
     nColors = 0;
 #endif
-    
+
     bTextureGen = (pFrame->aMode[FMT_GEOMETRY] & 0xA0) == 0xA0;
 
     if (pFrame->nFlag & 0x10000) {

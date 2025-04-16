@@ -5,8 +5,8 @@
  * instead of being compiled separately.
  */
 #include "emulator/cpu.h"
-#include "emulator/simGCN.h"
 #include "emulator/mcardGCN.h"
+#include "emulator/simGCN.h"
 #include "stdio.h"
 #include "string.h"
 
@@ -5138,7 +5138,8 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
                     break;
                 case 0x28: // sb
 #if IS_MM
-                    if (gpSystem->eTypeROM == SRT_ZELDA2 && gRegCount != 0 && (MIPS_IMM_U16(nOpcode) == 0x0 && gRegList[MIPS_RS(nOpcode)] != 0)) {
+                    if (gpSystem->eTypeROM == SRT_ZELDA2 && gRegCount != 0 &&
+                        (MIPS_IMM_U16(nOpcode) == 0x0 && gRegList[MIPS_RS(nOpcode)] != 0)) {
                         gRegCount--;
                         reg = MIPS_RS(nOpcode);
                         gRegList[reg] = 0;
@@ -6052,7 +6053,6 @@ static bool cpuGetPPC(Cpu* pCPU, s32* pnAddress, CpuFunction* pFunction, s32* an
     } else {
         return false;
     }
-
 }
 
 /**
@@ -6425,7 +6425,7 @@ static bool cpuExecuteUpdate(Cpu* pCPU, s32* pnAddressGCN, u32 nCount) {
 #if IS_OOT
     if (pSystem->eTypeROM == SRT_DRMARIO) {
         eModeUpdate = pSystem->bException ? RUM_NONE : RUM_IDLE;
-    } else 
+    } else
 #endif
     {
         eModeUpdate = ((pCPU->nMode & 0x80) && !pSystem->bException) ? RUM_IDLE : RUM_NONE;
@@ -6702,7 +6702,8 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
                     if (MIPS_RS(nOpcode) == 0 || MIPS_RT(nOpcode) == 0) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
-                        strcpy(szText[2], MIPS_RT(nOpcode) == 0 ? gaszNameGPR[MIPS_RS(nOpcode)] : gaszNameGPR[MIPS_RT(nOpcode)]);
+                        strcpy(szText[2],
+                               MIPS_RT(nOpcode) == 0 ? gaszNameGPR[MIPS_RS(nOpcode)] : gaszNameGPR[MIPS_RT(nOpcode)]);
                     } else {
                         strcpy(szText[0], "ADD");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6714,7 +6715,8 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
                     if (MIPS_RS(nOpcode) == 0 || MIPS_RT(nOpcode) == 0) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
-                        strcpy(szText[2], MIPS_RS(nOpcode) == 0 ? gaszNameGPR[MIPS_RT(nOpcode)] : gaszNameGPR[MIPS_RS(nOpcode)]);
+                        strcpy(szText[2],
+                               MIPS_RS(nOpcode) == 0 ? gaszNameGPR[MIPS_RT(nOpcode)] : gaszNameGPR[MIPS_RS(nOpcode)]);
                     } else {
                         strcpy(szText[0], "ADDU");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -6749,7 +6751,8 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
                     if (MIPS_RS(nOpcode) == 0 || MIPS_RT(nOpcode) == 0) {
                         strcpy(szText[0], "MOV");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
-                        strcpy(szText[2], MIPS_RS(nOpcode) == 0 ? gaszNameGPR[MIPS_RT(nOpcode)] : gaszNameGPR[MIPS_RS(nOpcode)]);
+                        strcpy(szText[2],
+                               MIPS_RS(nOpcode) == 0 ? gaszNameGPR[MIPS_RT(nOpcode)] : gaszNameGPR[MIPS_RS(nOpcode)]);
                     } else {
                         strcpy(szText[0], "OR");
                         strcpy(szText[1], gaszNameGPR[MIPS_RD(nOpcode)]);
@@ -7120,7 +7123,7 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
                                 default:
                                     break;
                             }
-                        break;
+                            break;
                     }
                     break;
             }
@@ -7160,7 +7163,6 @@ static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
                         break;
                     default:
                         break;
-                
                 }
             } else if (MIPS_FMT(nOpcode) == 0x08) {
                 switch (MIPS_RT(nOpcode)) {

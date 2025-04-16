@@ -943,7 +943,7 @@ bool DVDReadAbsAsyncPrio(DVDCommandBlock* block, void* addr, s32 length, s32 off
 
 s32 DVDSeekAbsAsyncPrio(DVDCommandBlock* block, s32 offset, DVDCBCallback callback, s32 prio) {
     int idle;
-    
+
     block->command = DVD_COMMAND_SEEK;
     block->offset = offset;
     block->callback = callback;
@@ -1041,7 +1041,7 @@ s32 DVDGetStreamErrorStatus(DVDCommandBlock* block) {
         if (state == DVD_STATE_END || state == DVD_STATE_FATAL_ERROR || state == DVD_STATE_CANCELED) {
             retVal = block->transferredSize;
             break;
-        } 
+        }
 
         OSSleepThread(&__DVDThreadQueue);
     }
