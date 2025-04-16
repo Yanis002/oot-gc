@@ -275,7 +275,7 @@ config.libs = [
             Object(Linked, "emulator/THPDraw.c", cflags=cflags_base),
             Object(Linked, "emulator/THPRead.c"),
             Object(Linked, "emulator/THPVideoDecode.c", cflags=cflags_base),
-            Object(Linked, "emulator/mcardGCN.c"),
+            Object(OOT_VERSIONS, "emulator/mcardGCN.c"),
             Object(Linked, "emulator/codeGCN.c"),
             Object(Linked, "emulator/soundGCN.c"),
             Object(OOT_VERSIONS, "emulator/frame.c"),

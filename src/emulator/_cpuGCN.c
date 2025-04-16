@@ -6,6 +6,7 @@
  */
 #include "emulator/cpu.h"
 #include "emulator/simGCN.h"
+#include "emulator/mcardGCN.h"
 #include "stdio.h"
 #include "string.h"
 
@@ -6522,8 +6523,6 @@ static inline bool cpuExecuteCacheInstruction(Cpu* pCPU) {
 }
 
 #if IS_MM
-extern s32 mcardSaveDisplay;
-
 static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
     // Parameters
     // struct _CPU* pCPU; // r25

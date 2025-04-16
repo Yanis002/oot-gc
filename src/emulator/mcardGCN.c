@@ -2417,7 +2417,7 @@ bool mcardOpenDuringGameError(MemCard* pMCard, MemCardCommand* pCommand) {
 static bool mcardNewStart;
 static s32 mcardEmpty;
 static s32 mcardOneTime;
-static s32 mcardSaveDisplay;
+s32 mcardSaveDisplay;
 
 #define SET_NEW_START(val) mcardNewStart = val
 #define SET_EMPTY(val) mcardEmpty = val
