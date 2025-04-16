@@ -1409,16 +1409,17 @@ bool mcardGameSet(MemCard* pMCard, char* name) {
                     pMCard->file.game.buffer[0] &= 0xFC;
                 }
             }
-        } else if (gpSystem->eTypeROM == SRT_ZELDA2) {
+        } 
 #if IS_MM
+        else if (gpSystem->eTypeROM == SRT_ZELDA2) {
             char* buffer = pMCard->file.game.buffer + 0x18000;
             testInt = (s32*)buffer;
 
             if (OSGetSoundMode() == OS_SOUND_MODE_MONO) {
                 *testInt = 0xA51D0101;
             }
-#endif
         }
+#endif
     }
 
     return true;

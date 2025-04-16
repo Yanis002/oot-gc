@@ -3838,16 +3838,18 @@ void ZeldaEraseCamera(void) {
 void ZeldaDrawFrameCamera(Frame* pFrame, void* buffer) {
     Mtx matrix;
     GXColor color;
-    f32 new_var;
-    f32 new_var2;
     f32 nX0; // f31
     f32 nY0; // f30
     f32 nX1; // f29
     f32 nY1; // f28
-    s32 shrink;
-    s32 pad;
     f32 width; // f2
     f32 height; // f3
+
+#if IS_MM
+    f32 new_var;
+    f32 new_var2;
+    s32 shrink;
+#endif
 
     static GXTexObj frameObj;
 
