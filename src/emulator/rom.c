@@ -487,335 +487,252 @@ bool romReloadRange(Cpu* pCPU) {
         if (!romLoadRangeBlock(pROM, 0x4, 0x23, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x46, 0x4C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x54, 0x56, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x64, 0x65, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x74, 0x78, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x87, 0x8F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9A, 0x9C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xAE, 0xB0, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC1, 0xC7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x102, 0x103, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x184, 0x1BB, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x228, 0x236, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x243, 0x263, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x2F0, 0x2F6, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x2FF, 0x32B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x33E, 0x344, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x354, 0x356, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x371, 0x373, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x37D, 0x384, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3A4, 0x3AF, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3C9, 0x3CA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3E1, 0x3E2, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3E9, 0x3EF, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3FE, 0x404, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x410, 0x412, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x494, 0x4A3, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4BB, 0x4BE, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4C8, 0x4CC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4D6, 0x4DE, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4FE, 0x505, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x528, 0x529, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x538, 0x539, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x59D, 0x5DA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x5F1, 0x5FF, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x60B, 0x619, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x621, 0x625, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x634, 0x635, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x63C, 0x663, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x66E, 0x679, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x67E, 0x690, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x69B, 0x6A7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x6BE, 0x73D, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x749, 0x75F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x781, 0x784, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x78C, 0x794, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x79E, 0x79F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7A9, 0x7CA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7D2, 0x7D8, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7E4, 0x7E7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7F7, 0x809, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x811, 0x826, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x83D, 0x863, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x878, 0x886, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x8BF, 0x8CB, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x8DE, 0x8F4, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x912, 0x926, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x930, 0x984, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9B8, 0x9BF, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9C6, 0x9E5, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9FA, 0xA09, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA1F, 0xA2B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA3E, 0xA6A, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA72, 0xA87, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA8C, 0xACA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xADA, 0xAEE, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xAF7, 0xB0B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xB1C, 0xB3B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xB6F, 0xBB5, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xBCB, 0xBFC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC71, 0xC7F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC8B, 0xC98, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xCC3, 0xCDD, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xCE2, 0xD01, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD08, 0xD57, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD68, 0xD81, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD8C, 0xD9E, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xDA9, 0xDB4, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xDD1, 0xDDB, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xE5D, 0xE63, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xE8C, 0xE95, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xECD, 0xED7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xEFE, 0xF18, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xF34, 0xF38, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xF45, 0xF57, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
@@ -827,327 +744,246 @@ bool romReloadRange(Cpu* pCPU) {
         if (!romLoadRangeBlock(pROM, 0x46, 0x4C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x54, 0x56, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x64, 0x65, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x75, 0x77, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x87, 0x8F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x99, 0x9C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xAE, 0xB0, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC1, 0xC7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x102, 0x103, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x184, 0x1BC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x228, 0x236, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x243, 0x263, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x33E, 0x343, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x354, 0x356, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x371, 0x373, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x37D, 0x384, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3A4, 0x3AE, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3C9, 0x3CA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3E1, 0x3E2, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3E9, 0x3F0, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x3FE, 0x404, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x410, 0x412, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x494, 0x4A4, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4BA, 0x4BD, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4C7, 0x4CB, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4D5, 0x4DD, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x4FE, 0x506, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x529, 0x53C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x59F, 0x5DC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x5F3, 0x601, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x60D, 0x627, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x636, 0x645, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x64D, 0x658, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x661, 0x665, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x670, 0x692, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x69C, 0x6A8, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x6C0, 0x6DF, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x6E5, 0x73F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x74A, 0x761, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x782, 0x786, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x78E, 0x796, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x79F, 0x7A1, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7AA, 0x7CC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7D4, 0x7DA, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7E6, 0x7E9, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x7F9, 0x80B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x813, 0x81B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x822, 0x828, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x83F, 0x865, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x879, 0x887, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x8C0, 0x8CD, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x8E0, 0x8F6, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x914, 0x928, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x931, 0x93F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x946, 0x95F, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x968, 0x985, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9BA, 0x9E7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0x9FB, 0x9FD, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA05, 0xA0A, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA20, 0xA2C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA3F, 0xA89, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xA8D, 0xACC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xADC, 0xAF0, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xAF8, 0xB0D, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xB1D, 0xB3B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xB6F, 0xBB5, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xBCF, 0xBFC, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC75, 0xC83, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xC8B, 0xC98, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xCC7, 0xD01, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD0C, 0xD28, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD29, 0xD57, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD6C, 0xD81, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xD8C, 0xD9E, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xDAD, 0xDB8, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xDD1, 0xE01, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xE61, 0xE67, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xE8C, 0xEA0, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xED1, 0xEDB, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xEFE, 0xF1B, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xF38, 0xF3C, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-
         if (!romLoadRangeBlock(pROM, 0xF45, 0xF57, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
@@ -1793,6 +1629,8 @@ bool romCacheGame(Rom* pROM) {
     bool bZeldaE;
     bool bZeldaF;
     bool bZeldaG;
+    bool bZeldaI;
+    bool bZeldaS;
     s32 nSize;
     char* szName;
     tXL_FILE* pFile;
@@ -1803,10 +1641,20 @@ bool romCacheGame(Rom* pROM) {
     if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ") || romTestCode(pROM, "NZLP")) {
         bZeldaE = romTestCode(pROM, "CZLE");
         bZeldaJ = romTestCode(pROM, "CZLJ");
-        bZeldaG = bZeldaJ;
-        bZeldaF = bZeldaJ;
 
-        if (bZeldaE || bZeldaJ || bZeldaF || bZeldaG) {
+        bZeldaF = bZeldaG = bZeldaI = bZeldaS = false;
+
+        if (bZeldaE || bZeldaJ || bZeldaF || bZeldaG || bZeldaI || bZeldaS) {
+            if (gnFlagZelda & 2) {
+                if (!bZeldaE && !bZeldaJ && (bZeldaE || bZeldaF || bZeldaG || bZeldaI || bZeldaS)) {
+                    // pROM->anOffsetBlock = ganOffsetBlock_ZLP;
+                    // pROM->nCountOffsetBlocks = 0xC6;
+                }
+            } else if (!bZeldaE && !bZeldaJ && (bZeldaE || bZeldaF || bZeldaG || bZeldaI || bZeldaS)) {
+                // pROM->anOffsetBlock = ganOffsetBlock_URAZLP;
+                // pROM->nCountOffsetBlocks = 0xC6;
+            }
+
             if (bZeldaE) {
                 szName = gnFlagZelda & 2 ? "zle.tpl" : "urazle.tpl";
             } else if (bZeldaF) {
@@ -1815,6 +1663,10 @@ bool romCacheGame(Rom* pROM) {
                 szName = gnFlagZelda & 2 ? "zlg.tpl" : "urazlg.tpl";
             } else if (bZeldaJ) {
                 szName = gnFlagZelda & 2 ? "zlj.tpl" : "urazlj.tpl";
+            } else if (bZeldaI) {
+                szName = gnFlagZelda & 2 ? "zle.tpl" : "urazle.tpl"; // TODO
+            } else if (bZeldaS) {
+                szName = gnFlagZelda & 2 ? "zle.tpl" : "urazle.tpl";
             } else {
                 szName = "";
             }
@@ -1860,15 +1712,12 @@ bool romCacheGame(Rom* pROM) {
         if (xlFileOpen(&pFile, XLFT_BINARY, szName)) {
             nSize = pFile->nSize;
             gpImageBack = (u8*)SYSTEM_RAM(pROM->pHost)->pBuffer + 0x300000;
-
             if (!xlFileGet(pFile, gpImageBack, nSize)) {
                 return false;
             }
-
             if (!xlFileClose(&pFile)) {
                 return false;
             }
-
             simulatorUnpackTexPalette(gpImageBack);
             DCStoreRange(gpImageBack, nSize);
             gbProgress = false;
@@ -1876,136 +1725,107 @@ bool romCacheGame(Rom* pROM) {
         }
 
         if (romTestCode(pROM, "NZSJ")) {
-            pROM->anOffsetBlock = (u32*)&ganOffsetBlock_ZELDA2J;
-            pROM->nCountOffsetBlocks = 0xca;
+            pROM->anOffsetBlock = ganOffsetBlock_ZELDA2J;
+            pROM->nCountOffsetBlocks = 0xCA;
 
-            if (!romLoadRange(pROM, 0x0, 0x9e2b50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x0, 0x9E2B50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x9fdff0, 0xa723b0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x9FDFF0, 0xA723B0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0xb3b620, 0xdeae50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0xB3B620, 0xDEAE50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0xe52080, 0x1053a00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0xE52080, 0x1053A00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1601c10, 0x1617c00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1601C10, 0x1617C00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x163a270, 0x166f3f0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x163A270, 0x166F3F0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x17a3a00, 0x17c0ad0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x17A3A00, 0x17C0AD0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1d82520, 0x1d90ca0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1D82520, 0x1D90CA0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1da7600, 0x1dba130, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1DA7600, 0x1DBA130, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1e1b6d0, 0x1e7ca30, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1E1B6D0, 0x1E7CA30, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0x71c, 0x71e, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0x71C, 0x71E, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0x938, 0x93e, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0x938, 0x93E, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0xac9, 0xaca, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0xAC9, 0xACA, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
             if (!romLoadRangeBlock(pROM, 0x926, 0x927, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0xbcb, 0xbd0, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0xBCB, 0xBD0, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0xeba, 0xec0, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0xEBA, 0xEC0, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0xecd, 0xed2, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0xECD, 0xED2, &blockCount, 0x0, NULL)) {
                 return false;
             }
         } else {
-            pROM->anOffsetBlock = (u32*)&ganOffsetBlock_ZELDA2E;
-            pROM->nCountOffsetBlocks = 0xca;
+            pROM->anOffsetBlock = ganOffsetBlock_ZELDA2E;
+            pROM->nCountOffsetBlocks = 0xCA;
 
-            if (!romLoadRange(pROM, 0x0, 0x9e22c0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x0, 0x9E22C0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x9fd760, 0xa77120, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x9FD760, 0xA77120, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0xb3f840, 0xdeec10, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0xB3F840, 0xDEEC10, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0xe55e40, 0x1056d50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0xE55E40, 0x1056D50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x16055f0, 0x161b5e0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x16055F0, 0x161B5E0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x163c3a0, 0x1650c50, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x163C3A0, 0x1650C50, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x179e730, 0x17bd330, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x179E730, 0x17BD330, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1d7b020, 0x1d92b80, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1D7B020, 0x1D92B80, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1da0730, 0x1dbcc00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1DA0730, 0x1DBCC00, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRange(pROM, 0x1dfc1a0, 0x1e766b0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+            if (!romLoadRange(pROM, 0x1DFC1A0, 0x1E766B0, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0x71e, 0x720, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0x71E, 0x720, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0x93a, 0x93f, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0x93A, 0x93F, &blockCount, 0x0, NULL)) {
                 return false;
             }
-            if (!romLoadRangeBlock(pROM, 0xacb, 0xacc, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0xACB, 0xACC, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
             if (!romLoadRangeBlock(pROM, 0x928, 0x929, &blockCount, 0x0, NULL)) {
                 return false;
             }
-
-            if (!romLoadRangeBlock(pROM, 0x98c, 0x98d, &blockCount, 0x0, NULL)) {
+            if (!romLoadRangeBlock(pROM, 0x98C, 0x98D, &blockCount, 0x0, NULL)) {
                 return false;
             }
         }
