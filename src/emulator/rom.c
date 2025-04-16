@@ -474,16 +474,22 @@ bool romReloadRange(Cpu* pCPU) {
     s32 iBlock;
     s32 blockCount;
     Rom* pROM;
-    s32 pad;
+    System* pSystem;
 
     blockCount = 0;
-    pROM = SYSTEM_ROM(pCPU->pHost);
+    pSystem = SYSTEM(pCPU->pHost);
+    pROM = SYSTEM_ROM(pSystem);
 
     for (iBlock = 0; iBlock < ARRAY_COUNT(pROM->aBlock); iBlock++) {
         romMarkBlockAsFree(pROM, iBlock);
     }
 
-    if (romTestCode(pROM, "NZSJ")) {
+#if VERSION == MM_J
+    if (romTestCode(pROM, "NZSJ"))
+#else
+    if (pSystem->bJapaneseVersion)
+#endif
+    {
         if (!romLoadRangeBlock(pROM, 0x4, 0x23, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
@@ -604,7 +610,7 @@ bool romReloadRange(Cpu* pCPU) {
         if (!romLoadRangeBlock(pROM, 0x67E, 0x690, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
-        if (!romLoadRangeBlock(pROM, 0x69B, 0x6A7, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
+        if (!romLoadRangeBlock(pROM, 0x69B, VERSION == MM_J ? 0x6A7 : 0x6A6, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
             return false;
         }
         if (!romLoadRangeBlock(pROM, 0x6BE, 0x73D, &blockCount, 0x1, &romCacheEnding_ZELDA)) {
@@ -1101,7 +1107,9 @@ static bool romCacheEnding_ZELDA(f32 rProgress) {
     // Local variables
     GXColor color; // r1+0x80
     Mtx matrix; // r1+0x50
+#if VERSION == MM_J
     s32 pad1;
+#endif
     s32 width; // r24
     s32 height; // r30
     s32 nX0; // r31
@@ -1249,6 +1257,7 @@ static bool romCacheEnding_ZELDA(f32 rProgress) {
     return true;
 }
 
+#if VERSION == MM_J
 static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
     int temp_r31;
     s32 nSize;
@@ -1342,6 +1351,7 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
 
     return true;
 }
+#endif
 
 #endif
 
@@ -1623,6 +1633,12 @@ bool romCacheGame(Rom* pROM) {
 
 #elif IS_MM
 
+#if VERSION == MM_J
+#define CHECK_MM_PAL romTestCode(pROM, "NZSP")
+#else
+#define CHECK_MM_PAL false
+#endif
+
 bool romCacheGame(Rom* pROM) {
     s32 blockCount;
     bool bZeldaJ;
@@ -1702,7 +1718,7 @@ bool romCacheGame(Rom* pROM) {
                 }
             }
         }
-    } else if (romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE") || romTestCode(pROM, "NZSP")) {
+    } else if (romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE") || CHECK_MM_PAL) {
         if (romTestCode(pROM, "NZSJ")) {
             szName = "zelda2j.tpl";
         } else {
@@ -1734,6 +1750,7 @@ bool romCacheGame(Rom* pROM) {
             if (!romLoadRange(pROM, 0x9FDFF0, 0xA723B0, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
+#if VERSION == MM_J
             if (!romLoadRange(pROM, 0xB3B620, 0xDEAE50, &blockCount, 0x1, &romCacheGame_ZELDA)) {
                 return false;
             }
@@ -1758,6 +1775,32 @@ bool romCacheGame(Rom* pROM) {
             if (!romLoadRange(pROM, 0x1E1B6D0, 0x1E7CA30, &blockCount, 0x0, &romCacheGame_ZELDA)) {
                 return false;
             }
+#elif VERSION == MM_U
+            if (!romLoadRange(pROM, 0xB3B570, 0xDEADA0, &blockCount, 1, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0xE51FD0, 0x01053990, &blockCount, 1, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x01601BA0, 0x01617B90, &blockCount, 1, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x0163A200, 0x01648BE0, &blockCount, 0, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x017966D0, 0x017B52E0, &blockCount, 0, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x01D72FB0, 0x01D8AB10, &blockCount, 0, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x01D986C0, 0x01DB4B80, &blockCount, 1, &romCacheGame_ZELDA)) {
+                return false;
+            }
+            if (!romLoadRange(pROM, 0x01DF4120, 0x01E6E630, &blockCount, 0x0, &romCacheGame_ZELDA)) {
+                return false;
+            }
+#endif
             if (!romLoadRangeBlock(pROM, 0x71C, 0x71E, &blockCount, 0x0, NULL)) {
                 return false;
             }
@@ -1770,6 +1813,7 @@ bool romCacheGame(Rom* pROM) {
             if (!romLoadRangeBlock(pROM, 0x926, 0x927, &blockCount, 0x0, NULL)) {
                 return false;
             }
+#if VERSION == MM_J
             if (!romLoadRangeBlock(pROM, 0xBCB, 0xBD0, &blockCount, 0x0, NULL)) {
                 return false;
             }
@@ -1779,6 +1823,7 @@ bool romCacheGame(Rom* pROM) {
             if (!romLoadRangeBlock(pROM, 0xECD, 0xED2, &blockCount, 0x0, NULL)) {
                 return false;
             }
+#endif
         } else {
             pROM->anOffsetBlock = ganOffsetBlock_ZELDA2E;
             pROM->nCountOffsetBlocks = 0xCA;
@@ -1988,7 +2033,7 @@ static bool romCopyUpdate(Rom* pROM) {
     return true;
 }
 
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
 //! TODO: can szName arg work?
 static bool romCacheAllBlocks(Rom* pROM) {
     s32 iCache;
@@ -2012,7 +2057,7 @@ static bool romCacheAllBlocks(Rom* pROM) {
 
     return true;
 }
-#elif IS_MM
+#elif VERSION == MM_J
 static bool romCacheAllBlocks(Rom* pROM, char* szName) {
     s32 iCache;
     u32 iBlock;
@@ -2046,7 +2091,7 @@ static bool romLoadFullOrPart(Rom* pROM) {
     tXL_FILE* pFile;
     s32 pad;
 
-#if IS_MM
+#if VERSION == MM_J
     // s32 iBlock;
     // s32 nLoad;
     // s32 nStep;
@@ -2085,11 +2130,11 @@ static bool romLoadFullOrPart(Rom* pROM) {
             pROM->anBlockCachedARAM[i] = 0;
         }
 
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
         if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romCacheAllBlocks(pROM)) {
             return false;
         }
-#elif IS_MM
+#elif VERSION == MM_J
         if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romCacheAllBlocks(pROM, szName)) {
             return false;
         }
@@ -2120,9 +2165,9 @@ static bool romLoadFullOrPart(Rom* pROM) {
                 xlFileGet(pFile, (void*)((u32)pROM->pBuffer + i), (s32)temp_r28);
                 i += temp_r28;
 
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
                 simulatorShowLoad(0, pROM->acNameFile, (f32)i / (f32)pROM->nSize);
-#elif IS_MM
+#elif VERSION == MM_J
                 romCacheGame_OTHER(pROM, szName, (f32)i / (f32)pROM->nSize);
 #endif
             }

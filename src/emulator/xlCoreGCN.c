@@ -14,6 +14,8 @@
 #define LINE_OFFSET 16
 #elif VERSION == MM_J
 #define LINE_OFFSET 17
+#elif VERSION == MM_U
+#define LINE_OFFSET 8
 #else
 #define LINE_OFFSET 0
 #endif

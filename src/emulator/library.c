@@ -2976,6 +2976,10 @@ bool dmaSoundRomHandler_ZELDA1(Cpu* pCPU) {
 bool dmaSoundRomHandler_ZELDA2(Cpu* pCPU) { return dmaSoundRomHandler_ZELDA1(pCPU); }
 #endif
 
+#if VERSION == MM_U || VERSION == MM_E
+bool flashRomIDCheck(Cpu* pCPU) { return true; }
+#endif
+
 bool osViSwapBuffer_Entry(Cpu* pCPU) {
     static u32 nAddress = 0xFFFFFFFF;
 
@@ -3681,7 +3685,7 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
                     bReturn = false;
                     if ((nOpcode & 0xFFFF0000) != 0x27BD0000) {
                         xlPostText("TestFunction: INTERNAL ERROR: osViSwapBuffer: No ADDIU opcode: 0x%08x", "library.c",
-                                   IS_MM ? 7043 : 6971, nOpcode);
+                                   VERSION == MM_J ? 7043 : VERSION == MM_U ? 7052 : 6971, nOpcode);
                     } else {
                         pLibrary->nAddStackSwap = MIPS_IMM_S16(nOpcode);
                     }
@@ -3720,6 +3724,22 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
             else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)dmaSoundRomHandler_ZELDA2) {
                 if (((System*)pLibrary->pHost)->eTypeROM != SRT_ZELDA2) {
                     bFlag = false;
+                }
+            }
+#endif
+
+#if VERSION == MM_U || VERSION == MM_E
+            else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)flashRomIDCheck) {
+                if (((System*)pLibrary->pHost)->eTypeROM != SRT_ZELDA2) {
+                    bFlag = false;
+                } else {
+                    pnCodeTemp = pnCode;
+                    for (iCode = 0; iCode < nSizeCode; iCode++) {
+                        if (pnCodeTemp[iCode] == 0x2402FFFF) {
+                            pnCodeTemp[iCode] = 0x24020000;
+                        }
+                    }
+                    return true;
                 }
             }
 #endif
@@ -3799,6 +3819,11 @@ bool libraryFunctionReplaced(Library* pLibrary, s32 iFunction) {
     } else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)zeldaLoadSZS_Exit) {
         return false;
     }
+#if VERSION == MM_U || VERSION == MM_E
+    else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)flashRomIDCheck) {
+        return false;
+    }
+#endif
     return true;
 }
 

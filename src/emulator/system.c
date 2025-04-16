@@ -49,11 +49,17 @@
 #define MCARD_FILE_SIZE 0xC000
 #define MCARD_FILE_NAME_MM "ZELDA3"
 #define MCARD_COMMENT_MM "Legend of Zelda"
-#elif IS_MM
+#elif VERSION == MM_J
 #define MCARD_FILE_NAME "ZELDA1"
 #define MCARD_FILE_NAME_MM "ZELDA2"
 #define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ" // "The Legend of Zelda: Ocarina of Time GC"
 #define MCARD_COMMENT_MM "ゼルダコレクション" // "Zelda Collection"
+#define MCARD_FILE_SIZE 0xC000
+#elif VERSION == MM_U
+#define MCARD_FILE_NAME "ZELDA1"
+#define MCARD_FILE_NAME_MM "ZELDA2"
+#define MCARD_COMMENT "Zelda: Ocarina of Time"
+#define MCARD_COMMENT_MM "Zelda: Collector's Edition"
 #define MCARD_FILE_SIZE 0xC000
 #endif
 
@@ -201,7 +207,7 @@ u32 gnFlagZelda;
 #define ROM_TEST_OOT_EU false
 #endif
 
-#if IS_MM
+#if VERSION == MM_J
 #define ROM_TEST_PW_JP romTestCode(pROM, "NPWJ")
 #define ROM_TEST_MM_US romTestCode(pROM, "NZSE")
 #define ROM_TEST_MM_EU romTestCode(pROM, "NZSP")
@@ -209,6 +215,14 @@ u32 gnFlagZelda;
 #define ROM_TEST_KIRBY_JP romTestCode(pROM, "NK4J")
 #define MCARD_FILE_NAME_STARFOX "Starfox 64"
 #define MCARD_FILE_NAME_MK64 "Mario Kart 64"
+#elif VERSION == MM_U
+#define ROM_TEST_PW_JP romTestCode(pROM, "NPWJ")
+#define ROM_TEST_MM_US false
+#define ROM_TEST_MM_EU false
+#define ROM_TEST_MK64_JP romTestCode(pROM, "NKTJ")
+#define ROM_TEST_KIRBY_JP romTestCode(pROM, "NK4J")
+#define MCARD_FILE_NAME_STARFOX "Starfox"
+#define MCARD_FILE_NAME_MK64 "Mario Kart"
 #else
 #define ROM_TEST_PW_JP false
 #define ROM_TEST_MM_US false
@@ -342,12 +356,17 @@ static bool systemSetupGameRAM(System* pSystem) {
             case 0x421EB8E9:
                 gnFlagZelda = 4;
                 break;
-#else
+#elif VERSION == MM_J
             case 0xA1ADC351:
             case 0xA1AD0330:
                 gnFlagZelda = 4;
                 break;
             case 0xA1AF7705:
+                gnFlagZelda = 4;
+                break;
+#elif VERSION == MM_U
+            case 0xA1ADC351:
+            case 0xA1AD0040:
                 gnFlagZelda = 4;
                 break;
 #endif
@@ -902,15 +921,18 @@ static bool systemSetupGameALL(System* pSystem) {
         pSystem->eTypeROM = SRT_ZELDA2;
         nSizeSound = 0x1000;
 
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
         if (romTestCode(pROM, "NZSJ")) {
             pSystem->bJapaneseVersion = true;
         } else {
             pSystem->bJapaneseVersion = false;
         }
 
+#if IS_OOT
         nTickMultiplier = 2;
         fTickScale = 1.1f;
+#endif
+
 #endif
 
         if (!ramGetBuffer(SYSTEM_RAM(pSystem), (void**)&anMode, 0x300U, NULL)) {
@@ -1004,17 +1026,27 @@ static bool systemSetupGameALL(System* pSystem) {
                     return false;
                 }
             }
-#elif IS_MM
+#elif VERSION == MMJ
             if (romTestCode(pROM, "NZSJ")) {
                 if (!cpuSetCodeHack(pCPU, 0x80177CF4, 0x95630000, -1)) {
                     return false;
                 }
-            } else if (romTestCode(pROM, "NZSE") != 0) {
+            } else if (romTestCode(pROM, "NZSE")) {
                 if (!cpuSetCodeHack(pCPU, 0x80177D34, 0x95630000, -1)) {
                     return false;
                 }
             } else {
                 if (!cpuSetCodeHack(pCPU, 0x801786B4, 0x95630000, -1)) {
+                    return false;
+                }
+            }
+#elif VERSION == MM_U
+            if (romTestCode(pROM, "NZSJ")) {
+                if (!cpuSetCodeHack(pCPU, 0x80177BF4, 0x95630000, -1)) {
+                    return false;
+                }
+            } else {
+                if (!cpuSetCodeHack(pCPU, 0x80177C34, 0x95630000, -1)) {
                     return false;
                 }
             }
@@ -1255,7 +1287,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
                 mcardOpen(&mCard, "KART", MCARD_FILE_NAME_MK64, mCard.saveIcon, mCard.saveBanner, "KART",
                           &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x200);
-                pCPU->nCompileFlag |= IS_MM ? 0x110 : 0x10;
+                pCPU->nCompileFlag |= VERSION == MM_J ? 0x110 : 0x10;
             } else if (romTestCode(pROM, "NK4E") || ROM_TEST_KIRBY_JP) {
                 // Kirby 64
 #if IS_MM
@@ -1480,7 +1512,7 @@ static bool systemSetupGameALL(System* pSystem) {
                         mcardOpen(&mCard, "STARFOX", MCARD_FILE_NAME_STARFOX, mCard.saveIcon, mCard.saveBanner,
                                   "STARFOX", &gSystemRomConfigurationList[i].currentControllerConfig, 0x4000, 0x200);
 
-#if IS_MM
+#if VERSION == MM_J
                         if (romTestCode(pROM, "NFXJ")) {
                             if (!cpuSetCodeHack(pCPU, 0x8019F548, 0xA2000000, 0)) {
                                 return false;
@@ -2148,7 +2180,7 @@ bool systemEvent(System* pSystem, s32 nEvent, void* pArgument) {
             pSystem->eMode = SM_STOPPED;
             pSystem->eTypeROM = SRT_NONE;
             pSystem->nAddressBreak = -1;
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
             pSystem->bJapaneseVersion = false;
 #endif
             pSystem->romCopy.nSize = 0;

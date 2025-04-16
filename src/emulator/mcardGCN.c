@@ -55,6 +55,8 @@
 #define LN(mq_j, ce_j, mm_j) (ce_j + 22)
 #elif VERSION == MM_J
 #define LN(mq_j, ce_j, mm_j) (mm_j)
+#elif VERSION == MM_U
+#define LN(mq_j, ce_j, mm_j) (mm_j)
 #endif
 
 #if IS_MQ

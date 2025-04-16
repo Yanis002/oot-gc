@@ -93,6 +93,8 @@ extern void InitDVDTrackList(void);
 #define DEFAULT_ROM_NAME "zle_f.n64"
 #elif VERSION == MM_J
 #define DEFAULT_ROM_NAME "zelda2j.n64"
+#elif VERSION == MM_U
+#define DEFAULT_ROM_NAME "zelda2e.n64"
 #endif
 
 #if IS_EU || IS_MM

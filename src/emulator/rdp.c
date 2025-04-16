@@ -415,7 +415,7 @@ bool rdpParseGBI(Rdp* pRDP, u64** ppnGBI, RspUCodeType eTypeUCode) {
             if (!frameLoadTMEM(pFrame, FLT_BLOCK, iTile)) {
                 return false;
             }
-#if IS_MM
+#if VERSION == MM_J
             pFrame->aTile[pFrame->lastTile].nCodePixel = pFrame->nCodePixel;
 #endif
             break;

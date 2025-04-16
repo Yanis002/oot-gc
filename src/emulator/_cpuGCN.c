@@ -6397,7 +6397,7 @@ static bool cpuNextInstruction(Cpu* pCPU, s32 addressN64, s32 opcode, s32* anCod
             return false;
         default:
             OSReport("ERROR in cpuNextInstruction() with opcode %p at %p\n", opcode, addressN64);
-            OSPanic("_cpuGCN.c", IS_MM ? 3650 : 3621, "");
+            OSPanic("_cpuGCN.c", VERSION == MM_J ? 3650 : VERSION == MM_U ? 3636 : 3621, "");
             break;
     }
 
@@ -6522,7 +6522,7 @@ static inline bool cpuExecuteCacheInstruction(Cpu* pCPU) {
     return true;
 }
 
-#if IS_MM
+#if VERSION == MM_J
 static bool cpuPrintOpcode(Cpu* pCPU, s32 unused, s32 nAddressN64) {
     // Parameters
     // struct _CPU* pCPU; // r25
@@ -8407,10 +8407,12 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
                     romReloadRange(pCPU);
                 } else if (value >= 0x10 && value <= 0x19) {
                     mcardSaveDisplay = value;
+#if VERSION == MM_J
                 } else if (value == 0x1A) {
                     mcardSaveDisplay = value;
                 } else if (value >= 0x30 && value <= 0x31) {
                     mcardSaveCamera(value);
+#endif
                 } else {
                     soundPlayOcarinaTune(pCPU);
                 }
@@ -10001,8 +10003,10 @@ static s32 cpuExecuteCall(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddressGC
 #else
 #define LINE_NUM 4725
 #endif
-#elif IS_MM
+#elif VERSION == MM_J
 #define LINE_NUM 4927
+#elif VERSION == MM_U
+#define LINE_NUM 4806
 #endif
 
 /**
@@ -10293,8 +10297,10 @@ static s32 cpuExecuteLoadStore(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddr
 #else
 #define LINE_NUM 5181
 #endif
-#elif IS_MM
+#elif VERSION == MM_J
 #define LINE_NUM 5383
+#elif VERSION == MM_U
+#define LINE_NUM 5262
 #endif
 
 /**

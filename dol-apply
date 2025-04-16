@@ -7,7 +7,7 @@
 set -euo pipefail
 
 VERSION=${1:-ce-j}
-if [ "$VERSION" == "mm-j" ]
+if [ "${VERSION#mm-}" != "$VERSION" ]
 then
     GAME="mm"
 else
