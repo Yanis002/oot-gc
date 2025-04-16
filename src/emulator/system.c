@@ -1026,7 +1026,7 @@ static bool systemSetupGameALL(System* pSystem) {
                     return false;
                 }
             }
-#elif VERSION == MMJ
+#elif VERSION == MM_J
             if (romTestCode(pROM, "NZSJ")) {
                 if (!cpuSetCodeHack(pCPU, 0x80177CF4, 0x95630000, -1)) {
                     return false;
