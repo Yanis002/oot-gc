@@ -129,6 +129,8 @@ OOT_VERSIONS = [
 ]
 MM_VERSIONS = [
     "mm-j",
+    "mm-u",
+    "mm-e",
 ]
 ALL_VERSIONS = OOT_VERSIONS + MM_VERSIONS
 config.versions = [
@@ -299,7 +301,7 @@ config.libs = [
             Object(LinkedFor("ce-j"), "emulator/_frameGCNcc.c", asm_processor=True),
             Object(Linked, "emulator/_buildtev.c"),
             Object(NotLinked, "emulator/snddvdtrk.c"),
-            Object(MM_VERSIONS, "emulator/sndspecial.c"),
+            Object(LinkedFor("mm-j"), "emulator/sndspecial.c"),
         ],
     ),
     DolphinLib(
