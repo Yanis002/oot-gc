@@ -4235,9 +4235,9 @@ bool frameHackCIMG_Zelda2_Shrink(Rdp* pRDP, Frame* pFrame, u64** ppnGBI) {
 static inline void ZeldaCopyCamera(u16* buffer) {
     GXSetTexCopySrc(ZELDA2_CAMERA_WIDTH, ZELDA2_CAMERA_HEIGHT - 10, ZELDA2_CAMERA_WIDTH * 2, ZELDA2_CAMERA_HEIGHT * 2);
     GXSetTexCopyDst(ZELDA2_CAMERA_WIDTH, ZELDA2_CAMERA_HEIGHT, GX_TF_I8, GX_TRUE);
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
     DCInvalidateRange(buffer, ZELDA2_CAMERA_WIDTH * ZELDA2_CAMERA_HEIGHT * sizeof(u16));
-#elif IS_MM
+#elif VERSION == MM_J
     DCInvalidateRange(buffer, ZELDA2_CAMERA_WIDTH * ZELDA2_CAMERA_HEIGHT);
 #endif
     GXCopyTex(buffer, GX_FALSE);
@@ -5099,9 +5099,9 @@ bool frameGetDepth(Frame* pFrame, u16* pnData, s32 nAddress) {
     return false;
 }
 
-#if IS_OOT
+#if IS_OOT || VERSION == MM_U
 #define CAMERA_BUFFER_SIZE 0xA000
-#elif IS_MM
+#elif VERSION == MM_J
 #define CAMERA_BUFFER_SIZE 0x5000
 #endif
 
