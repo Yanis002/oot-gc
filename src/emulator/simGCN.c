@@ -234,47 +234,47 @@ bool gbReset;
     }
 #define PREFIX_TPL
 
-#define DRAW_TPL(tpl, texObj, matrix, color)                                                          \
-    {                                                                                                 \
-        GXSetNumTevStages(1);                                                                         \
-        GXSetNumChans(0);                                                                             \
-        GXSetNumTexGens(1);                                                                           \
-        GXSetTevColor(GX_TEVREG0, color);                                                             \
-        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);   \
-        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);   \
-        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);                  \
-        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);                  \
-        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);                         \
-        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);                   \
-        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);                                    \
-        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);                                                    \
-        GXSetZCompLoc(GX_TRUE);                                                                       \
-        PSMTXIdentity(matrix);                                                                        \
-        GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);                                                     \
-        TEXGetGXTexObjFromPalette(tpl, &texObj, 0);                                                   \
-        GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
-        GXLoadTexObj(&texObj, GX_TEXMAP0);                                                            \
-        GXClearVtxDesc();                                                                             \
-        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);                                                           \
-        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);                                                          \
-                                                                                                      \
-        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);                              \
-        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);                              \
-        width = tpl->descriptorArray->textureHeader->width / 2;                                       \
-        height = tpl->descriptorArray->textureHeader->height / 2;                                     \
-        nX0 = (N64_FRAME_WIDTH - width) / 2;                                                         \
-        nY0 = (N64_FRAME_HEIGHT - height) / 2;                                                      \
-        GXBegin(GX_QUADS, GX_VTXFMT0, 4);                                                             \
-        GXPosition3f32(nX0, nY0, 0.0f);                                                              \
-        GXTexCoord2f32(0.0f, 0.0f);                                                             \
-        GXPosition3f32(nX0 + width, nY0, 0.0f);                                                      \
-        GXTexCoord2f32(1.0f, 0.0f);                                                             \
-        GXPosition3f32(nX0 + width, nY0 + height, 0.0f);                                             \
-        GXTexCoord2f32(1.0f, 1.0f);                                                             \
-        GXPosition3f32(nX0, nY0 + height, 0.0f);                                                     \
-        GXTexCoord2f32(0.0f, 1.0f);                                                             \
-        GXEnd();                                                                                      \
-        GXPixModeSync();                                                                              \
+#define DRAW_TPL(texPalette, textureObj, mtx, col, x, y)                                                    \
+    {                                                                                                       \
+        GXSetNumTevStages(1);                                                                               \
+        GXSetNumChans(0);                                                                                   \
+        GXSetNumTexGens(1);                                                                                 \
+        GXSetTevColor(GX_TEVREG0, (col));                                                                   \
+        GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);         \
+        GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);         \
+        GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);                        \
+        GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);                        \
+        GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);                               \
+        GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);                         \
+        GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);                                          \
+        GXSetZMode(GX_FALSE, GX_LEQUAL, GX_FALSE);                                                          \
+        GXSetZCompLoc(GX_TRUE);                                                                             \
+        PSMTXIdentity((mtx));                                                                               \
+        GXLoadTexMtxImm((mtx), 0x1E, GX_MTX2x4);                                                            \
+        TEXGetGXTexObjFromPalette(texPalette, &(textureObj), 0);                                            \
+        GXInitTexObjLOD(&(textureObj), GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1); \
+        GXLoadTexObj(&(textureObj), GX_TEXMAP0);                                                            \
+        GXClearVtxDesc();                                                                                   \
+        GXSetVtxDesc(GX_VA_POS, GX_DIRECT);                                                                 \
+        GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);                                                                \
+                                                                                                            \
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);                                      \
+        GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);                                      \
+        width = (texPalette)->descriptorArray->textureHeader->width / 2;                                    \
+        height = (texPalette)->descriptorArray->textureHeader->height / 2;                                  \
+        (x) = (N64_FRAME_WIDTH - width) / 2;                                                                \
+        (y) = (N64_FRAME_HEIGHT - height) / 2;                                                              \
+        GXBegin(GX_QUADS, GX_VTXFMT0, 4);                                                                   \
+        GXPosition3f32((x), (y), 0.0f);                                                                     \
+        GXTexCoord2f32(0.0f, 0.0f);                                                                         \
+        GXPosition3f32((x) + width, (y), 0.0f);                                                             \
+        GXTexCoord2f32(1.0f, 0.0f);                                                                         \
+        GXPosition3f32((x) + width, (y) + height, 0.0f);                                                    \
+        GXTexCoord2f32(1.0f, 1.0f);                                                                         \
+        GXPosition3f32((x), (y) + height, 0.0f);                                                            \
+        GXTexCoord2f32(0.0f, 1.0f);                                                                         \
+        GXEnd();                                                                                            \
+        GXPixModeSync();                                                                                    \
     }
 #endif
 
@@ -770,26 +770,61 @@ bool simulatorDrawImage(TEXPalette* tpl, s32 nX0, s32 nY0, bool drawBar, s32 per
     color.b = 255;
     color.a = 255;
 
-    DRAW_TPL(tpl, texObj, matrix, color);
+    GXSetNumTevStages(1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_DISABLE, GX_LEQUAL, GX_DISABLE);
+    GXSetZCompLoc(GX_TRUE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    TEXGetGXTexObjFromPalette(tpl, &texObj, 0);
+    GXInitTexObjLOD(&texObj, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj, GX_TEXMAP0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    width = tpl->descriptorArray->textureHeader->width / 2;
+    height = tpl->descriptorArray->textureHeader->height / 2;
+    nX0 = (N64_FRAME_WIDTH - width) / 2;
+    nY0 = (N64_FRAME_HEIGHT - height) / 2;
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(nX0, nY0, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(nX0 + width, nY0, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(nX0 + width, nY0 + height, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(nX0, nY0 + height, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXEnd();
+    GXPixModeSync();
 #endif
 
     if (drawBar == true) {
         GXLoadPosMtxImm(g2DviewMtx, false);
 
         Vert_s16Bar[0] = N64_FRAME_WIDTH / 2 - ((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2;
-        Vert_s16Bar[1] = (nY0 + tpl->descriptorArray->textureHeader->height) - BAR_OFFSET;
-        Vert_s16Bar[3] = ((N64_FRAME_WIDTH / 2 - (((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2)) +
-                          ((((TEXPalette*)gbar)->descriptorArray->textureHeader->width * percent) / 100));
-        Vert_s16Bar[4] = (nY0 + tpl->descriptorArray->textureHeader->height) - BAR_OFFSET;
-        Vert_s16Bar[6] = ((N64_FRAME_WIDTH / 2 - (((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2)) +
-                          ((((TEXPalette*)gbar)->descriptorArray->textureHeader->width * percent) / 100));
-        Vert_s16Bar[7] = (nY0 + tpl->descriptorArray->textureHeader->height +
-                          ((TEXPalette*)gbar)->descriptorArray->textureHeader->height) -
-                         BAR_OFFSET;
+        Vert_s16Bar[1] = nY0 - BAR_OFFSET + tpl->descriptorArray->textureHeader->height;
+        Vert_s16Bar[3] = (N64_FRAME_WIDTH / 2 - (((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2)) +
+                         ((((TEXPalette*)gbar)->descriptorArray->textureHeader->width * percent) / 100);
+        Vert_s16Bar[4] = nY0 - BAR_OFFSET + tpl->descriptorArray->textureHeader->height;
+        Vert_s16Bar[6] = (N64_FRAME_WIDTH / 2 - (((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2)) +
+                         ((((TEXPalette*)gbar)->descriptorArray->textureHeader->width * percent) / 100);
+        Vert_s16Bar[7] = nY0 - BAR_OFFSET + tpl->descriptorArray->textureHeader->height +
+                         ((TEXPalette*)gbar)->descriptorArray->textureHeader->height;
         Vert_s16Bar[9] = N64_FRAME_WIDTH / 2 - ((TEXPalette*)gbar)->descriptorArray->textureHeader->width / 2;
-        Vert_s16Bar[10] = (nY0 + tpl->descriptorArray->textureHeader->height +
-                           ((TEXPalette*)gbar)->descriptorArray->textureHeader->height) -
-                          BAR_OFFSET;
+        Vert_s16Bar[10] = nY0 - BAR_OFFSET + tpl->descriptorArray->textureHeader->height +
+                          ((TEXPalette*)gbar)->descriptorArray->textureHeader->height;
 
         DCStoreRange(Vert_s16Bar, sizeof(Vert_s16Bar));
         GXClearVtxDesc();
@@ -858,8 +893,8 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
     Mtx matrix; // r1+0x38
     s32 width; // r21
     s32 height; // r27
-    s32 nX0; // r21
-    s32 nY0; // r27
+    s32 nX0;
+    s32 nY0;
 
     static GXTexObj texObj1;
     static GXTexObj texObj2;
@@ -1092,7 +1127,44 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
     color.b = 255;
     color.a = 255;
 
-    DRAW_TPL(tplMessage, texObj1, matrix, color);
+    GXSetNumTevStages(1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_DISABLE, GX_LEQUAL, GX_DISABLE);
+    GXSetZCompLoc(GX_TRUE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    TEXGetGXTexObjFromPalette(tplMessage, &texObj1, 0);
+    GXInitTexObjLOD(&texObj1, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj1, GX_TEXMAP0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    width = tplMessage->descriptorArray->textureHeader->width / 2;
+    height = tplMessage->descriptorArray->textureHeader->height / 2;
+    nX0 = ((N64_FRAME_WIDTH - width) / 2);
+    nY0 = ((N64_FRAME_HEIGHT - 20 - height) / 2);
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(nX0, nY0, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(nX0 + nX0Message, nY0, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(nX0 + nX0Message, nY0 + height, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(nX0, nY0 + height, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXEnd();
+    GXPixModeSync();
 
     if (gHighlightChoice == 1) {
         color.r = 255;
@@ -1106,7 +1178,44 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
         color.a = 255;
     }
 
-    DRAW_TPL(tplYes, texObj2, matrix, color);
+    GXSetNumTevStages(1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_DISABLE, GX_LEQUAL, GX_DISABLE);
+    GXSetZCompLoc(GX_TRUE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    TEXGetGXTexObjFromPalette(tplYes, &texObj2, 0);
+    GXInitTexObjLOD(&texObj2, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj2, GX_TEXMAP0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    width = tplYes->descriptorArray->textureHeader->width / 2;
+    height = tplYes->descriptorArray->textureHeader->height / 2;
+    nX0Yes = (nX0Message + (width / 2)) - width - 0x1E;
+    nY0Yes = (height) / 2;
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(nX0Yes, nY0Yes, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(nX0Yes + width, nY0Yes, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(nX0Yes + width, nY0Yes + height, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(nX0Yes, nY0Yes + height, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXEnd();
+    GXPixModeSync();
 
     if (gHighlightChoice == 1) {
         color.r = 255;
@@ -1120,7 +1229,44 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
         color.a = 255;
     }
 
-    DRAW_TPL(tplNo, texObj3, matrix, color);
+    GXSetNumTevStages(1);
+    GXSetNumChans(0);
+    GXSetNumTexGens(1);
+    GXSetTevColor(GX_TEVREG0, color);
+    GXSetTevColorOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevAlphaOp(GX_TEVSTAGE0, GX_TEV_ADD, GX_TB_ZERO, GX_CS_SCALE_1, GX_FALSE, GX_TEVPREV);
+    GXSetTevColorIn(GX_TEVSTAGE0, GX_CC_ZERO, GX_CC_TEXC, GX_CC_C0, GX_CC_ZERO);
+    GXSetTevAlphaIn(GX_TEVSTAGE0, GX_CA_ZERO, GX_CA_ZERO, GX_CA_ZERO, GX_CA_A0);
+    GXSetTevOrder(GX_TEVSTAGE0, GX_TEXCOORD0, GX_TEXMAP0, GX_COLOR_NULL);
+    GXSetBlendMode(GX_BM_BLEND, GX_BL_SRCALPHA, GX_BL_INVSRCALPHA, GX_LO_NOOP);
+    GXSetAlphaCompare(GX_ALWAYS, 0, GX_AOP_AND, GX_ALWAYS, 0);
+    GXSetZMode(GX_DISABLE, GX_LEQUAL, GX_DISABLE);
+    GXSetZCompLoc(GX_TRUE);
+    PSMTXIdentity(matrix);
+    GXLoadTexMtxImm(matrix, 0x1E, GX_MTX2x4);
+    TEXGetGXTexObjFromPalette(tplNo, &texObj3, 0);
+    GXInitTexObjLOD(&texObj3, GX_NEAR, GX_NEAR, 0.0f, 0.0f, 0.0f, GX_FALSE, GX_FALSE, GX_ANISO_1);
+    GXLoadTexObj(&texObj3, GX_TEXMAP0);
+    GXClearVtxDesc();
+    GXSetVtxDesc(GX_VA_POS, GX_DIRECT);
+    GXSetVtxDesc(GX_VA_TEX0, GX_DIRECT);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XYZ, GX_F32, 0);
+    GXSetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
+    width = tplNo->descriptorArray->textureHeader->width / 2;
+    height = tplNo->descriptorArray->textureHeader->height / 2;
+    nX0No = (N64_FRAME_WIDTH - width) / 2;
+    nY0No = (N64_FRAME_HEIGHT - height) / 2;
+    GXBegin(GX_QUADS, GX_VTXFMT0, 4);
+    GXPosition3f32(nX0No, nY0No, 0.0f);
+    GXTexCoord2f32(0.0f, 0.0f);
+    GXPosition3f32(nX0No + width, nY0No, 0.0f);
+    GXTexCoord2f32(1.0f, 0.0f);
+    GXPosition3f32(nX0No + width, nY0No + height, 0.0f);
+    GXTexCoord2f32(1.0f, 1.0f);
+    GXPosition3f32(nX0No, nY0No + height, 0.0f);
+    GXTexCoord2f32(0.0f, 1.0f);
+    GXEnd();
+    GXPixModeSync();
 
     gpFrame->nMode = 0;
     gpFrame->nModeVtx = -1;
@@ -1153,8 +1299,6 @@ bool simulatorDrawOKImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Message
     Mtx matrix; // r1+0x2C
     s32 width; // r23
     s32 height; // r22
-    s32 nX0; // r23
-    s32 nY0; // r22
 
     static GXTexObj texObj1;
     static GXTexObj texObj2;
@@ -1316,14 +1460,14 @@ bool simulatorDrawOKImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Message
     color.b = 255;
     color.a = 255;
 
-    DRAW_TPL(tplMessage, texObj1, matrix, color);
+    DRAW_TPL(tplOK, texObj1, matrix, color, nX0Message, nY0Message);
 
     color.r = 255;
     color.g = 255;
     color.b = 0;
     color.a = 255;
 
-    DRAW_TPL(tplOK, texObj2, matrix, color);
+    DRAW_TPL(tplMessage, texObj2, matrix, color, nX0OK, nY0OK);
 
     gpFrame->nMode = 0;
     gpFrame->nModeVtx = -1;

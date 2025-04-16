@@ -3169,6 +3169,7 @@ bool frameEnd(Frame* pFrame) {
     Cpu* pCPU;
     s32 iHint;
     void* pData;
+    s32 nValue;
 
     pCPU = SYSTEM_CPU(gpSystem);
 
@@ -3837,12 +3838,17 @@ void ZeldaEraseCamera(void) {
 void ZeldaDrawFrameCamera(Frame* pFrame, void* buffer) {
     Mtx matrix;
     GXColor color;
+    f32 new_var;
+    f32 new_var2;
     f32 nX0; // f31
     f32 nY0; // f30
     f32 nX1; // f29
     f32 nY1; // f28
+    s32 shrink;
+    s32 pad;
     f32 width; // f2
     f32 height; // f3
+
     static GXTexObj frameObj;
 
     nX0 = 80.0f;
@@ -3851,39 +3857,39 @@ void ZeldaDrawFrameCamera(Frame* pFrame, void* buffer) {
     nY1 = 143.0f;
 
 #if IS_MM
-    width = 160.0f;
-    height = 112.0f;
+    width = new_var = 160.0f;
+    height = new_var2 = 112.0f;
+    shrink = pFrame->bShrinking >> 16;
 
-    // bug? probably accidental doubles for nX1 and nY1
-    switch (pFrame->bShrinking >> 16) {
-        case 0x0:
-            break;
-        case 0x435:
-            nX0 = 88.0f;
-            nY0 = 40.0f;
-            nX1 = nX0 + width * 0.9025;
-            nY1 = nY0 + height * 0.9025;
-            break;
-        case 0x471:
-            nX0 = 96.0f;
-            nY0 = 49.0f;
-            nX1 = nX0 + width * 0.81;
-            nY1 = nY0 + height * 0.81;
-            break;
-        case 0x4B4:
-            nX0 = 102.0f;
-            nY0 = 56.0f;
-            nX1 = nX0 + width * 0.7224999999999999;
-            nY1 = nY0 + height * 0.7224999999999999;
-            break;
-        case 0x500:
-            nX0 = 111.0f;
-            nY0 = 64.0f;
-            nX1 = nX0 + width * 0.61;
-            nY1 = nY0 + height * 0.64;
-            break;
-        default:
-            break;
+    if (shrink != 0) {
+        switch (shrink) {
+            case 0x435:
+                nX0 = 88.0f;
+                nY0 = 40.0f;
+                nX1 = nX0 + (f32)(width * 0.9025);
+                nY1 = nY0 + (f32)(height * 0.9025);
+                break;
+            case 0x471:
+                nX0 = 96.0f;
+                nY0 = 49.0f;
+                nX1 = nX0 + (f32)(width * 0.81);
+                nY1 = nY0 + (f32)(height * 0.81);
+                break;
+            case 0x4B4:
+                nX0 = 102.0f;
+                nY0 = 56.0f;
+                nX1 = nX0 + (f32)(width * 0.7224999999999999);
+                nY1 = nY0 + (f32)(height * 0.7224999999999999);
+                break;
+            case 0x500:
+                nX0 = 111.0f;
+                nY0 = 64.0f;
+                nX1 = nX0 + (f32)(width * 0.61);
+                nY1 = nY0 + (f32)(height * 0.64);
+                break;
+            default:
+                break;
+        }
     }
 #endif
 
