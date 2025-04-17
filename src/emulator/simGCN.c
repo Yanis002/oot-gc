@@ -78,15 +78,16 @@ extern void InitDVDTrackList(void);
 
 #elif VERSION == MM_E
 
-u8* gcoverOpen;
-u8* gnoDisk;
-u8* gretryErr;
-u8* gfatalErr;
-u8* gwrongDisk;
-u8* greadingDisk;
-u8* gyes;
-u8* gno;
-u8* gmesgOK;
+//! TODO: that's probably fake but it avoids the declaration issue
+u8 gmesgOK[4];
+u8 gno[4];
+u8 gyes[4];
+u8 greadingDisk[4];
+u8 gwrongDisk[4];
+u8 gfatalErr[4];
+u8 gretryErr[4];
+u8 gnoDisk[4];
+u8 gcoverOpen[4];
 
 #include "gbar.inc"
 
@@ -2446,6 +2447,247 @@ static bool simulatorDrawCursor(s32 nX, s32 nY) {
 
     return true;
 }
+
+#if VERSION == MM_E
+bool simulatorPreloadDiskMessages(void) {
+    char path_coverOpen[40];
+    char path_noDisk[40];
+    char path_retryErr[40];
+    char path_fatalErr[40];
+    char path_wrongDisk[40];
+    char path_readingDisk[40];
+    char path_yes[40];
+    char path_no[40];
+    char path_mesgOK[40];
+    struct DVDFileInfo fileInfo;
+    u32 size;
+
+    simulatorUnpackTexPalette((TEXPalette*)gbar);
+
+    switch (gLanguage) {
+        case 1:
+            strcpy(path_coverOpen, "TPL/GERMAN/german_coverOpen.tpl");
+            strcpy(path_noDisk, "TPL/GERMAN/german_noDisk.tpl");
+            strcpy(path_retryErr, "TPL/GERMAN/german_retryErr.tpl");
+            strcpy(path_fatalErr, "TPL/GERMAN/german_fatalErr.tpl");
+            strcpy(path_wrongDisk, "TPL/GERMAN/german_wrongDisk.tpl");
+            strcpy(path_readingDisk, "TPL/GERMAN/german_readingDisk.tpl");
+            strcpy(path_yes, "TPL/GERMAN/german_yes.tpl");
+            strcpy(path_no, "TPL/GERMAN/german_no.tpl");
+            strcpy(path_mesgOK, "TPL/GERMAN/german_mesgOK.tpl");
+            break;
+        case 2:
+            strcpy(path_coverOpen, "TPL/FRENCH/french_coverOpen.tpl");
+            strcpy(path_noDisk, "TPL/FRENCH/french_noDisk.tpl");
+            strcpy(path_retryErr, "TPL/FRENCH/french_retryErr.tpl");
+            strcpy(path_fatalErr, "TPL/FRENCH/french_fatalErr.tpl");
+            strcpy(path_wrongDisk, "TPL/FRENCH/french_wrongDisk.tpl");
+            strcpy(path_readingDisk, "TPL/FRENCH/french_readingDisk.tpl");
+            strcpy(path_yes, "TPL/FRENCH/french_yes.tpl");
+            strcpy(path_no, "TPL/FRENCH/french_no.tpl");
+            strcpy(path_mesgOK, "TPL/FRENCH/french_mesgOK.tpl");
+            break;
+        case 3:
+            strcpy(path_coverOpen, "TPL/SPANISH/spanish_coverOpen.tpl");
+            strcpy(path_noDisk, "TPL/SPANISH/spanish_noDisk.tpl");
+            strcpy(path_retryErr, "TPL/SPANISH/spanish_retryErr.tpl");
+            strcpy(path_fatalErr, "TPL/SPANISH/spanish_fatalErr.tpl");
+            strcpy(path_wrongDisk, "TPL/SPANISH/spanish_wrongDisk.tpl");
+            strcpy(path_readingDisk, "TPL/SPANISH/spanish_readingDisk.tpl");
+            strcpy(path_yes, "TPL/SPANISH/spanish_yes.tpl");
+            strcpy(path_no, "TPL/SPANISH/spanish_no.tpl");
+            strcpy(path_mesgOK, "TPL/SPANISH/spanish_mesgOK.tpl");
+            break;
+        case 4:
+            strcpy(path_coverOpen, "TPL/ITALIAN/italian_coverOpen.tpl");
+            strcpy(path_noDisk, "TPL/ITALIAN/italian_noDisk.tpl");
+            strcpy(path_retryErr, "TPL/ITALIAN/italian_retryErr.tpl");
+            strcpy(path_fatalErr, "TPL/ITALIAN/italian_fatalErr.tpl");
+            strcpy(path_wrongDisk, "TPL/ITALIAN/italian_wrongDisk.tpl");
+            strcpy(path_readingDisk, "TPL/ITALIAN/italian_readingDisk.tpl");
+            strcpy(path_yes, "TPL/ITALIAN/italian_yes.tpl");
+            strcpy(path_no, "TPL/ITALIAN/italian_no.tpl");
+            strcpy(path_mesgOK, "TPL/ITALIAN/italian_mesgOK.tpl");
+            break;
+        case 0:
+        default:
+            strcpy(path_coverOpen, "TPL/ENGLISH/coverOpen.tpl");
+            strcpy(path_noDisk, "TPL/ENGLISH/noDisk.tpl");
+            strcpy(path_retryErr, "TPL/ENGLISH/retryErr.tpl");
+            strcpy(path_fatalErr, "TPL/ENGLISH/fatalErr.tpl");
+            strcpy(path_wrongDisk, "TPL/ENGLISH/wrongDisk.tpl");
+            strcpy(path_readingDisk, "TPL/ENGLISH/readingDisk.tpl");
+            strcpy(path_yes, "TPL/ENGLISH/yes.tpl");
+            strcpy(path_no, "TPL/ENGLISH/no.tpl");
+            strcpy(path_mesgOK, "TPL/ENGLISH/mesgOK.tpl");
+            break;
+    }
+
+    if (DVDOpen(path_coverOpen, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gcoverOpen != NULL && !xlHeapFree((void**)&gcoverOpen)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gcoverOpen, size | 0x30000000)) {
+            return false;
+        }
+
+        DVDReadPrio(&fileInfo, gcoverOpen, size, 0, 2);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_readingDisk, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (greadingDisk != NULL && !xlHeapFree((void**)&greadingDisk)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&greadingDisk, size | 0x30000000)) {
+            return false;
+        }
+
+        DVDReadPrio(&fileInfo, greadingDisk, size, 0, 2);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)greadingDisk);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_wrongDisk, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gwrongDisk != NULL && !xlHeapFree((void**)&gwrongDisk)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gwrongDisk, size | 0x30000000)) {
+            return false;
+        }
+
+        DVDReadPrio(&fileInfo, gwrongDisk, size, 0, 2);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gwrongDisk);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_noDisk, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gnoDisk != NULL && !xlHeapFree((void**)&gnoDisk)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gnoDisk, size | 0x30000000)) {
+            return false;
+        }
+
+        DVDReadPrio(&fileInfo, gnoDisk, size, 0, 2);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gnoDisk);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_retryErr, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gretryErr != NULL && !xlHeapFree((void**)&gretryErr)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gretryErr, size | 0x30000000)) {
+            return false;
+        }
+
+        simulatorDVDRead(&fileInfo, gretryErr, size, 0, NULL);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gretryErr);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_fatalErr, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gfatalErr != NULL && !xlHeapFree((void**)&gfatalErr)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gfatalErr, size | 0x30000000)) {
+            return false;
+        }
+
+        simulatorDVDRead(&fileInfo, gfatalErr, size, 0, NULL);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gfatalErr);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_yes, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gyes != NULL && !xlHeapFree((void**)&gyes)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gyes, size | 0x30000000)) {
+            return false;
+        }
+
+        simulatorDVDRead(&fileInfo, gyes, size, 0, NULL);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gyes);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_no, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gno != NULL && !xlHeapFree((void**)&gno)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gno, size | 0x30000000)) {
+            return false;
+        }
+
+        simulatorDVDRead(&fileInfo, gno, size, 0, NULL);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gno);
+    } else {
+        return false;
+    }
+
+    if (DVDOpen(path_mesgOK, &fileInfo)) {
+        size = (fileInfo.length + 0x1F) & ~0x1F;
+
+        if (gmesgOK != NULL && !xlHeapFree((void**)&gmesgOK)) {
+            return false;
+        }
+
+        if (!xlHeapTake((void**)&gmesgOK, size | 0x30000000)) {
+            return false;
+        }
+
+        simulatorDVDRead(&fileInfo, gmesgOK, size, 0, NULL);
+        DVDClose(&fileInfo);
+        simulatorUnpackTexPalette((TEXPalette*)gmesgOK);
+    } else {
+        return false;
+    }
+
+    return true;
+}
+#endif
 
 static char* gaszArgument[8];
 

@@ -738,7 +738,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #endif
 
         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -750,7 +750,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #endif
 
         if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -866,7 +866,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -878,7 +878,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #endif
 
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -891,7 +891,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -901,7 +901,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -919,7 +919,7 @@ static bool systemSetupGameALL(System* pSystem) {
             strcat(buf1, "z_icon.tpl");
 #endif
             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                 return false;
             }
 
@@ -930,7 +930,7 @@ static bool systemSetupGameALL(System* pSystem) {
             strcat(buf2, "z_bnr.tpl");
 #endif
             if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                 return false;
             }
 
@@ -971,7 +971,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #endif
 
         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -983,7 +983,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #endif
 
         if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -1086,7 +1086,7 @@ static bool systemSetupGameALL(System* pSystem) {
         strcat(buf1, "z_icon.tpl");
 #endif
         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -1097,7 +1097,7 @@ static bool systemSetupGameALL(System* pSystem) {
         strcat(buf2, "z_bnr.tpl");
 #endif
         if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -1112,7 +1112,7 @@ static bool systemSetupGameALL(System* pSystem) {
         strcat(buf1, "z_icon.tpl");
 #endif
         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 
@@ -1122,12 +1122,12 @@ static bool systemSetupGameALL(System* pSystem) {
 #if IS_EU || IS_MM
         strcat(buf2, "z_bnr.tpl");
         if (DVDOpen(buf2, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 #else
         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
             return false;
         }
 #endif
@@ -1158,7 +1158,7 @@ static bool systemSetupGameALL(System* pSystem) {
             strcat(buf1, "z_icon.tpl");
 #endif
             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                 return false;
             }
 
@@ -1168,12 +1168,12 @@ static bool systemSetupGameALL(System* pSystem) {
 #if IS_EU || IS_MM
             strcat(buf2, "z_bnr.tpl");
             if (DVDOpen(buf2, &fileInfo) == 1 &&
-                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                 return false;
             }
 #else
             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                 return false;
             }
 #endif
@@ -1231,7 +1231,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1242,7 +1242,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1293,7 +1293,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1304,7 +1304,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1335,7 +1335,7 @@ static bool systemSetupGameALL(System* pSystem) {
 #if IS_MM
                 strcat(buf1, "z_icon.tpl");
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
                 DVDClose(&fileInfo);
@@ -1343,7 +1343,7 @@ static bool systemSetupGameALL(System* pSystem) {
 
                 strcat(buf2, "z_bnr.tpl");
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    (simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL) == 0)) {
+                    (simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL) == 0)) {
                     return false;
                 }
                 DVDClose(&fileInfo);
@@ -1360,7 +1360,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1371,7 +1371,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1387,7 +1387,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1398,7 +1398,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1414,7 +1414,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf1, "z_icon.tpl");
 #endif
                 if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1425,7 +1425,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 strcat(buf2, "z_bnr.tpl");
 #endif
                 if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                    !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                     return false;
                 }
 
@@ -1440,7 +1440,7 @@ static bool systemSetupGameALL(System* pSystem) {
                     strcat(buf1, "z_icon.tpl");
 #endif
                     if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                         return false;
                     }
 
@@ -1450,7 +1450,7 @@ static bool systemSetupGameALL(System* pSystem) {
                     strcat(buf2, "z_bnr.tpl");
 #endif
                     if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                        !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                        !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                         return false;
                     }
 
@@ -1464,7 +1464,7 @@ static bool systemSetupGameALL(System* pSystem) {
                     strcat(buf1, "z_icon.tpl");
 #endif
                     if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                         return false;
                     }
 
@@ -1474,12 +1474,12 @@ static bool systemSetupGameALL(System* pSystem) {
 #if IS_EU || IS_MM
                     strcat(buf2, "z_bnr.tpl");
                     if (DVDOpen(buf2, &fileInfo) == 1 &&
-                        !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                        !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                         return false;
                     }
 #else
                     if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                        !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                         return false;
                     }
 #endif
@@ -1518,7 +1518,7 @@ static bool systemSetupGameALL(System* pSystem) {
                         strcat(buf1, "z_icon.tpl");
 #endif
                         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                             return false;
                         }
 
@@ -1528,7 +1528,7 @@ static bool systemSetupGameALL(System* pSystem) {
                         strcat(buf2, "z_bnr.tpl");
 #endif
                         if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                             return false;
                         }
 
@@ -1593,7 +1593,7 @@ static bool systemSetupGameALL(System* pSystem) {
                         strcat(buf1, "z_icon.tpl");
 #endif
                         if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                            !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0, NULL)) {
                             return false;
                         }
 
@@ -1604,7 +1604,7 @@ static bool systemSetupGameALL(System* pSystem) {
                         strcat(buf2, "z_bnr.tpl");
 #endif
                         if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0, NULL)) {
+                            !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0, NULL)) {
                             return false;
                         }
 
@@ -1627,7 +1627,7 @@ static bool systemSetupGameALL(System* pSystem) {
                             strcat(buf1, "z_icon.tpl");
 #endif
                             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }
@@ -1639,7 +1639,7 @@ static bool systemSetupGameALL(System* pSystem) {
                             strcat(buf2, "z_bnr.tpl");
 #endif
                             if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }
@@ -1671,7 +1671,7 @@ static bool systemSetupGameALL(System* pSystem) {
                             strcat(buf1, "z_icon.tpl");
 #endif
                             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }
@@ -1683,7 +1683,7 @@ static bool systemSetupGameALL(System* pSystem) {
                             strcat(buf2, "z_bnr.tpl");
 #endif
                             if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }
@@ -1712,7 +1712,7 @@ static bool systemSetupGameALL(System* pSystem) {
 
                             strcat(buf1, "z_icon.tpl");
                             if (DVDOpen(Z_ICON_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveIcon, (gz_iconSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }
@@ -1721,7 +1721,7 @@ static bool systemSetupGameALL(System* pSystem) {
                             simulatorUnpackTexPalette((TEXPalette*)mCard.saveIcon);
                             strcat(buf2, "z_bnr.tpl");
                             if (DVDOpen(Z_BNR_PATH, &fileInfo) == 1 &&
-                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & 0xFFFFFFE0, 0,
+                                !simulatorDVDRead(&fileInfo, mCard.saveBanner, (gz_bnrSize + 0x1F) & ~0x1F, 0,
                                                   NULL)) {
                                 return false;
                             }

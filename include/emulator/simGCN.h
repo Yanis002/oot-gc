@@ -92,9 +92,8 @@ extern u8 gfatalErr[];
 extern u8 gwrongDisk[];
 extern u8 greadingDisk[];
 extern u8 gyes[];
-extern u8 yno[];
+extern u8 gno[];
 extern u8 gmesgOK[];
-
 extern u8 gbar[];
 
 #if IS_EU || VERSION == MM_E
