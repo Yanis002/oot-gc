@@ -5101,7 +5101,7 @@ bool frameGetDepth(Frame* pFrame, u16* pnData, s32 nAddress) {
     return false;
 }
 
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
 #define CAMERA_BUFFER_SIZE 0xA000
 #elif VERSION == MM_J
 #define CAMERA_BUFFER_SIZE 0x5000

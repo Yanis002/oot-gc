@@ -55,7 +55,7 @@
 #define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ" // "The Legend of Zelda: Ocarina of Time GC"
 #define MCARD_COMMENT_MM "ゼルダコレクション" // "Zelda Collection"
 #define MCARD_FILE_SIZE 0xC000
-#elif VERSION == MM_U
+#elif VERSION == MM_U || VERSION == MM_E
 #define MCARD_FILE_NAME "ZELDA1"
 #define MCARD_FILE_NAME_MM "ZELDA2"
 #define MCARD_COMMENT "Zelda: Ocarina of Time"

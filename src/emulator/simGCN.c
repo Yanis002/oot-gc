@@ -20,12 +20,15 @@
 extern void InitDVDTrackList(void);
 
 // clang-format off
+
+#if VERSION != MM_E
 #include "gcoverOpen.inc"
 #include "gnoDisk.inc"
 #include "gretryErr.inc"
 #include "gfatalErr.inc"
 #include "gwrongDisk.inc"
 #include "greadingDisk.inc"
+#endif
 
 #if IS_EU
 #include "gyes.inc"
@@ -73,6 +76,10 @@ extern void InitDVDTrackList(void);
 
 #include "gbar.inc"
 
+#elif VERSION == MM_E
+
+#include "gbar.inc"
+
 #else
 
 #include "gbar.inc"
@@ -95,6 +102,8 @@ extern void InitDVDTrackList(void);
 #define DEFAULT_ROM_NAME "zelda2j.n64"
 #elif VERSION == MM_U
 #define DEFAULT_ROM_NAME "zelda2e.n64"
+#else
+#define DEFAULT_ROM_NAME ""
 #endif
 
 #if IS_EU || IS_MM
@@ -1580,6 +1589,7 @@ bool simulatorDrawYesNoMessageLoop(TEXPalette* simulatorQuestion, bool* yes) {
         gHighlightChoice = false;
     }
 
+#if VERSION != MM_E
     pNo = &((TEXPalette*)gno)->descriptorArray;
     pYes = &((TEXPalette*)gyes)->descriptorArray;
     pQuestion = &simulatorQuestion->descriptorArray;
@@ -1588,6 +1598,7 @@ bool simulatorDrawYesNoMessageLoop(TEXPalette* simulatorQuestion, bool* yes) {
                             120 - (*pYes)->textureHeader->width / 2, 180 - (*pYes)->textureHeader->height / 2,
                             (TEXPalette*)gno, 200 - (*pNo)->textureHeader->width / 2,
                             180 - (*pNo)->textureHeader->height / 2);
+#endif
 
     if (gButtonDownToggle == true) {
         DEMOPadRead();
@@ -1604,11 +1615,13 @@ bool simulatorDrawYesNoMessageLoop(TEXPalette* simulatorQuestion, bool* yes) {
         gHighlightChoice = false;
     }
 
+#if VERSION != MM_E
     simulatorDrawYesNoImage(simulatorQuestion, N64_FRAME_WIDTH / 2 - (*pQuestion)->textureHeader->width / 2,
                             N64_FRAME_HEIGHT / 2 - (*pQuestion)->textureHeader->height / 2, (TEXPalette*)gyes,
                             120 - (*pYes)->textureHeader->width / 2, 180 - (*pYes)->textureHeader->height / 2,
                             (TEXPalette*)gno, 200 - (*pNo)->textureHeader->width / 2,
                             180 - (*pNo)->textureHeader->height / 2);
+#endif
 
     if (DemoPad->pst.err == 0) {
         if (DemoPad->pst.button & 0x1100) {
@@ -2659,6 +2672,7 @@ bool xlMain(void) {
             simulatorUnpackTexPalette((TEXPalette*)gmesgOK);
             break;
     }
+#elif VERSION == MM_E
 #else
     simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
     simulatorUnpackTexPalette((TEXPalette*)gnoDisk);

@@ -192,7 +192,7 @@ void OSSetSoundMode(u32 mode) {
     __OSUnlockSram(true);
 }
 
-#if IS_EU
+#if IS_EU || VERSION == MM_E
 u8 OSGetLanguage(void) {
     OSSram* sram = __OSLockSram();
     u8 language = sram->language;

@@ -10009,6 +10009,8 @@ static s32 cpuExecuteCall(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddressGC
 #define LINE_NUM 4927
 #elif VERSION == MM_U
 #define LINE_NUM 4806
+#else
+#define LINE_NUM 0
 #endif
 
 /**
@@ -10303,6 +10305,8 @@ static s32 cpuExecuteLoadStore(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddr
 #define LINE_NUM 5383
 #elif VERSION == MM_U
 #define LINE_NUM 5262
+#else
+#define LINE_NUM 0
 #endif
 
 /**

@@ -16,6 +16,8 @@
 #define LINE_OFFSET 17
 #elif VERSION == MM_U
 #define LINE_OFFSET 8
+#elif VERSION == MM_E
+#define LINE_OFFSET 18
 #else
 #define LINE_OFFSET 0
 #endif
@@ -49,7 +51,7 @@ static void xlCoreInitRenderMode(GXRenderModeObj* mode) {
         return;
     }
 
-#if VERSION == CE_E
+#if VERSION == CE_E || VERSION == MM_E
     rmode = &GXEurgb60Hz480IntDf;
     rmode->viXOrigin -= 0x20;
     rmode->viWidth += 0x40;
