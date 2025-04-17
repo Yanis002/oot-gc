@@ -4,7 +4,7 @@
 #include "stddef.h"
 
 GXTevColorArg gColorArgs[16] = {
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
     GX_CC_CPREV, GX_CC_TEXC, GX_CC_TEXC, GX_CC_C1,   GX_CC_RASC, GX_CC_C2,  GX_CC_ONE, GX_CC_APREV,
     GX_CC_TEXA,  GX_CC_TEXA, GX_CC_A1,   GX_CC_RASA, GX_CC_A2,   GX_CC_ONE, GX_CC_C0,  GX_CC_ZERO,
 #elif VERSION == MM_J
@@ -14,7 +14,7 @@ GXTevColorArg gColorArgs[16] = {
 };
 
 GXTevAlphaArg gAlphaArgs[10] = {
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
     GX_CA_KONST, GX_CA_TEXA, GX_CA_TEXA, GX_CA_A1, GX_CA_RASA, GX_CA_A2, GX_CA_KONST, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0,
 #elif VERSION == MM_J
     GX_CA_A0, GX_CA_TEXA, GX_CA_TEXA, GX_CA_A1, GX_CA_RASA, GX_CA_A2, GX_CA_KONST, GX_CA_ZERO, GX_CA_APREV, GX_CA_A0,

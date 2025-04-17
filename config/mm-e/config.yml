@@ -15,95 +15,94 @@ extract:
 - symbol: gbar
   header: gbar.inc
 
-# block_relocations:
+block_relocations:
 # systemSetupGameALL
-# - source: 0x8002D8FC
-# - source: 0x8002D908
-# - source: 0x8002D928
-# - source: 0x8002D930
-# - source: 0x8002D964
-# - source: 0x8002D970
-# - source: 0x8002D990
-# - source: 0x8002D998
-# - source: 0x8002D9CC
-# - source: 0x8002D9D8
-# - source: 0x8002D9F8
-# - source: 0x8002DA00
-# - source: 0x8002DA54
-# - source: 0x8002DA5C
-# - source: 0x8002DA7C
-# - source: 0x8002DAB0
-# - source: 0x8002DABC
-# - source: 0x8002DAE0
-# - source: 0x8002DB14
-# - source: 0x8002DB20
-# - source: 0x8002DB44
-# - source: 0x8002E3A4
-# - source: 0x8002E3B0
-# - source: 0x8002E4DC
-# - source: 0x8002E4E8
-# - source: 0x8002E5D0
-# - source: 0x8002E5D8
-# - source: 0x8002E5FC
-# - source: 0x8002E620
-# - source: 0x8002E644
-# - source: 0x8002E64C
-# - source: 0x8002E670
-# - source: 0x8002E694
-# - source: 0x8002E7E0
-# - source: 0x8002E7EC
-# - source: 0x8002E814
-# - source: 0x8002E83C
-# - source: 0x8002E870
-# - source: 0x8002E87C
-# - source: 0x8002E8A0
-# - source: 0x8002E8CC
-# - source: 0x8002E900
-# - source: 0x8002E90C
-# - source: 0x8002E930
-# - source: 0x8002E950
-# - source: 0x8002E95C
-# - source: 0x8002EB04
-# - source: 0x8002EB10
-# - source: 0x8002EB38
-# - source: 0x8002F208
-# - source: 0x8002F214
-# - source: 0x8002F23C
-# - source: 0x8002F264
-# - source: 0x8002F288
-# - source: 0x8002F2B0
-# - source: 0x8002F484
-# - source: 0x8002F490
-# - source: 0x8002F4F0
-# - source: 0x8002F4F8
-# - source: 0x8002F51C
-# - source: 0x8002F53C
-# - source: 0x8002F548
-# - source: 0x8002F56C
-# - source: 0x8002F64C
-# - source: 0x8002F65C
-# - source: 0x8002F7B8
-# - source: 0x8002F7C4
-# - source: 0x8002F7FC
-# - source: 0x8002F80C
-# - source: 0x8002F950
-# - source: 0x8002F958
-# - source: 0x8002F990
-# - source: 0x8002F9A0
-# - source: 0x8002F9C8
-# - source: 0x8002FC8C
-# - source: 0x8002FC98
+- source: 0x8002DC10
+- source: 0x8002DC1C
+- source: 0x8002DC3C
+- source: 0x8002DC44
+- source: 0x8002DC78
+- source: 0x8002DC84
+- source: 0x8002DCA4
+- source: 0x8002DCAC
+- source: 0x8002DCE0
+- source: 0x8002DCEC
+- source: 0x8002DD0C
+- source: 0x8002DD14
+- source: 0x8002DD68
+- source: 0x8002DD70
+- source: 0x8002DD90
+- source: 0x8002DDC4
+- source: 0x8002DDD0
+- source: 0x8002DDF4
+- source: 0x8002DE28
+- source: 0x8002DE34
+- source: 0x8002DE58
+- source: 0x8002E6CC
+- source: 0x8002E6D8
+- source: 0x8002E804
+- source: 0x8002E810
+- source: 0x8002E8F8
+- source: 0x8002E900
+- source: 0x8002E924
+- source: 0x8002E948
+- source: 0x8002E96C
+- source: 0x8002E974
+- source: 0x8002E998
+- source: 0x8002E9BC
+- source: 0x8002EB08
+- source: 0x8002EB14
+- source: 0x8002EB3C
+- source: 0x8002EB64
+- source: 0x8002EB98
+- source: 0x8002EBA4
+- source: 0x8002EBC8
+- source: 0x8002EBF4
+- source: 0x8002EC28
+- source: 0x8002EC34
+- source: 0x8002EC58
+- source: 0x8002EC78
+- source: 0x8002EC84
+- source: 0x8002EE2C
+- source: 0x8002EE38
+- source: 0x8002EE60
+- source: 0x8002F530
+- source: 0x8002F53C
+- source: 0x8002F564
+- source: 0x8002F58C
+- source: 0x8002F5B0
+- source: 0x8002F5D8
+- source: 0x8002F770
+- source: 0x8002F77C
+- source: 0x8002F7DC
+- source: 0x8002F7E4
+- source: 0x8002F808
+- source: 0x8002F828
+- source: 0x8002F834
+- source: 0x8002F858
+- source: 0x8002F938
+- source: 0x8002F948
+- source: 0x8002FAA4
+- source: 0x8002FAB0
+- source: 0x8002FAE8
+- source: 0x8002FAF8
+- source: 0x8002FC3C
+- source: 0x8002FC44
+- source: 0x8002FC7C
+- source: 0x8002FC8C
+- source: 0x8002FCB4
+- source: 0x8002FF78
+- source: 0x8002FF84
 # cpuFindFunction
-# - source: 0x80033234
-# - source: 0x80033234
-# - source: 0x8003323C
-# - source: 0x80033248
-# - source: 0x800339d8
-# - source: 0x80033A08
-# - source: 0x80033A0C
-# - source: 0x80033A40
-# - source: 0x80033A54
-# - source: 0x80033A94
-# - source: 0x80033A98
-# - source: 0x80033ACC
-# - source: 0x80033AE0
+- source: 0x80033520
+- source: 0x80033528
+- source: 0x80033534
+- source: 0x80033CC4
+- source: 0x80033CF4
+- source: 0x80033CF8
+- source: 0x80033D2C
+- source: 0x80033D40
+- source: 0x80033D80
+- source: 0x80033D84
+- source: 0x80033DB8
+- source: 0x80033DCC

@@ -223,6 +223,14 @@ u32 gnFlagZelda;
 #define ROM_TEST_KIRBY_JP romTestCode(pROM, "NK4J")
 #define MCARD_FILE_NAME_STARFOX "Starfox"
 #define MCARD_FILE_NAME_MK64 "Mario Kart"
+#elif VERSION == MM_E
+#define ROM_TEST_PW_JP romTestCode(pROM, "NPWJ")
+#define ROM_TEST_MM_US false
+#define ROM_TEST_MM_EU romTestCode(pROM, "NZSP")
+#define ROM_TEST_MK64_JP romTestCode(pROM, "NKTJ")
+#define ROM_TEST_KIRBY_JP romTestCode(pROM, "NK4J")
+#define MCARD_FILE_NAME_STARFOX "Starfox"
+#define MCARD_FILE_NAME_MK64 "Mario Kart"
 #else
 #define ROM_TEST_PW_JP false
 #define ROM_TEST_MM_US false
@@ -367,6 +375,14 @@ static bool systemSetupGameRAM(System* pSystem) {
 #elif VERSION == MM_U
             case 0xA1ADC351:
             case 0xA1AD0040:
+                gnFlagZelda = 4;
+                break;
+#elif VERSION == MM_E
+            case 0xA1ADC351:
+            case 0xA1AD0040:
+                gnFlagZelda = 4;
+                break;
+            case 0xA1AF7705:
                 gnFlagZelda = 4;
                 break;
 #endif
@@ -615,7 +631,7 @@ static bool systemSetupGameALL(System* pSystem) {
     pROM = SYSTEM_ROM(pSystem);
     pPIF = SYSTEM_PIF(pSystem);
 
-#if IS_EU
+#if IS_EU || VERSION == MM_E
     if (gLanguage == 1) {
         strcpy(buf1, "TPL/GERMAN/");
         strcpy(buf2, "TPL/GERMAN/");
@@ -623,7 +639,7 @@ static bool systemSetupGameALL(System* pSystem) {
         strcpy(buf1, "TPL/FRENCH/");
         strcpy(buf2, "TPL/FRENCH/");
 
-#if VERSION == CE_E
+#if VERSION == CE_E || VERSION == MM_E
     } else if (gLanguage == 3) {
         strcpy(buf1, "TPL/SPANISH/");
         strcpy(buf2, "TPL/SPANISH/");
@@ -885,7 +901,7 @@ static bool systemSetupGameALL(System* pSystem) {
                 mcardOpen(&mCard, MCARD_FILE_NAME, MCARD_COMMENT, mCard.saveIcon, mCard.saveBanner, "ZELDA",
                           &gSystemRomConfigurationList[i].currentControllerConfig, MCARD_FILE_SIZE, 0x8000);
             }
-#if IS_EU
+#if IS_EU || VERSION == MM_E
             mCard.file.game.buffer[2] = gLanguage;
 #endif
         } else {
@@ -1026,7 +1042,7 @@ static bool systemSetupGameALL(System* pSystem) {
                     return false;
                 }
             }
-#elif VERSION == MM_J
+#elif VERSION == MM_J || VERSION == MM_E
             if (romTestCode(pROM, "NZSJ")) {
                 if (!cpuSetCodeHack(pCPU, 0x80177CF4, 0x95630000, -1)) {
                     return false;

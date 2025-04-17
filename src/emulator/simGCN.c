@@ -78,6 +78,16 @@ extern void InitDVDTrackList(void);
 
 #elif VERSION == MM_E
 
+u8* gcoverOpen;
+u8* gnoDisk;
+u8* gretryErr;
+u8* gfatalErr;
+u8* gwrongDisk;
+u8* greadingDisk;
+u8* gyes;
+u8* gno;
+u8* gmesgOK;
+
 #include "gbar.inc"
 
 #else
@@ -102,6 +112,8 @@ extern void InitDVDTrackList(void);
 #define DEFAULT_ROM_NAME "zelda2j.n64"
 #elif VERSION == MM_U
 #define DEFAULT_ROM_NAME "zelda2e.n64"
+#elif VERSION == MM_E
+#define DEFAULT_ROM_NAME "zelda2p.n64"
 #else
 #define DEFAULT_ROM_NAME ""
 #endif
@@ -196,6 +208,10 @@ bool gResetBeginFlag = true;
 
 static Code* gpCode;
 
+#if IS_EU || VERSION == MM_E
+u8 gLanguage;
+#endif
+
 #if IS_OOT
 void* gpFrame;
 #elif IS_MM
@@ -217,20 +233,7 @@ bool gPreviousIPLSetting;
 u32 gnTickReset;
 bool gbReset;
 
-#if IS_OOT
-#define simulatorOpenMessage(msg, fileName, size, fileInfo, ...)                                \
-    {                                                                                           \
-        if (simulatorMessageCurrent != msg) {                                                   \
-            simulatorMessageCurrent = msg;                                                      \
-            if (DVDOpen(fileName, &fileInfo) == 1) {                                            \
-                simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(size), 0, NULL); \
-            }                                                                                   \
-            DVDClose(&fileInfo);                                                                \
-            simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);                       \
-        }                                                                                       \
-    }
-#define PREFIX_TPL "TPL/"
-#elif IS_MM
+#if VERSION == MM_J
 #define simulatorOpenMessage(msg, fileName, size, fileInfo, buffer)                             \
     {                                                                                           \
         if (simulatorMessageCurrent != msg) {                                                   \
@@ -287,6 +290,19 @@ bool gbReset;
         GXEnd();                                                                                            \
         GXPixModeSync();                                                                                    \
     }
+#else
+#define simulatorOpenMessage(msg, fileName, size, fileInfo, ...)                                \
+    {                                                                                           \
+        if (simulatorMessageCurrent != msg) {                                                   \
+            simulatorMessageCurrent = msg;                                                      \
+            if (DVDOpen(fileName, &fileInfo) == 1) {                                            \
+                simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(size), 0, NULL); \
+            }                                                                                   \
+            DVDClose(&fileInfo);                                                                \
+            simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);                       \
+        }                                                                                       \
+    }
+#define PREFIX_TPL "TPL/"
 #endif
 
 bool simulatorGXInit(void) {
@@ -1552,7 +1568,7 @@ bool simulatorDrawErrorMessage(SimulatorMessage simulatorErrorMessage, bool draw
 bool simulatorPrepareMessage(SimulatorMessage simulatorErrorMessage) {
     DVDFileInfo fileInfo;
 
-#if IS_MM
+#if VERSION == MM_J
     char buf[30] = "TPL/";
 #else
 #define buf
@@ -1654,7 +1670,7 @@ bool simulatorDrawYesNoMessageLoop(TEXPalette* simulatorQuestion, bool* yes) {
 bool simulatorDrawYesNoMessage(SimulatorMessage simulatorMessage, bool* yes) {
     DVDFileInfo fileInfo;
 
-#if IS_MM
+#if VERSION == MM_J
     char buf[30] = "TPL/";
 #else
 #define buf
@@ -1748,7 +1764,7 @@ static inline bool simulatorDrawOKMessageLoop(TEXPalette* simulatorMessage)
 bool simulatorDrawErrorMessageWait(SimulatorMessage simulatorErrorMessage) {
     DVDFileInfo fileInfo;
 
-#if IS_MM
+#if VERSION == MM_J
     char buf[30] = "TPL/";
 #else
 #define buf
@@ -2593,9 +2609,11 @@ bool xlMain(void) {
     VISetBlack(false);
     VIFlush();
 
-#if IS_EU
+#if IS_EU || VERSION == MM_E
     gLanguage = OSGetLanguage();
+#endif
 
+#if IS_EU
     switch (gLanguage) {
         case 0:
             simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
@@ -2748,6 +2766,10 @@ bool xlMain(void) {
     if (!xlFileSetRead(&simulatorDVDRead)) {
         return false;
     }
+
+#if VERSION == MM_E
+    while (!simulatorPreloadDiskMessages()) {}
+#endif
 
     soundLoadBeep(SYSTEM_SOUND(gpSystem), SOUND_BEEP_ACCEPT, "yes.raw");
     soundLoadBeep(SYSTEM_SOUND(gpSystem), SOUND_BEEP_DECLINE, "no.raw");

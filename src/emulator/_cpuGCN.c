@@ -6397,7 +6397,7 @@ static bool cpuNextInstruction(Cpu* pCPU, s32 addressN64, s32 opcode, s32* anCod
             return false;
         default:
             OSReport("ERROR in cpuNextInstruction() with opcode %p at %p\n", opcode, addressN64);
-            OSPanic("_cpuGCN.c", VERSION == MM_J ? 3650 : VERSION == MM_U ? 3636 : 3621, "");
+            OSPanic("_cpuGCN.c", VERSION == MM_J ? 3650 : VERSION == MM_U || VERSION == MM_E ? 3636 : 3621, "");
             break;
     }
 
@@ -8412,6 +8412,8 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
 #if VERSION == MM_J
                 } else if (value == 0x1A) {
                     mcardSaveDisplay = value;
+#endif
+#if VERSION == MM_J || VERSION == MM_E
                 } else if (value >= 0x30 && value <= 0x31) {
                     mcardSaveCamera(value);
 #endif
@@ -10009,6 +10011,8 @@ static s32 cpuExecuteCall(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddressGC
 #define LINE_NUM 4927
 #elif VERSION == MM_U
 #define LINE_NUM 4806
+#elif VERSION == MM_E
+#define LINE_NUM 4812
 #else
 #define LINE_NUM 0
 #endif
@@ -10305,6 +10309,8 @@ static s32 cpuExecuteLoadStore(Cpu* pCPU, s32 nCount, s32 nAddressN64, s32 nAddr
 #define LINE_NUM 5383
 #elif VERSION == MM_U
 #define LINE_NUM 5262
+#elif VERSION == MM_E
+#define LINE_NUM 5268
 #else
 #define LINE_NUM 0
 #endif

@@ -1633,7 +1633,7 @@ bool romCacheGame(Rom* pROM) {
 
 #elif IS_MM
 
-#if VERSION == MM_J
+#if VERSION == MM_J || VERSION == MM_E
 #define CHECK_MM_PAL romTestCode(pROM, "NZSP")
 #else
 #define CHECK_MM_PAL false
@@ -1659,6 +1659,20 @@ bool romCacheGame(Rom* pROM) {
         bZeldaJ = romTestCode(pROM, "CZLJ");
 
         bZeldaF = bZeldaG = bZeldaI = bZeldaS = false;
+
+#if VERSION == MM_E
+        if (gLanguage == 1) {
+            bZeldaG = true;
+        } else if (gLanguage == 2) {
+            bZeldaF = true;
+        } else if (gLanguage == 3) {
+            bZeldaS = true;
+        } else if (gLanguage == 4) {
+            bZeldaI = true;
+        } else {
+            bZeldaE = true;
+        }
+#endif
 
         if (bZeldaE || bZeldaJ || bZeldaF || bZeldaG || bZeldaI || bZeldaS) {
             if (gnFlagZelda & 2) {
@@ -1719,11 +1733,25 @@ bool romCacheGame(Rom* pROM) {
             }
         }
     } else if (romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE") || CHECK_MM_PAL) {
+#if VERSION == MM_E
+        if (gLanguage == 1) {
+            szName = "zelda2g.tpl";
+        } else if (gLanguage == 2) {
+            szName = "zelda2f.tpl";
+        } else if (gLanguage == 3) {
+            szName = "zelda2s.tpl";
+        } else if (gLanguage == 4) {
+            szName = "zelda2i.tpl";
+        } else {
+            szName = "zelda2e.tpl";
+        }
+#else
         if (romTestCode(pROM, "NZSJ")) {
             szName = "zelda2j.tpl";
         } else {
             szName = "zelda2e.tpl";
         }
+#endif
 
         if (xlFileOpen(&pFile, XLFT_BINARY, szName)) {
             nSize = pFile->nSize;
@@ -1740,6 +1768,8 @@ bool romCacheGame(Rom* pROM) {
             gbDisplayedError = true;
         }
 
+#if VERSION == MM_E
+#else
         if (romTestCode(pROM, "NZSJ")) {
             pROM->anOffsetBlock = ganOffsetBlock_ZELDA2J;
             pROM->nCountOffsetBlocks = 0xCA;
@@ -1874,6 +1904,7 @@ bool romCacheGame(Rom* pROM) {
                 return false;
             }
         }
+#endif
     }
 
     gDVDResetToggle = false;
@@ -2033,7 +2064,7 @@ static bool romCopyUpdate(Rom* pROM) {
     return true;
 }
 
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
 //! TODO: can szName arg work?
 static bool romCacheAllBlocks(Rom* pROM) {
     s32 iCache;
@@ -2130,7 +2161,7 @@ static bool romLoadFullOrPart(Rom* pROM) {
             pROM->anBlockCachedARAM[i] = 0;
         }
 
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
         if ((s32)pROM->nSize < (pROM->nSizeCacheRAM + 0xFFA000) && !romCacheAllBlocks(pROM)) {
             return false;
         }
@@ -2165,7 +2196,7 @@ static bool romLoadFullOrPart(Rom* pROM) {
                 xlFileGet(pFile, (void*)((u32)pROM->pBuffer + i), (s32)temp_r28);
                 i += temp_r28;
 
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
                 simulatorShowLoad(0, pROM->acNameFile, (f32)i / (f32)pROM->nSize);
 #elif VERSION == MM_J
                 romCacheGame_OTHER(pROM, szName, (f32)i / (f32)pROM->nSize);

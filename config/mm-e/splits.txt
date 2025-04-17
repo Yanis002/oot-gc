@@ -51,7 +51,7 @@ emulator/simGCN.c:
 	.data       start:0x800E02C0 end:0x800E1748
 	.bss        start:0x800ED200 end:0x800F24A0
 	.sdata      start:0x8012F378 end:0x8012F440
-	.sbss       start:0x8012FCF0 end:0x8012FD30
+	.sbss       start:0x8012FCF0 end:0x8012FD58
 	.sdata2     start:0x80130478 end:0x801304B8
 
 emulator/movie.c:
@@ -154,14 +154,14 @@ emulator/rom.c:
 	.bss        start:0x8012A8C0 end:0x8012A900
 	.sdata      start:0x8012F948 end:0x8012F9A8
 	.sbss       start:0x8012FEB8 end:0x8012FEC8
-	.sdata2     start:0x80130788 end:0x801307A0
+	.sdata2     start:0x80130788 end:0x801307E0
 
 emulator/rdp.c:
 	.text       start:0x80072EA8 end:0x800744AC
 	.data       start:0x800E6258 end:0x800E64C8
 	.sdata      start:0x8012F9A8 end:0x8012F9B0
 	.sbss       start:0x8012FEC8 end:0x8012FEE0
-	.sdata2     start:0x801307A0 end:0x801307D0
+	.sdata2     start:0x801307E0 end:0x80130820
 
 emulator/rdb.c:
 	.text       start:0x800744AC end:0x80074A94
@@ -173,7 +173,7 @@ emulator/rsp.c:
 	.data       start:0x800E6538 end:0x800E69E8
 	.sdata      start:0x8012F9B8 end:0x8012F9E0
 	.sbss       start:0x8012FEE0 end:0x8012FF08
-	.sdata2     start:0x801307D0 end:0x80130818
+	.sdata2     start:0x80130820 end:0x80130860
 
 emulator/mips.c:
 	.text       start:0x80090054 end:0x80090594
@@ -214,7 +214,7 @@ emulator/library.c:
 	.text       start:0x80091F18 end:0x8009A72C
 	.data       start:0x800E6E18 end:0x800E8200
 	.sdata      start:0x8012FA20 end:0x8012FA68
-	.sdata2     start:0x80130818 end:0x80130824
+	.sdata2     start:0x80130860 end:0x801308C8
 
 emulator/peripheral.c:
 	.text       start:0x8009A72C end:0x8009AD2C
@@ -222,19 +222,19 @@ emulator/peripheral.c:
 
 emulator/_frameGCNcc.c:
 	.text       start:0x8009AD2C end:0x8009B634
-	.data       start:0x800E83A8 end:0x800E8408
+	.data       start:0x800E83A8 end:0x800E86B0
 	.sdata      start:0x8012FA68 end:0x8012FAF8
 
 emulator/_buildtev.c:
 	.text       start:0x8009B634 end:0x8009EA3C
-	.data       start:0x800E8448 end:0x800E87B8
+	.data       start:0x800E86B0 end:0x800E8878
 	.bss        start:0x8012A900 end:0x8012ABB8
 	.sdata      start:0x8012FAF8 end:0x8012FB08
-	.sdata2     start:0x80130824 end:0x80130828
+	.sdata2     start:0x801308C8 end:0x801308D0
 
 emulator/snddvdtrk.c:
 	.text       start:0x8009EA3C end:0x8009F7B8
-	.data       start:0x800E87B8 end:0x800E88A0
+	.data       start:0x800E8878 end:0x800E88A0
 	.bss        start:0x8012ABB8 end:0x8012B550
 	.sdata      start:0x8012FB08 end:0x8012FB18
 	.sbss       start:0x8012FF08 end:0x8012FF10
@@ -244,7 +244,7 @@ emulator/sndspecial.c:
 	.data       start:0x800E88A0 end:0x800E9098
 	.bss        start:0x8012B550 end:0x8012B5A0
 	.sbss       start:0x8012FF10 end:0x8012FF18
-	.sdata2     start:0x80130828 end:0x801308F0
+	.sdata2     start:0x801308D0 end:0x801308F0
 
 dolphin/base/PPCArch.c:
 	.text       start:0x8009FE24 end:0x8009FF38

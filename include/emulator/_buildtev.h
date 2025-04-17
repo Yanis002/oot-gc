@@ -4,7 +4,7 @@
 #include "dolphin.h"
 #include "macros.h"
 
-#if IS_OOT || VERSION == MM_U
+#if IS_OOT || VERSION == MM_U || VERSION == MM_E
 #define TEV_NUM 8
 #elif VERSION == MM_J
 #define TEV_NUM 9
