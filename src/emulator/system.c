@@ -639,11 +639,20 @@ static bool systemSetupGameALL(System* pSystem) {
         strcpy(buf1, "TPL/FRENCH/");
         strcpy(buf2, "TPL/FRENCH/");
 
-#if VERSION == CE_E || VERSION == MM_E
+#if VERSION == CE_E
     } else if (gLanguage == 3) {
         strcpy(buf1, "TPL/SPANISH/");
         strcpy(buf2, "TPL/SPANISH/");
     } else if (gLanguage == 4) {
+        strcpy(buf1, "TPL/ITALIAN/");
+        strcpy(buf2, "TPL/ITALIAN/");
+#elif VERSION == MM_E
+    } else if (gLanguage == 3) {
+        strcpy(buf1, "TPL/SPANISH/");
+        strcpy(buf2, "TPL/SPANISH/");
+    } else if (gLanguage == 3) {
+        //! @bug: This condition will always be false as `gLanguage` is 4 when using italian as the console's language.
+        //! This has no effect as this path is only used to get the memory card's icon and banner TPL files.
         strcpy(buf1, "TPL/ITALIAN/");
         strcpy(buf2, "TPL/ITALIAN/");
 #endif

@@ -85,17 +85,6 @@ extern System* gpSystem;
 extern u32 gz_bnrSize;
 extern u32 gz_iconSize;
 
-#if VERSION == MM_E
-extern u8* gcoverOpen;
-extern u8* gnoDisk;
-extern u8* gretryErr;
-extern u8* gfatalErr;
-extern u8* gwrongDisk;
-extern u8* greadingDisk;
-extern u8* gyes;
-extern u8* gno;
-extern u8* gmesgOK;
-#else
 extern u8 gcoverOpen[];
 extern u8 gnoDisk[];
 extern u8 gretryErr[];
@@ -105,7 +94,6 @@ extern u8 greadingDisk[];
 extern u8 gyes[];
 extern u8 yno[];
 extern u8 gmesgOK[];
-#endif
 
 extern u8 gbar[];
 
