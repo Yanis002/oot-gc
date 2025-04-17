@@ -1409,7 +1409,7 @@ bool mcardGameSet(MemCard* pMCard, char* name) {
                     pMCard->file.game.buffer[0] &= 0xFC;
                 }
             }
-        } 
+        }
 #if IS_MM
         else if (gpSystem->eTypeROM == SRT_ZELDA2) {
             char* buffer = pMCard->file.game.buffer + 0x18000;

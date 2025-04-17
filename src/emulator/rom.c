@@ -1328,8 +1328,12 @@ static bool romCacheEnding_ZELDA(f32 rProgress) {
     static GXTexObj texObj;
     static GXTexObj texObj2;
 
+#if VERSION == MM_E
     //! TODO: fake match?
     tpl = (TEXPalette*)*(u32*)greadingDisk;
+#else
+    tpl = (TEXPalette*)greadingDisk;
+#endif
 
     while (frameBeginOK(gpFrame) != 1) {}
     xlCoreBeforeRender();
@@ -1462,7 +1466,7 @@ static bool romCacheEnding_ZELDA(f32 rProgress) {
 
 #if VERSION == MM_J
 static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
-    int pROM;
+    int temp_r31;
     s32 nSize;
     Mtx44 matrix44;
     Mtx matrix;
@@ -1534,17 +1538,17 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
 
     VIWaitForRetrace();
 
-    pROM = 400.0 * rProgress;
+    temp_r31 = 400.0 * rProgress;
 
-    if (pROM > 400) {
-        pROM = 400;
+    if (temp_r31 > 400) {
+        temp_r31 = 400;
     }
 
     if (!_frameDrawRectangle(SYSTEM_FRAME(gpSystem), 0x4083407D, 120, 440, 400, 8)) {
         return false;
     }
 
-    if (!_frameDrawRectangle(SYSTEM_FRAME(gpSystem), 0x8F9B8F7C, 120, 440, pROM, 8)) {
+    if (!_frameDrawRectangle(SYSTEM_FRAME(gpSystem), 0x8F9B8F7C, 120, 440, temp_r31, 8)) {
         return false;
     }
 
@@ -1972,63 +1976,63 @@ bool romCacheGame(Rom* pROM) {
         }
 
 #if VERSION == MM_E
-            pROM->anOffsetBlock = ganOffsetBlock_ZELDA2P;
-            pROM->nCountOffsetBlocks = 0xCA;
+        pROM->anOffsetBlock = ganOffsetBlock_ZELDA2P;
+        pROM->nCountOffsetBlocks = 0xCA;
 
-            if (!romLoadRange(pROM, 0, 0x99D630, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x9B8AD0, 0xBB5CB0, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xC78F20, 0xF286F0, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xF8F920, 0x0103E570, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x017440D0, 0x0175A0C0, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x017877A0, 0x0179FB20, &blockCount, 0, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x018ED600, 0x0190C200, &blockCount, 0, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x01EC9EE0, 0x01EE3710, &blockCount, 0, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x01EEF5F0, 0x01F0BAD0, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0x01F4B070, 0x01FC55C0, &blockCount, 0, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0x7BB, 0x7BD, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0x832, 0x83A, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0x9C7, 0x9C8, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0x9D9, 0x9DE, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0xB6A, 0xB6B, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0xC70, 0xC75, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0xF62, 0xF63, &blockCount, 0, 0)) {
-                return false;
-            }
-            if (!romLoadRangeBlock(pROM, 0xF72, 0xF76, &blockCount, 0, 0)) {
-                return false;
-            }
+        if (!romLoadRange(pROM, 0, 0x99D630, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x9B8AD0, 0xBB5CB0, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0xC78F20, 0xF286F0, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0xF8F920, 0x0103E570, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x017440D0, 0x0175A0C0, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x017877A0, 0x0179FB20, &blockCount, 0, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x018ED600, 0x0190C200, &blockCount, 0, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x01EC9EE0, 0x01EE3710, &blockCount, 0, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x01EEF5F0, 0x01F0BAD0, &blockCount, 1, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRange(pROM, 0x01F4B070, 0x01FC55C0, &blockCount, 0, &romCacheGame_ZELDA)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0x7BB, 0x7BD, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0x832, 0x83A, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0x9C7, 0x9C8, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0x9D9, 0x9DE, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0xB6A, 0xB6B, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0xC70, 0xC75, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0xF62, 0xF63, &blockCount, 0, 0)) {
+            return false;
+        }
+        if (!romLoadRangeBlock(pROM, 0xF72, 0xF76, &blockCount, 0, 0)) {
+            return false;
+        }
 #else
         if (romTestCode(pROM, "NZSJ")) {
             pROM->anOffsetBlock = ganOffsetBlock_ZELDA2J;
