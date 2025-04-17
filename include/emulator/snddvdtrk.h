@@ -50,25 +50,25 @@ typedef struct DVDFadeInfo {
 
 // __anon_0x937D8
 typedef struct DVDTrackList {
-    /* 0x000 */ s32 fileIDs[60];
-    /* 0x0F0 */ char filenames[60][32];
-    /* 0x870 */ u8 playOrder[60];
-    /* 0x8AC */ DVDFileInfo playingFileInfo;
-    /* 0x8E8 */ __anon_0x93582 error;
-    /* 0x8EC */ ErrorRetreivalState errorState;
-    /* 0x8F0 */ s32 numTracks;
-    /* 0x8F4 */ DVDTrackInfo curState;
-    /* 0x904 */ DVDTrackInfo nextState;
-    /* 0x914 */ DVDTrackInfo queueState;
-    /* 0x924 */ s32 stopTrack;
-    /* 0x928 */ s32 stopFadeTime;
-    /* 0x92C */ s32 fadeTime;
-    /* 0x930 */ s32 waitTime;
-    /* 0x934 */ DVDFadeInfo fadeInfo;
-    /* 0x948 */ s32 volume;
-    /* 0x94C */ s32 fadeInOutVolume;
-    /* 0x950 */ DVDTrackState state;
-    /* 0x954 */ DVDTrackState lastState;
+    /* 0x000 0x03C */ s32 fileIDs[60];
+    /* 0x0F0 0x12C */ char filenames[60][32];
+    /* 0x870 0x8AC */ u8 playOrder[60];
+    /* 0x8AC 0x8E8 */ DVDFileInfo playingFileInfo;
+    /* 0x8E8 0x924 */ __anon_0x93582 error;
+    /* 0x8EC 0x928 */ ErrorRetreivalState errorState;
+    /* 0x8F0 0x92C */ s32 numTracks;
+    /* 0x8F4 0x930 */ DVDTrackInfo curState;
+    /* 0x904 0x940 */ DVDTrackInfo nextState;
+    /* 0x914 0x950 */ DVDTrackInfo queueState;
+    /* 0x924 0x960 */ s32 stopTrack;
+    /* 0x928 0x964 */ s32 stopFadeTime;
+    /* 0x92C 0x968 */ s32 fadeTime;
+    /* 0x930 0x96C */ s32 waitTime;
+    /* 0x934 0x970 */ DVDFadeInfo fadeInfo;
+    /* 0x948 0x984 */ s32 volume;
+    /* 0x94C 0x988 */ s32 fadeInOutVolume;
+    /* 0x950 0x98C */ DVDTrackState state;
+    /* 0x954 0x990 */ DVDTrackState lastState;
 } DVDTrackList; // size = 0x958
 
 #endif

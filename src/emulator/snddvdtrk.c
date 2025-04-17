@@ -1,4 +1,5 @@
 #include "emulator/snddvdtrk.h"
+#include "emulator/simGCN.h"
 #include "macros.h"
 
 void PauseDVDTrack(void);
@@ -46,18 +47,20 @@ static void DVDTrackGetErrorCallback(s32 result) {
     // -> DVDTrackList gDVDTrackList;
 }
 
-static void CheckErrorStatus(s32 result) {
+static void CheckErrorStatus(volatile s32 result, DVDCommandBlock* block) {
     // Parameters
     // s32 result; // r1+0x8
 
     // References
     // -> DVDTrackList gDVDTrackList;
 
+    int new_var;
+
     gDVDTrackList.error.code = result;
     gDVDTrackList.errorState = ERROR_RETRIEVED;
 }
 
-static void DVDTrackStopCallback(void) {}
+static void DVDTrackStopCallback(s32 result, DVDCommandBlock* block) {}
 
 static void DVDTrackPrepareStreamCallback(s32 result, DVDFileInfo* fileInfo) {
     // Parameters
@@ -66,7 +69,6 @@ static void DVDTrackPrepareStreamCallback(s32 result, DVDFileInfo* fileInfo) {
 
     // Local variables
     DVDTrackState lastState; // r30
-    u32 temp_r28;
 
     // References
     // -> DVDTrackList gDVDTrackList;
@@ -79,7 +81,8 @@ static void DVDTrackPrepareStreamCallback(s32 result, DVDFileInfo* fileInfo) {
             lastState = gDVDTrackList.state;
 
             if (lastState != TRACK_FADE_OUT_STREAM) {
-                gDVDTrackList.volume = gDVDTrackList.curState.fadeTime;
+                gDVDTrackList.fadeInOutVolume = 0;
+                gDVDTrackList.volume = gDVDTrackList.curState.volume;
                 gDVDTrackList.state = TRACK_FADE_IN_STREAM;
 
                 if (gDVDTrackList.fadeTime >= gDVDTrackList.curState.fadeTime) {
@@ -101,7 +104,7 @@ static void DVDTrackPrepareStreamCallback(s32 result, DVDFileInfo* fileInfo) {
                 gDVDTrackList.curState.flags &= 0xFFFFBFFF;
 
                 if (!(gDVDTrackList.curState.flags & 1)) {
-                    DVDStopStreamAtEndAsync(fileInfo, DVDTrackStopCallback);
+                    DVDStopStreamAtEndAsync(&fileInfo->cb, &DVDTrackStopCallback);
                 }
             }
         }
@@ -117,32 +120,32 @@ static void DVDTrackCancelStreamCallback(s32 result, DVDCommandBlock* block) {
     // References
     // -> DVDTrackList gDVDTrackList;
 
-    if (result == 0) {
+    if (result == DVD_STATE_END) {
         DVDClose(&gDVDTrackList.playingFileInfo);
         AISetStreamPlayState(0);
-        gDVDTrackList.state = 0;
+        gDVDTrackList.state = TRACK_NOTHING;
         gDVDTrackList.curState.trackID = -1;
     }
 }
 
 static void DVDTrackFadeOutUpdate(void) {
-    if (gDVDTrackList.fadeTime <= 0) {
-        gDVDTrackList.error.code = 1;
+    s32 pad;
 
-        if ((gDVDTrackList.fadeTime < 0) && (gDVDTrackList.fadeTime == -1)) {
+    if (gDVDTrackList.fadeTime <= 0) {
+        gDVDTrackList.error.code = DVD_STATE_END;
+        gDVDTrackList.error.bytes[3] = 1;
+
+        if (gDVDTrackList.fadeTime < 0 && gDVDTrackList.fadeTime == -1) {
             gDVDTrackList.fadeTime = 0;
             gDVDTrackList.error.code = DVDGetStreamErrorStatus(&gDVDTrackList.playingFileInfo.cb);
         }
 
         gDVDTrackList.fadeInOutVolume = 0;
         SetDVDTrackVolume();
-        // AISetStreamVolLeft(0);
-        // AISetStreamVolRight(0);
-
         gDVDTrackList.state = TRACK_STOPPING_STREAM;
 
-        if ((gDVDTrackList.error.bytes[0] == 0 && gDVDTrackList.error.bytes[1] == 0) &&
-            gDVDTrackList.error.bytes[3] != 0) {
+        if (gDVDTrackList.error.bytes[0] != 0 || gDVDTrackList.error.bytes[1] != 0 ||
+            gDVDTrackList.error.bytes[3] == 0) {
             DVDClose(&gDVDTrackList.playingFileInfo);
             AISetStreamPlayState(0);
             gDVDTrackList.state = TRACK_NOTHING;
@@ -160,18 +163,27 @@ static void DVDTrackFadeOutUpdate(void) {
     }
 }
 
-// Erased
 static void DVDTrackFadeOutPauseUpdate(void) {
-    // References
-    // -> DVDTrackList gDVDTrackList;
-    // -> s32* gDVDVolumeP;
+    if (gDVDTrackList.fadeTime <= 0) {
+        AISetStreamPlayState(0);
+        gDVDTrackList.state = TRACK_FADE_OUT_HOLD_PAUSE;
+    } else {
+        gDVDTrackList.fadeTime--;
+        gDVDTrackList.fadeInOutVolume = (gDVDTrackList.fadeTime * 128) / gDVDTrackList.curState.fadeTime;
+        SetDVDTrackVolume();
+    }
 }
 
-// Erased
 static void DVDTrackFadeInUpdate(void) {
-    // References
-    // -> DVDTrackList gDVDTrackList;
-    // -> s32* gDVDVolumeP;
+    if (gDVDTrackList.fadeTime >= gDVDTrackList.curState.fadeTime) {
+        gDVDTrackList.fadeInOutVolume = 128;
+        gDVDTrackList.state = TRACK_PLAYING_STREAM;
+    } else {
+        gDVDTrackList.fadeTime++;
+        gDVDTrackList.fadeInOutVolume = (gDVDTrackList.fadeTime * 128) / gDVDTrackList.curState.fadeTime;
+    }
+
+    SetDVDTrackVolume();
 }
 
 // Erased
@@ -323,6 +335,75 @@ static bool HandleDVDTrackListError(void) {
     // -> static s32 vErrReadDone;
 }
 
+static inline s32 UnknownInline1() {
+    s32 status = DVDGetDriveStatus();
+
+    if ((status - 4) > DVD_STATE_BUSY && status != DVD_STATE_WRONG_DISK) {
+        return DVD_STATE_END;
+    }
+
+    return status;
+}
+
+static inline s32 UnknownInline2() {
+    s32 status = UnknownInline1();
+
+    if (!UnknownInline1() && status != DVD_STATE_RETRY) {
+        return DVD_STATE_END;
+    }
+
+    return status;
+}
+
+static inline s32 UnknownInline3() {
+    s32 status = UnknownInline2();
+
+    if (!UnknownInline1() && status != DVD_STATE_FATAL_ERROR) {
+        return DVD_STATE_END;
+    }
+
+    return status;
+}
+
+static inline bool Inline_1(u32 status) {
+	bool ret = true;
+
+	if ((status - 4) > 1) {
+	    ret = false;
+	}
+
+	return ret;
+}
+
+static inline bool Inline_2(s32 status) {
+	bool ret = true;
+
+	if (!Inline_1(status) && status != 6) {
+		ret = 0;
+	}
+
+	return ret;
+}
+
+static inline bool Inline_3(s32 status) {
+	bool ret = true;
+
+	if (!Inline_2(status) && status != 11) {
+		ret = false;
+	}
+
+	return ret;
+}
+
+static inline bool Inline_4(s32 status, s32 thing) {
+     if (thing == 0) {
+        return false;
+    }
+
+    simulatorDVDShowError(status, NULL, 0, 0);
+    return true;
+}
+
 void UpdateDVDTrackList(void) {
     // Local variables
     s32 updateVolume; // r28
@@ -336,6 +417,127 @@ void UpdateDVDTrackList(void) {
     // -> static s32 counter$238;
     // -> static DVDFileInfo sErrorDFI;
     // -> static s32 vErrReadDone;
+
+    updateVolume = false;
+    error = false;
+    UpdateSpecial();
+
+    if (gDVDTrackList.state != TRACK_NOTHING) {
+        s32 status;
+        bool var_r29;
+
+        status = DVDGetDriveStatus();
+        var_r29 = 1;
+        if (!Inline_3(status) && (status != -1)) {
+            var_r29 = 0;
+        }
+
+        if ((var_r29 == 0) && (DVDCheckDisk() != 1) && ((s32) vErrReadDone == 0)) {
+            vErrReadDone = 1;
+            DVDOpen("yes.raw", &sErrorDFI);
+            DVDSeekAsyncPrio(&sErrorDFI, 0, ErrorCallBack, 2);
+
+            status = DVDGetDriveStatus();
+            var_r29 = 1;
+            if (!Inline_3(status) && (status != -1)) {
+				var_r29 = 0;
+			}
+        }
+
+        error = Inline_4(status, var_r29);
+    }
+
+    switch (gDVDTrackList.state) {
+        case TRACK_NOTHING:
+            if (gDVDTrackList.nextState.trackID >= 0) {
+                gDVDTrackList.stopTrack = 0;
+                gDVDTrackList.stopFadeTime = 0;
+                gDVDTrackList.curState = gDVDTrackList.nextState;
+                gDVDTrackList.nextState.trackID = -1;
+                gDVDTrackList.fadeTime = 0;
+                gDVDTrackList.volume = 0;
+                gDVDTrackList.nextState.flags = 0;
+                gDVDTrackList.waitTime = 0;
+                DVDFastOpen(gDVDTrackList.fileIDs[gDVDTrackList.curState.trackID], &gDVDTrackList.playingFileInfo);
+                gDVDTrackList.state = TRACK_PREPARE_STREAM;
+                DVDPrepareStreamAsync(&gDVDTrackList.playingFileInfo, 0, 0, &DVDTrackPrepareStreamCallback);
+            }
+            break;
+        case TRACK_PLAYING_STREAM:
+            updateVolume = true;
+
+            if (gDVDTrackList.errorState != ERROR_RETRIEVED || !CheckForStopDVDTrack()) {
+                counter++;
+
+                if (gDVDTrackList.errorState == ERROR_RETRIEVED) {
+                    if (gDVDTrackList.error.code < 0 || gDVDTrackList.error.bytes[3] == 0 || gDVDTrackList.error.bytes[0] != 0 || gDVDTrackList.error.bytes[1] != 0) {
+                        if (!(gDVDTrackList.curState.flags & 1)) {
+                            DVDClose(&gDVDTrackList.playingFileInfo);
+                            AISetStreamPlayState(0);
+                            gDVDTrackList.state = TRACK_NOTHING;
+                            gDVDTrackList.curState.trackID = -1;
+                        } else {
+                            gDVDTrackList.nextState = gDVDTrackList.curState;
+                            gDVDTrackList.nextState.fadeTime = 0;
+                            DVDClose(&gDVDTrackList.playingFileInfo);
+                            AISetStreamPlayState(0x0);
+                            gDVDTrackList.state = TRACK_NOTHING;
+                            gDVDTrackList.curState.trackID = -1;
+                        }
+                    }
+
+                    gDVDTrackList.errorState = NO_ERROR_RETRIEVING;
+                } else if (!(counter & 0xF) && gDVDTrackList.state == TRACK_PLAYING_STREAM && gDVDTrackList.errorState == NO_ERROR_RETRIEVING) {
+                    gDVDTrackList.errorState = RETRIEVING_ERROR;
+                    DVDGetStreamErrorStatusAsync(&gDVDTrackList.playingFileInfo.cb, &CheckErrorStatus);
+                }
+            }
+            break;
+        case TRACK_FADE_IN_STREAM:
+            updateVolume = true;
+            DVDTrackFadeInUpdate();
+            break;
+        case TRACK_FADE_OUT_PAUSE:
+            updateVolume = true;
+            DVDTrackFadeOutPauseUpdate();
+            break;
+        case TRACK_FADE_OUT_STREAM:
+            updateVolume = true;
+            DVDTrackFadeOutUpdate();
+            break;
+        case TRACK_PAUSING_STREAM:
+            PauseDVDTrack();
+            break;
+        case TRACK_PREPARE_STREAM:
+            if (error) {
+                gDVDTrackList.waitTime = 30;
+            }
+
+            if (gDVDTrackList.waitTime < 30) {
+                gDVDTrackList.waitTime++;
+            }
+            break;
+        default:
+            break;
+    }
+
+    if (gDVDTrackList.state != TRACK_PAUSE_STREAM) {
+        if (gDVDTrackList.fadeInfo.curTime < gDVDTrackList.fadeInfo.fadeTime) {
+            gDVDTrackList.fadeInfo.curVol =
+                gDVDTrackList.fadeInfo.startVol +
+                (gDVDTrackList.fadeInfo.curTime * (gDVDTrackList.fadeInfo.nextVol - gDVDTrackList.fadeInfo.startVol)) /
+                    gDVDTrackList.fadeInfo.fadeTime;
+            gDVDTrackList.fadeInfo.curTime++;
+        } else {
+            gDVDTrackList.fadeInfo.curVol = gDVDTrackList.fadeInfo.nextVol;
+        }
+
+        if (updateVolume) {
+            SetDVDTrackVolume();
+        }
+    }
+
+    PAD_STACK();
 }
 
 void PauseDVDTrack(void) {
@@ -348,7 +550,7 @@ void PauseDVDTrack(void) {
     if (gDVDTrackList.state != TRACK_PAUSE_STREAM) {
         enabled = OSDisableInterrupts();
 
-        if ((gDVDTrackList.state == TRACK_PREPARE_STREAM) || (gDVDTrackList.state == TRACK_STOPPING_STREAM)) {
+        if (gDVDTrackList.state == TRACK_PREPARE_STREAM || gDVDTrackList.state == TRACK_STOPPING_STREAM) {
             gDVDTrackList.state = TRACK_PAUSING_STREAM;
         }
 
@@ -442,11 +644,12 @@ static void DVDTrackVolume(s32 newVolume, s32 fadeTime) {
     // -> s32* gDVDVolumeP;
 }
 
-// Erased
 static void SetDVDTrackVolume(void) {
-    s32 volume = (((((gDVDTrackList.volume * *gDVDVolumeP) >> 7) * gDVDTrackList.fadeInOutVolume) >> 7) *
-                  gDVDTrackList.fadeInfo.curVol) >>
-                 7;
+    s32 volume;
+
+    volume = (gDVDTrackList.volume * *gDVDVolumeP) >> 7;
+    volume = (volume * gDVDTrackList.fadeInOutVolume) >> 7;
+    volume = (volume * gDVDTrackList.fadeInfo.curVol) >> 7;
 
     AISetStreamVolLeft(volume);
     AISetStreamVolRight(volume);
@@ -476,6 +679,10 @@ static bool IsDVDTrackStopped(void) {
 static bool IsDVDTrackPaused(void) {
     // References
     // -> DVDTrackList gDVDTrackList;
+
+    if (gDVDTrackList.state == TRACK_PAUSING_STREAM || gDVDTrackList.state == TRACK_PAUSE_STREAM) {
+        CheckForStopDVDTrack();
+    }
 }
 
 // Erased
