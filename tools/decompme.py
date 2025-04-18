@@ -20,6 +20,7 @@ INCLUDE_DIRS = [
     Path("."),
     Path("include"),
     Path("libc"),
+    Path("src"),
 ]
 COMPILER_NAME = "mwcc_233_159"
 # We don't set -inline deferred because otherwise the reversed function order
@@ -45,6 +46,8 @@ MACROS: list[tuple[re.Pattern, str]] = [
     (re.compile(r"\bN64_FRAME_HEIGHT\b"), "240"),
     (re.compile(r"\bATTRIBUTE_ALIGN\b\(.*\)"), ""),
     (re.compile(r"\b_MATH_INLINE\b"), "static inline"),
+    (re.compile(r"\bINIT\b"), ""),
+    (re.compile(r"\b__ungetc_buffer_size\b"), "2"),
 ]
 
 # Defined preprocessor macros (for conditions)

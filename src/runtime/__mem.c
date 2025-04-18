@@ -1,10 +1,23 @@
 #include "dolphin/types.h"
-#include "mem_funcs.h"
+#include "macros.h"
+#include "stddef.h"
 
-INIT void* memset(void* dst, int val, size_t n) {
-    __fill_mem(dst, val, n);
+INIT void* memcpy(void* dst, const void* src, size_t n) {
+    const char* p;
+    char* q;
+    int rev = ((u32)src < (u32)dst);
 
-    return (dst);
+    if (!rev) {
+        for (p = (const char*)src - 1, q = (char*)dst - 1, n++; --n;) {
+            *++q = *++p;
+        }
+    } else {
+        for (p = (const char*)src + n, q = (char*)dst + n, n++; --n;) {
+            *--q = *--p;
+        }
+    }
+
+    return dst;
 }
 
 INIT void __fill_mem(void* dst, int val, size_t n) {
@@ -34,6 +47,7 @@ INIT void __fill_mem(void* dst, int val, size_t n) {
 
         if (i) {
             do {
+#if __MWERKS__
                 *++(((u32*)dst)) = v;
                 *++(((u32*)dst)) = v;
                 *++(((u32*)dst)) = v;
@@ -42,6 +56,24 @@ INIT void __fill_mem(void* dst, int val, size_t n) {
                 *++(((u32*)dst)) = v;
                 *++(((u32*)dst)) = v;
                 *++(((u32*)dst)) = v;
+#else
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+                dst = (void*)((u32*)dst + 1);
+                *(u32*)dst = v;
+#endif
             } while (--i);
         }
 
@@ -66,19 +98,8 @@ INIT void __fill_mem(void* dst, int val, size_t n) {
     }
 }
 
-INIT void* memcpy(void* dst, const void* src, size_t n) {
-    const char* p;
-    char* q;
-    int rev = ((u32)src < (u32)dst);
+INIT void* memset(void* dst, int val, size_t n) {
+    __fill_mem(dst, val, n);
 
-    if (!rev) {
-
-        for (p = (const char*)src - 1, q = (char*)dst - 1, n++; --n;)
-            *++q = *++p;
-
-    } else {
-        for (p = (const char*)src + n, q = (char*)dst + n, n++; --n;)
-            *--q = *--p;
-    }
-    return (dst);
+    return dst;
 }

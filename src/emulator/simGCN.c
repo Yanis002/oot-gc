@@ -23,15 +23,68 @@
 #include "gfatalErr.inc"
 #include "gwrongDisk.inc"
 #include "greadingDisk.inc"
+
+#if IS_EU
+#include "gyes.inc"
+#include "gno.inc"
+#include "gmesgOK.inc"
+#include "gfrench_coverOpen.inc"
+#include "gfrench_noDisk.inc"
+#include "gfrench_retryErr.inc"
+#include "gfrench_fatalErr.inc"
+#include "gfrench_wrongDisk.inc"
+#include "gfrench_readingDisk.inc"
+#include "gfrench_yes.inc"
+#include "gfrench_no.inc"
+#include "gfrench_mesgOK.inc"
+#include "ggerman_coverOpen.inc"
+#include "ggerman_noDisk.inc"
+#include "ggerman_retryErr.inc"
+#include "ggerman_fatalErr.inc"
+#include "ggerman_wrongDisk.inc"
+#include "ggerman_readingDisk.inc"
+#include "ggerman_yes.inc"
+#include "ggerman_no.inc"
+#include "ggerman_mesgOK.inc"
+
+#if VERSION == CE_E
+#include "gspanish_coverOpen.inc"
+#include "gspanish_noDisk.inc"
+#include "gspanish_retryErr.inc"
+#include "gspanish_fatalErr.inc"
+#include "gspanish_wrongDisk.inc"
+#include "gspanish_readingDisk.inc"
+#include "gspanish_yes.inc"
+#include "gspanish_no.inc"
+#include "gspanish_mesgOK.inc"
+#include "gitalian_coverOpen.inc"
+#include "gitalian_noDisk.inc"
+#include "gitalian_retryErr.inc"
+#include "gitalian_fatalErr.inc"
+#include "gitalian_wrongDisk.inc"
+#include "gitalian_readingDisk.inc"
+#include "gitalian_yes.inc"
+#include "gitalian_no.inc"
+#include "gitalian_mesgOK.inc"
+#endif
+
+#include "gbar.inc"
+
+#else
+
 #include "gbar.inc"
 #include "gyes.inc"
 #include "gno.inc"
 #include "gmesgOK.inc"
+
+#endif
 // clang-format on
 
 #if VERSION == MQ_J
 #define DEFAULT_ROM_NAME "zlj_f.n64"
-#elif VERSION == CE_J
+#elif VERSION == MQ_U
+#define DEFAULT_ROM_NAME "urazle_f.n64"
+#elif VERSION == CE_J || IS_EU
 #define DEFAULT_ROM_NAME "zlj_f.n64"
 #elif VERSION == CE_U
 #define DEFAULT_ROM_NAME "zle_f.n64"
@@ -136,6 +189,18 @@ bool gPreviousIPLSetting;
 
 u32 gnTickReset;
 bool gbReset;
+
+#define simulatorOpenMessage(msg, fileName, size, fileInfo)                                     \
+    {                                                                                           \
+        if (simulatorMessageCurrent != msg) {                                                   \
+            simulatorMessageCurrent = msg;                                                      \
+            if (DVDOpen(fileName, &fileInfo) == 1) {                                            \
+                simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(size), 0, NULL); \
+            }                                                                                   \
+            DVDClose(&fileInfo);                                                                \
+            simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);                       \
+        }                                                                                       \
+    }
 
 bool simulatorGXInit(void) {
     s32 i;
@@ -289,6 +354,33 @@ void simulatorUnpackTexPalette(TEXPalette* pal) {
     }
 }
 
+static void simulatorDEMOSwapBuffers(void) {
+    if ((void*)DemoCurrentBuffer == (void*)DemoFrameBuffer1) {
+        DemoCurrentBuffer = DemoFrameBuffer2;
+    } else {
+        DemoCurrentBuffer = DemoFrameBuffer1;
+    }
+}
+
+static void simulatorDEMODoneRender(void) {
+    if (DemoStatEnable != 0) {
+        GXDrawDone();
+        DEMOUpdateStats(1);
+        DEMOPrintStats();
+        GXDrawDone();
+        DEMOUpdateStats(0);
+    }
+
+    GXSetZMode(GX_ENABLE, GX_LEQUAL, GX_ENABLE);
+    GXSetColorUpdate(GX_ENABLE);
+    GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
+    GXDrawDone();
+    VISetNextFrameBuffer(DemoCurrentBuffer);
+    VIFlush();
+    VIWaitForRetrace();
+    simulatorDEMOSwapBuffers();
+}
+
 bool gButtonDownToggle = false;
 bool gDVDResetToggle = false;
 
@@ -342,7 +434,11 @@ bool simulatorDVDShowError(s32 nStatus, void* anData, s32 nSizeRead, u32 nOffset
                 break;
             default:
                 nMessage = S_M_DISK_DEFAULT_ERROR;
-                xlPostText("ShowError: Unknown FileInfoStatus: %d", "simGCN.c", VERSION == MQ_J ? 750 : 763, nStatus);
+                xlPostText("ShowError: Unknown FileInfoStatus: %d", "simGCN.c",
+                           VERSION == MQ_J ? 750
+                           : IS_EU         ? 865
+                                           : 763,
+                           nStatus);
                 break;
         }
 
@@ -594,26 +690,8 @@ bool simulatorDrawImage(TEXPalette* tpl, s32 nX0, s32 nY0, bool drawBar, s32 per
         GXTexCoord1x8(3);
         GXEnd();
     }
-    if (DemoStatEnable != 0) {
-        GXDrawDone();
-        DEMOUpdateStats(1);
-        DEMOPrintStats();
-        GXDrawDone();
-        DEMOUpdateStats(0);
-    }
-    GXSetZMode(GX_ENABLE, GX_LEQUAL, GX_ENABLE);
-    GXSetColorUpdate(GX_ENABLE);
-    GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
-    GXDrawDone();
-    VISetNextFrameBuffer(DemoCurrentBuffer);
-    VIFlush();
-    VIWaitForRetrace();
 
-    if ((void*)DemoCurrentBuffer == (void*)DemoFrameBuffer1) {
-        DemoCurrentBuffer = DemoFrameBuffer2;
-    } else {
-        DemoCurrentBuffer = DemoFrameBuffer1;
-    }
+    simulatorDEMODoneRender();
     frameDrawReset(gpFrame, 0x5FFED);
 
     PAD_STACK();
@@ -822,26 +900,7 @@ bool simulatorDrawYesNoImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Mess
     GXTexCoord1x8(3);
     GXEnd();
 
-    if (DemoStatEnable != 0) {
-        GXDrawDone();
-        DEMOUpdateStats(1);
-        DEMOPrintStats();
-        GXDrawDone();
-        DEMOUpdateStats(0);
-    }
-    GXSetZMode(GX_ENABLE, GX_LEQUAL, GX_ENABLE);
-    GXSetColorUpdate(GX_ENABLE);
-    GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
-    GXDrawDone();
-    VISetNextFrameBuffer(DemoCurrentBuffer);
-    VIFlush();
-    VIWaitForRetrace();
-
-    if ((void*)DemoCurrentBuffer == (void*)DemoFrameBuffer1) {
-        DemoCurrentBuffer = DemoFrameBuffer2;
-    } else {
-        DemoCurrentBuffer = DemoFrameBuffer1;
-    }
+    simulatorDEMODoneRender();
     frameDrawReset(gpFrame, 0x5FFED);
 
     PAD_STACK();
@@ -981,26 +1040,7 @@ bool simulatorDrawOKImage(TEXPalette* tplMessage, s32 nX0Message, s32 nY0Message
     GXTexCoord1x8(3);
     GXEnd();
 
-    if (DemoStatEnable != 0) {
-        GXDrawDone();
-        DEMOUpdateStats(1);
-        DEMOPrintStats();
-        GXDrawDone();
-        DEMOUpdateStats(0);
-    }
-    GXSetZMode(GX_ENABLE, GX_LEQUAL, GX_ENABLE);
-    GXSetColorUpdate(GX_ENABLE);
-    GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
-    GXDrawDone();
-    VISetNextFrameBuffer(DemoCurrentBuffer);
-    VIFlush();
-    VIWaitForRetrace();
-
-    if ((void*)DemoCurrentBuffer == (void*)DemoFrameBuffer1) {
-        DemoCurrentBuffer = DemoFrameBuffer2;
-    } else {
-        DemoCurrentBuffer = DemoFrameBuffer1;
-    }
+    simulatorDEMODoneRender();
     frameDrawReset(gpFrame, 0x5FFED);
 
     PAD_STACK();
@@ -1070,38 +1110,18 @@ bool simulatorDrawErrorMessage(SimulatorMessage simulatorErrorMessage, bool draw
 
 bool simulatorPrepareMessage(SimulatorMessage simulatorErrorMessage) {
     DVDFileInfo fileInfo;
+
     switch (simulatorErrorMessage) {
         case S_M_CARD_IN02:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_in02.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_in02Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_in02.tpl", gmsg_in02Size, fileInfo);
             break;
 
         case S_M_CARD_SV09:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv09.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv09Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv09.tpl", gmsg_sv09Size, fileInfo);
             break;
 
         case S_M_CARD_GF02:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_gf02.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf02Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_gf02.tpl", gmsg_gf02Size, fileInfo);
             break;
 
         default:
@@ -1182,93 +1202,38 @@ bool simulatorDrawYesNoMessageLoop(TEXPalette* simulatorQuestion, bool* yes) {
 
 bool simulatorDrawYesNoMessage(SimulatorMessage simulatorMessage, bool* yes) {
     DVDFileInfo fileInfo;
+
     switch (simulatorMessage) {
         case S_M_CARD_LD05_2:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_ld05_2.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld05_2Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_ld05_2.tpl", gmsg_ld05_2Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_LD06_4:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_ld06_4.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld06_4Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_ld06_4.tpl", gmsg_ld06_4Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_LD07:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_ld07.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld07Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_ld07.tpl", gmsg_ld07Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_GF01:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_gf01.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf01Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_gf01.tpl", gmsg_gf01Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_IN01:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_in01.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_in01Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_in01.tpl", gmsg_in01Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_SV06_4:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_sv06_4.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv06_4Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_sv06_4.tpl", gmsg_sv06_4Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_SV06_5:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_sv06_5.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv06_5Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_sv06_5.tpl", gmsg_sv06_5Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         case S_M_CARD_SV08:
-            if (simulatorMessageCurrent != simulatorMessage) {
-                simulatorMessageCurrent = simulatorMessage;
-                if (DVDOpen("TPL/msg_sv08.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv08Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorMessage, "TPL/msg_sv08.tpl", gmsg_sv08Size, fileInfo);
             return simulatorDrawYesNoMessageLoop((TEXPalette*)gpErrorMessageBuffer, yes);
 
         default:
@@ -1278,7 +1243,12 @@ bool simulatorDrawYesNoMessage(SimulatorMessage simulatorMessage, bool* yes) {
     return false;
 }
 
-static inline bool simulatorDrawOKMessageLoop(TEXPalette* simulatorMessage) {
+#if IS_EU
+static bool simulatorDrawOKMessageLoop(TEXPalette* simulatorMessage)
+#else
+static inline bool simulatorDrawOKMessageLoop(TEXPalette* simulatorMessage)
+#endif
+{
     simulatorDrawOKImage(
         (TEXPalette*)gpErrorMessageBuffer,
         N64_FRAME_WIDTH / 2 - ((TEXPalette*)gpErrorMessageBuffer)->descriptorArray->textureHeader->width / 2,
@@ -1310,6 +1280,11 @@ static inline bool simulatorDrawOKMessageLoop(TEXPalette* simulatorMessage) {
     }
 
     PAD_STACK();
+
+    //! PAL TODO: check if this is really needed
+#if IS_EU
+    NO_INLINE();
+#endif
     return false;
 }
 
@@ -1318,295 +1293,121 @@ bool simulatorDrawErrorMessageWait(SimulatorMessage simulatorErrorMessage) {
 
     switch (simulatorErrorMessage) {
         case S_M_CARD_LD01:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld01.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld01Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld01.tpl", gmsg_ld01Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD02:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld02.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld02Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld02.tpl", gmsg_ld02Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD03:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld03.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld03Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld03.tpl", gmsg_ld03Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD04:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld04.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld04Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld04.tpl", gmsg_ld04Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD05_1:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld05_1.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld05_1Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld05_1.tpl", gmsg_ld05_1Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD06_1:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld06_1.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld06_1Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld06_1.tpl", gmsg_ld06_1Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD06_2:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld06_2.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld06_2Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld06_2.tpl", gmsg_ld06_2Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_LD06_3:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_ld06_3.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_ld06_3Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_ld06_3.tpl", gmsg_ld06_3Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_GF03:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_gf03.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf03Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_gf03.tpl", gmsg_gf03Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_GF04:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_gf04.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf04Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_gf04.tpl", gmsg_gf04Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_GF05:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_gf05.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf05Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_gf05.tpl", gmsg_gf05Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_GF06:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_gf06.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_gf06Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_gf06.tpl", gmsg_gf06Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_IN03:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_in03.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_in03Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_in03.tpl", gmsg_in03Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_IN04:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_in04.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_in04Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_in04.tpl", gmsg_in04Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_IN05:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_in05.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_in05Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_in05.tpl", gmsg_in05Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV01:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv01.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv01Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv01.tpl", gmsg_sv01Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV01_2:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv01_2.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv01_2Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv01_2.tpl", gmsg_sv01_2Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV02:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv02.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv02Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv02.tpl", gmsg_sv02Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV03:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv03.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv03Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv03.tpl", gmsg_sv03Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV04:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv04.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv04Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv04.tpl", gmsg_sv04Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV05_1:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv05_1.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv05_1Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv05_1.tpl", gmsg_sv05_1Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV06_1:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv06_1.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv06_1Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv06_1.tpl", gmsg_sv06_1Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV06_2:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv06_2.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv06_2Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv06_2.tpl", gmsg_sv06_2Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV06_3:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv06_3.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv06_3Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv06_3.tpl", gmsg_sv06_3Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV07:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv07.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv07Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv07.tpl", gmsg_sv07Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV10:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv10.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv10Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv10.tpl", gmsg_sv10Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV11:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv11.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv11Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv11.tpl", gmsg_sv11Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV12:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv12.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv12Size), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv12.tpl", gmsg_sv12Size, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         case S_M_CARD_SV_SHARE:
-            if (simulatorMessageCurrent != simulatorErrorMessage) {
-                simulatorMessageCurrent = simulatorErrorMessage;
-                if (DVDOpen("TPL/msg_sv_share.tpl", &fileInfo) == 1) {
-                    simulatorDVDRead(&fileInfo, gpErrorMessageBuffer, OSRoundUp32B(gmsg_sv_shareSize), 0, NULL);
-                }
-                DVDClose(&fileInfo);
-                simulatorUnpackTexPalette((TEXPalette*)gpErrorMessageBuffer);
-            }
+            simulatorOpenMessage(simulatorErrorMessage, "TPL/msg_sv_share.tpl", gmsg_sv_shareSize, fileInfo);
             return simulatorDrawOKMessageLoop((TEXPalette*)gmesgOK);
+
         default:
             break;
     }
@@ -1640,30 +1441,6 @@ void simulatorReset(bool IPL, bool forceMenu) {
     NO_INLINE();
 }
 
-static inline void simulatorUnknownInline(void) {
-    if (DemoStatEnable != 0) {
-        GXDrawDone();
-        DEMOUpdateStats(1);
-        DEMOPrintStats();
-        GXDrawDone();
-        DEMOUpdateStats(0);
-    }
-
-    GXSetZMode(GX_ENABLE, GX_LEQUAL, GX_ENABLE);
-    GXSetColorUpdate(GX_ENABLE);
-    GXCopyDisp(DemoCurrentBuffer, GX_TRUE);
-    GXDrawDone();
-    VISetNextFrameBuffer(DemoCurrentBuffer);
-    VIFlush();
-    VIWaitForRetrace();
-
-    if (DemoCurrentBuffer == DemoFrameBuffer1) {
-        DemoCurrentBuffer = DemoFrameBuffer2;
-    } else {
-        DemoCurrentBuffer = DemoFrameBuffer1;
-    }
-}
-
 void simulatorResetAndPlayMovie(void) {
     int pad1;
     GXColor color;
@@ -1694,7 +1471,7 @@ void simulatorResetAndPlayMovie(void) {
 
         DEMOBeforeRender();
         MovieDraw();
-        simulatorUnknownInline();
+        simulatorDEMODoneRender();
         VISetBlack(false);
         GXSetCopyClear(color, 0);
         movieTestReset(false, false);
@@ -1887,7 +1664,7 @@ bool simulatorReadEEPROM(u8 address, u8* data) {
         return false;
     }
 
-    mcardRead(&mCard, (address * 8) & 0x7F8, 8, (char*)data);
+    mcardRead(&mCard, address * 8, 8, (char*)data);
     return true;
 }
 
@@ -1898,7 +1675,7 @@ bool simulatorWriteEEPROM(u8 address, u8* data) {
         return false;
     }
 
-    mcardWrite(&mCard, (address * 8) & 0x7F8, 8, (char*)data);
+    mcardWrite(&mCard, address * 8, 8, (char*)data);
     return true;
 }
 
@@ -2023,7 +1800,11 @@ bool simulatorTestReset(bool IPL, bool forceMenu, bool allowReset, bool usePrevi
 bool simulatorDrawMCardText(void) {
 #if VERSION != MQ_J
     if ((s32)(((TEXPalette*)gpErrorMessageBuffer)->versionNumber) == 0) {
-        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c", 1623);
+        //! TODO: this should be an inline function
+        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c",
+                   VERSION == CE_E   ? 1924
+                   : VERSION == MQ_E ? 1836
+                                     : 1623);
         simulatorPrepareMessage(S_M_CARD_SV09);
     }
 #endif
@@ -2047,7 +1828,11 @@ bool simulatorMCardPollDrawBar(void) {
 
 #if VERSION != MQ_J
     if ((s32)(((TEXPalette*)gpErrorMessageBuffer)->versionNumber) == 0) {
-        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c", 1623);
+        //! TODO: this should be an inline function
+        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c",
+                   VERSION == CE_E   ? 1924
+                   : VERSION == MQ_E ? 1836
+                                     : 1623);
         simulatorPrepareMessage(S_M_CARD_SV09);
     }
 #endif
@@ -2071,7 +1856,11 @@ bool simulatorMCardPollDrawFormatBar(void) {
 
 #if VERSION != MQ_J
     if ((s32)(((TEXPalette*)gpErrorMessageBuffer)->versionNumber) == 0) {
-        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c", 1623);
+        //! TODO: this should be an inline function
+        xlPostText("Invalid Message Image Data - Assuming SV09", "simGCN.c",
+                   VERSION == CE_E   ? 1924
+                   : VERSION == MQ_E ? 1836
+                                     : 1623);
         simulatorPrepareMessage(S_M_CARD_SV09);
     }
 #endif
@@ -2297,15 +2086,95 @@ bool xlMain(void) {
     VIWaitForRetrace();
 
     xlCoreBeforeRender();
-    simulatorUnknownInline();
+    simulatorDEMODoneRender();
 
     xlCoreBeforeRender();
-    simulatorUnknownInline();
+    simulatorDEMODoneRender();
 
     VIWaitForRetrace();
     VISetBlack(false);
     VIFlush();
 
+#if IS_EU
+    gLanguage = OSGetLanguage();
+
+    switch (gLanguage) {
+        case 0:
+            simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)gnoDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gretryErr);
+            simulatorUnpackTexPalette((TEXPalette*)gfatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)gwrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)greadingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gbar);
+            simulatorUnpackTexPalette((TEXPalette*)gyes);
+            simulatorUnpackTexPalette((TEXPalette*)gno);
+            simulatorUnpackTexPalette((TEXPalette*)gmesgOK);
+            break;
+        case 1:
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_coverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_noDisk);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_retryErr);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_fatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_wrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_readingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_bar);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_yes);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_no);
+            simulatorUnpackTexPalette((TEXPalette*)ggerman_mesgOK);
+            break;
+        case 2:
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_coverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_noDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_retryErr);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_fatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_wrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_readingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_bar);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_yes);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_no);
+            simulatorUnpackTexPalette((TEXPalette*)gfrench_mesgOK);
+            break;
+#if VERSION == CE_E
+        case 3:
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_coverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_noDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_retryErr);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_fatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_wrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_readingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_bar);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_yes);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_no);
+            simulatorUnpackTexPalette((TEXPalette*)gspanish_mesgOK);
+            break;
+        case 4:
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_coverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_noDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_retryErr);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_fatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_wrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_readingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_bar);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_yes);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_no);
+            simulatorUnpackTexPalette((TEXPalette*)gitalian_mesgOK);
+            break;
+#endif
+        default:
+            simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
+            simulatorUnpackTexPalette((TEXPalette*)gnoDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gretryErr);
+            simulatorUnpackTexPalette((TEXPalette*)gfatalErr);
+            simulatorUnpackTexPalette((TEXPalette*)gwrongDisk);
+            simulatorUnpackTexPalette((TEXPalette*)greadingDisk);
+            simulatorUnpackTexPalette((TEXPalette*)gbar);
+            simulatorUnpackTexPalette((TEXPalette*)gyes);
+            simulatorUnpackTexPalette((TEXPalette*)gno);
+            simulatorUnpackTexPalette((TEXPalette*)gmesgOK);
+            break;
+    }
+#else
     simulatorUnpackTexPalette((TEXPalette*)gcoverOpen);
     simulatorUnpackTexPalette((TEXPalette*)gnoDisk);
     simulatorUnpackTexPalette((TEXPalette*)gretryErr);
@@ -2316,6 +2185,7 @@ bool xlMain(void) {
     simulatorUnpackTexPalette((TEXPalette*)gyes);
     simulatorUnpackTexPalette((TEXPalette*)gno);
     simulatorUnpackTexPalette((TEXPalette*)gmesgOK);
+#endif
 
     gbReset = false;
     gnTickReset = OSGetTick();
@@ -2324,9 +2194,9 @@ bool xlMain(void) {
         return false;
     }
 
-    mCard.bufferCreated = 0;
+    mCard.bufferCreated = false;
 #if VERSION != MQ_J
-    mCard.isBroken = 0;
+    mCard.isBroken = false;
 #endif
     mcardInit(&mCard);
 
@@ -2352,16 +2222,16 @@ bool xlMain(void) {
 
     gpSystem = NULL;
 
-    if (!xlObjectMake(&gpCode, NULL, &gClassCode)) {
+    if (!xlObjectMake((void**)&gpCode, NULL, &gClassCode)) {
         return false;
     }
-    if (!xlObjectMake(&gpFrame, NULL, &gClassFrame)) {
+    if (!xlObjectMake((void**)&gpFrame, NULL, &gClassFrame)) {
         return false;
     }
-    if (!xlObjectMake(&gpSound, NULL, &gClassSound)) {
+    if (!xlObjectMake((void**)&gpSound, NULL, &gClassSound)) {
         return false;
     }
-    if (!xlObjectMake(&gpSystem, NULL, &gClassSystem)) {
+    if (!xlObjectMake((void**)&gpSystem, NULL, &gClassSystem)) {
         return false;
     }
 
@@ -2394,16 +2264,16 @@ bool xlMain(void) {
 
     simulatorRun(&eMode);
 
-    if (!xlObjectFree(&gpSystem)) {
+    if (!xlObjectFree((void**)&gpSystem)) {
         return false;
     }
-    if (!xlObjectFree(&gpSound)) {
+    if (!xlObjectFree((void**)&gpSound)) {
         return false;
     }
-    if (!xlObjectFree(&gpFrame)) {
+    if (!xlObjectFree((void**)&gpFrame)) {
         return false;
     }
-    if (!xlObjectFree(&gpCode)) {
+    if (!xlObjectFree((void**)&gpCode)) {
         return false;
     }
 

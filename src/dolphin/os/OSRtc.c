@@ -1,6 +1,7 @@
 #include "dolphin/OSRtcPriv.h"
 #include "dolphin/exi.h"
 #include "dolphin/os.h"
+#include "macros.h"
 
 #define RTC_CMD_READ 0x20000000
 #define RTC_CMD_WRITE 0xA0000000
@@ -23,7 +24,7 @@ typedef struct SramControlBlock {
 
 static SramControlBlock Scb ATTRIBUTE_ALIGN(32);
 
-#if DOLPHIN_REV == 2003
+#if IS_CE
 u16 OSGetGbsMode(void);
 void OSSetGbsMode(u16 mode);
 #endif
@@ -90,7 +91,7 @@ void __OSInitSram(void) {
     Scb.locked = Scb.enabled = false;
     Scb.sync = ReadSram(Scb.sram);
     Scb.offset = RTC_SRAM_SIZE;
-#if DOLPHIN_REV == 2003
+#if IS_CE
     OSSetGbsMode(OSGetGbsMode());
 #endif
 }
@@ -136,7 +137,7 @@ static bool UnlockSram(bool commit, u32 offset) {
             Scb.offset = offset;
         }
 
-#if DOLPHIN_REV == 2003
+#if IS_CE
         if (Scb.offset <= 20) {
             // this seems to work? esp. since we have GbsMode functions when prime doesn't
             // wacky tho
@@ -164,6 +165,7 @@ bool __OSUnlockSramEx(bool commit) { return UnlockSram(commit, sizeof(OSSram)); 
 bool __OSSyncSram(void) { return Scb.sync; }
 
 static inline OSSram* __OSLockSramHACK(void) { return LockSram(0); }
+
 u32 OSGetSoundMode(void) {
     OSSram* sram;
     u32 mode;
@@ -190,6 +192,16 @@ void OSSetSoundMode(u32 mode) {
     __OSUnlockSram(true);
 }
 
+#if IS_EU
+u8 OSGetLanguage(void) {
+    OSSram* sram = __OSLockSram();
+    u8 language = sram->language;
+
+    __OSUnlockSram(0);
+    return language;
+}
+#endif
+
 u16 OSGetWirelessID(s32 channel) {
     OSSramEx* sram;
     u16 id;
@@ -213,7 +225,7 @@ void OSSetWirelessID(s32 channel, u16 id) {
     __OSUnlockSramEx(false);
 }
 
-#if DOLPHIN_REV == 2003
+#if IS_CE
 u16 OSGetGbsMode(void) {
     OSSramEx* sram;
     u16 id;

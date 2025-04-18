@@ -71,6 +71,7 @@ typedef enum SimulatorArgumentType {
 
 extern bool gDVDResetToggle;
 extern bool gbDisplayedError;
+extern bool gButtonDownToggle;
 
 extern void* gpFrame;
 extern void* gpSound;
@@ -89,6 +90,56 @@ extern u8 gbar[];
 extern u8 gyes[];
 extern u8 yno[];
 extern u8 gmesgOK[];
+
+#if IS_EU
+extern u8 gLanguage;
+
+extern u8 ggerman_coverOpen[];
+extern u8 ggerman_wrongDisk[];
+extern u8 ggerman_readingDisk[];
+extern u8 ggerman_retryErr[];
+extern u8 ggerman_fatalErr[];
+extern u8 ggerman_noDisk[];
+extern u8 ggerman_bar[];
+extern u8 ggerman_yes[];
+extern u8 ggerman_no[];
+extern u8 ggerman_mesgOK[];
+
+extern u8 gfrench_coverOpen[];
+extern u8 gfrench_wrongDisk[];
+extern u8 gfrench_readingDisk[];
+extern u8 gfrench_retryErr[];
+extern u8 gfrench_fatalErr[];
+extern u8 gfrench_noDisk[];
+extern u8 gfrench_bar[];
+extern u8 gfrench_yes[];
+extern u8 gfrench_no[];
+extern u8 gfrench_mesgOK[];
+
+#if VERSION == CE_E
+extern u8 gspanish_coverOpen[];
+extern u8 gspanish_wrongDisk[];
+extern u8 gspanish_readingDisk[];
+extern u8 gspanish_retryErr[];
+extern u8 gspanish_fatalErr[];
+extern u8 gspanish_noDisk[];
+extern u8 gspanish_bar[];
+extern u8 gspanish_yes[];
+extern u8 gspanish_no[];
+extern u8 gspanish_mesgOK[];
+
+extern u8 gitalian_coverOpen[];
+extern u8 gitalian_wrongDisk[];
+extern u8 gitalian_readingDisk[];
+extern u8 gitalian_retryErr[];
+extern u8 gitalian_fatalErr[];
+extern u8 gitalian_noDisk[];
+extern u8 gitalian_bar[];
+extern u8 gitalian_yes[];
+extern u8 gitalian_no[];
+extern u8 gitalian_mesgOK[];
+#endif
+#endif // IS_EU
 
 extern s16 Vert_s16[];
 extern u32 Colors_u32[];
@@ -117,6 +168,7 @@ bool simulatorDetectController(s32 channel);
 bool simulatorReadPak(s32 channel, u16 address, u8* data);
 bool simulatorWritePak(s32 channel, u16 address, u8* data);
 bool simulatorSetControllerMap(u32* mapData, s32 channel);
+void simulatorReset(bool IPL, bool forceMenu);
 void simulatorResetAndPlayMovie(void);
 bool simulatorDrawErrorMessage(SimulatorMessage simulatorErrorMessage, bool drawBar, s32 percent);
 bool simulatorDVDShowError(s32 nStatus, void*, s32, u32);
@@ -134,7 +186,10 @@ void simulatorReset(bool IPL, bool forceMenu);
 
 bool simulatorMCardPollDrawFormatBar(void);
 bool simulatorPrepareMessage(SimulatorMessage simulatorErrorMessage);
+bool simulatorMCardPollDrawBar(void);
 bool simulatorDrawMCardText(void);
+bool simulatorDrawErrorMessageWait(SimulatorMessage simulatorErrorMessage);
+bool simulatorDrawYesNoMessage(SimulatorMessage simulatorMessage, bool* yes);
 
 #if VERSION == MQ_J
 #define SIMULATOR_TEST_RESET(IPL, forceMenu, allowReset, usePreviousSettings) \
