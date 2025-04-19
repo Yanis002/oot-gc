@@ -24,7 +24,7 @@
 #include "gwrongDisk.inc"
 #include "greadingDisk.inc"
 
-#if IS_EU
+#if IS_OOT_EU
 #include "gyes.inc"
 #include "gno.inc"
 #include "gmesgOK.inc"
@@ -84,10 +84,16 @@
 #define DEFAULT_ROM_NAME "urazlj_f.n64"
 #elif VERSION == MQ_U
 #define DEFAULT_ROM_NAME "urazle_f.n64"
-#elif VERSION == CE_J || IS_EU
+#elif VERSION == CE_J || IS_OOT_EU
 #define DEFAULT_ROM_NAME "zlj_f.n64"
 #elif VERSION == CE_U
 #define DEFAULT_ROM_NAME "zle_f.n64"
+#elif VERSION == MM_J
+#define DEFAULT_ROM_NAME "zelda2j.n64"
+#elif VERSION == MM_U
+#define DEFAULT_ROM_NAME "zelda2e.n64"
+#elif VERSION == MM_E
+#define DEFAULT_ROM_NAME "zelda2p.n64"
 #endif
 
 s16 Vert_s16[12] ATTRIBUTE_ALIGN(32) = {

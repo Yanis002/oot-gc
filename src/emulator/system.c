@@ -29,17 +29,37 @@
 #define MCARD_FILE_NAME "ZELDA"
 #define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ" // "The Legend of Zelda: Ocarina of Time GC"
 #define MCARD_FILE_SIZE (0xC000 * 2)
+#define MCARD_FILE_NAME_MM "ZELDA3"
+#define MCARD_COMMENT_MM "Legend of Zelda"
 #elif VERSION == MQ_U || VERSION == MQ_E
 #define MCARD_FILE_NAME "ZELDA"
 #define MCARD_COMMENT "Zelda: Ocarina of Time"
 #define MCARD_FILE_SIZE (0xC000 * 2)
+#define MCARD_FILE_NAME_MM "ZELDA3"
+#define MCARD_COMMENT_MM "Legend of Zelda"
 #elif VERSION == CE_J
 #define MCARD_FILE_NAME "ZELDA1"
 #define MCARD_COMMENT "ゼルダコレクション" // "Zelda Collection"
 #define MCARD_FILE_SIZE 0xC000
+#define MCARD_FILE_NAME_MM "ZELDA3"
+#define MCARD_COMMENT_MM "Legend of Zelda"
 #elif VERSION == CE_U || VERSION == CE_E
 #define MCARD_FILE_NAME "ZELDA1"
 #define MCARD_COMMENT "Zelda: Collector's Edition"
+#define MCARD_FILE_SIZE 0xC000
+#define MCARD_FILE_NAME_MM "ZELDA3"
+#define MCARD_COMMENT_MM "Legend of Zelda"
+#elif VERSION == MM_J
+#define MCARD_FILE_NAME "ZELDA1"
+#define MCARD_FILE_NAME_MM "ZELDA2"
+#define MCARD_COMMENT "ゼルダの伝説　時のオカリナＧＣ" // "The Legend of Zelda: Ocarina of Time GC"
+#define MCARD_COMMENT_MM "ゼルダコレクション" // "Zelda Collection"
+#define MCARD_FILE_SIZE 0xC000
+#elif VERSION == MM_U || VERSION == MM_E
+#define MCARD_FILE_NAME "ZELDA1"
+#define MCARD_FILE_NAME_MM "ZELDA2"
+#define MCARD_COMMENT "Zelda: Ocarina of Time"
+#define MCARD_COMMENT_MM "Zelda: Collector's Edition"
 #define MCARD_FILE_SIZE 0xC000
 #endif
 

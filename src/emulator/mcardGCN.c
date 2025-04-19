@@ -83,6 +83,10 @@
 #define DATE_STRING "ゼルダの伝説：時のオカリナ"
 #elif VERSION == CE_U || VERSION == CE_E
 #define DATE_STRING "OCARINA OF TIME\0"
+#elif VERSION == MM_U || VERSION == MM_E
+#define DATE_STRING "MAJORA'S MASK\0"
+#else
+#define DATE_STRING ""
 #endif
 
 #define DATE_STRING_OFFSET 0x4C
