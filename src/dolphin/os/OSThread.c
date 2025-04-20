@@ -269,7 +269,7 @@ static OSThread* SelectThread(bool yield) {
 #endif
 
     if (RunQueueBits == 0) {
-#if IS_CE
+#if IS_CE || IS_MM
         OSSetCurrentThread(NULL);
 #endif
 

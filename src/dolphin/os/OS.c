@@ -237,7 +237,7 @@ void OSInit(void) {
         __OSStartTime = __OSGetSystemTime();
         OSDisableInterrupts();
 
-#if IS_CE
+#if IS_CE || IS_MM
         // set some PPC things
         PPCMtmmcr0(0);
         PPCMtmmcr1(0);
@@ -363,7 +363,7 @@ void OSInit(void) {
                         break;
                 }
                 break;
-#if IS_CE
+#if IS_CE || IS_MM
             default: // if none of the above, just report the info we have
                 OSReport("%08x\n", inputConsoleType);
                 break;
@@ -638,7 +638,7 @@ void __OSPSInit(void) {
         li      r3, 0
         mtspr   GQR0, r3
 
-#if IS_CE
+#if IS_CE || IS_MM
         mtspr   GQR1, r3
         mtspr   GQR2, r3
         mtspr   GQR3, r3

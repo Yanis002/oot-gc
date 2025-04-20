@@ -6,7 +6,7 @@
 
 u16 Pad3Button AT_ADDRESS(PAD3_BUTTON_ADDR);
 
-#if IS_CE
+#if IS_CE || IS_MM
 static u8 Debug_BBA = 0;
 #endif
 
@@ -17,7 +17,7 @@ void __check_pad3(void) {
     return;
 }
 
-#if IS_CE
+#if IS_CE || IS_MM
 INIT static void __set_debug_bba(void) { Debug_BBA = 1; }
 INIT static u8 __get_debug_bba(void) { return Debug_BBA; }
 #endif
@@ -136,7 +136,7 @@ _end_of_parseargs:
 _check_pad3:
     bl __check_pad3
 
-#if IS_CE
+#if IS_CE || IS_MM
 _skip_crc:
     bl __get_debug_bba
     cmplwi r3, 1
@@ -157,7 +157,7 @@ ASM void __init_registers(void) {
 #ifdef __MWERKS__ // clang-format off
     nofralloc
 
-#if IS_CE
+#if IS_CE || IS_MM
     li r0, 0
     li r3, 0
     li r4, 0
