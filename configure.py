@@ -279,7 +279,7 @@ config.libs = [
             Object(Linked, "emulator/soundGCN.c"),
             Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e"), "emulator/frame.c"),
             Object(Linked, "emulator/system.c"),
-            Object(Linked, "emulator/cpu.c"),
+            Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e"), "emulator/cpu.c"),
             Object(Linked, "emulator/pif.c"),
             Object(Linked, "emulator/ram.c"),
             Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e"), "emulator/rom.c"),

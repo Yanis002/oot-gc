@@ -133,6 +133,10 @@ static u8 RegimmOpcode[] = {
 
 static void* gHeapTree;
 
+#if IS_MM
+static u8 gRegCount;
+#endif
+
 static s32 ganOpcodeSaveFP1[] = {
     0x8F480018, 0x11000014, 0x00000000, 0x4448F800, 0x00000000,
 };
@@ -165,6 +169,11 @@ s32 ganMapGPR[32] = {
 };
 
 u32 aHeapTreeFlag[125];
+
+#if IS_MM
+u8 gRegList[32];
+static inline s32 cpuCountTLB(Cpu* pCPU, s32* pnCount);
+#endif
 
 static bool cpuHackHandler(Cpu* pCPU) {
     u32 nSize;

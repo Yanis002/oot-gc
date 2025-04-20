@@ -5,6 +5,7 @@
  * instead of being compiled separately.
  */
 #include "emulator/cpu.h"
+#include "emulator/mcardGCN.h"
 
 static inline bool cpuNoBranchTo(CpuFunction* pFunction, s32 addressN64);
 static inline bool cpuCutStoreLoad(Cpu* pCPU, s32 currentAddress, s32 source);
@@ -6483,11 +6484,18 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
     s32 pad1[2];
     u64 save;
     s32 restore;
+#if IS_MM
+    s32 skipDecode;
+#endif
     u32 nOpcode;
     u32* opcode;
     s32 pad2;
     CpuDevice** apDevice;
     u8* aiDevice;
+#if IS_MM
+    s32 reg;
+    int value;
+#endif
     s32 iEntry;
     s32 nCount;
     s8 nData8;
@@ -6500,6 +6508,11 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
     s32 pad3[2];
 
     restore = 0;
+
+#if IS_MM
+    skipDecode = 0;
+#endif
+
     nTick = OSGetTick();
     if (pCPU->nWaitPC != 0) {
         pCPU->nMode |= 8;
@@ -6519,1415 +6532,1456 @@ static s32 cpuExecuteOpcode(Cpu* pCPU, s32 nCount0, s32 nAddressN64, s32 nAddres
         pCPU->aGPR[31].s32 = pCPU->nReturnAddrLast;
     }
 
-    switch (MIPS_OP(nOpcode)) {
-        case 0x00: // special
-            switch (MIPS_FUNCT(nOpcode)) {
-                case 0x00: // sll
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32 << MIPS_SA(nOpcode);
-                    break;
-                case 0x02: // srl
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u32 = pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> MIPS_SA(nOpcode);
-                    break;
-                case 0x03: // sra
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32 >> MIPS_SA(nOpcode);
-                    break;
-                case 0x04: // sllv
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32
-                                                       << (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
-                    break;
-                case 0x06: // srlv
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
-                        pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
-                    break;
-                case 0x07: // srav
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
-                    break;
-                case 0x08: // jr
-                    pCPU->nWaitPC = pCPU->aGPR[MIPS_RS(nOpcode)].u32;
-                    break;
-                case 0x09: // jalr
-                    pCPU->nWaitPC = pCPU->aGPR[MIPS_RS(nOpcode)].u32;
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nPC + 4;
-                    break;
-                case 0x0C: // syscall
-                    cpuException(pCPU, CEC_SYSCALL, 0);
-                    break;
-                case 0x0D: // break
-                    cpuException(pCPU, CEC_BREAK, 0);
-                    break;
-                case 0x10: // mfhi
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nHi;
-                    break;
-                case 0x11: // mthi
-                    pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s64;
-                    break;
-                case 0x12: // mflo
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nLo;
-                    break;
-                case 0x13: // mtlo
-                    pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64;
-                    break;
-                case 0x14: // dsllv
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64
-                                                       << (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
-                    break;
-                case 0x16: // dsrlv
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
-                        pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
-                    break;
-                case 0x17: // dsrav
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
-                    break;
-                case 0x18: // mult
-                    nData64 = (s64)pCPU->aGPR[MIPS_RS(nOpcode)].s32 * (s64)pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    pCPU->nLo = (s32)(nData64 & 0xFFFFFFFF);
-                    pCPU->nHi = (s32)(nData64 >> 32);
-                    break;
-                case 0x19: // multu
-                    nData64 = (u64)pCPU->aGPR[MIPS_RS(nOpcode)].u32 * (u64)pCPU->aGPR[MIPS_RT(nOpcode)].u32;
-                    pCPU->nLo = (s32)(nData64 & 0xFFFFFFFF);
-                    pCPU->nHi = (s32)(nData64 >> 32);
-                    break;
-                case 0x1A: // div
-                    if (pCPU->aGPR[MIPS_RT(nOpcode)].s32 != 0) {
-                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s32 / pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                        pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s32 % pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    }
-                    break;
-                case 0x1B: // divu
-                    if (pCPU->aGPR[MIPS_RT(nOpcode)].u32 != 0) {
-                        pCPU->nLo = (s32)(pCPU->aGPR[MIPS_RS(nOpcode)].u32 / pCPU->aGPR[MIPS_RT(nOpcode)].u32);
-                        pCPU->nHi = (s32)(pCPU->aGPR[MIPS_RS(nOpcode)].u32 % pCPU->aGPR[MIPS_RT(nOpcode)].u32);
-                    }
-                    break;
-                case 0x1C: // dmult
-                    pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64 * pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                    pCPU->nHi = (pCPU->nLo < 0) ? -1 : 0;
-                    break;
-                case 0x1D: // dmultu
-                    pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].u64 * pCPU->aGPR[MIPS_RT(nOpcode)].u64;
-                    pCPU->nHi = (pCPU->nLo < 0) ? -1 : 0;
-                    break;
-                case 0x1E: // ddiv
-                    if (pCPU->aGPR[MIPS_RT(nOpcode)].s64 != 0) {
-                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64 / pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                        pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s64 % pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                    }
-                    break;
-                case 0x1F: // ddivu
-                    if (pCPU->aGPR[MIPS_RT(nOpcode)].u64 != 0) {
-                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].u64 / pCPU->aGPR[MIPS_RT(nOpcode)].u64;
-                        pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].u64 % pCPU->aGPR[MIPS_RT(nOpcode)].u64;
-                    }
-                    break;
-                case 0x20: // add
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s32 + pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    break;
-                case 0x21: // addu
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].u32 + pCPU->aGPR[MIPS_RT(nOpcode)].u32;
-                    break;
-                case 0x22: // sub
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s32 - pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    break;
-                case 0x23: // subu
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].u32 - pCPU->aGPR[MIPS_RT(nOpcode)].u32;
-                    break;
-                case 0x24: // and
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s32 & pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    break;
-                case 0x25: // or
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s32 | pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    break;
-                case 0x26: // xor
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s32 ^ pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                    break;
-                case 0x27: // nor
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        ~(pCPU->aGPR[MIPS_RS(nOpcode)].s32 | pCPU->aGPR[MIPS_RT(nOpcode)].s32);
-                    break;
-                case 0x2A: // slt
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < pCPU->aGPR[MIPS_RT(nOpcode)].s32) ? 1 : 0;
-                    break;
-                case 0x2B: // sltu
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
-                        (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < pCPU->aGPR[MIPS_RT(nOpcode)].u32) ? 1 : 0;
-                    break;
-                case 0x2C: // dadd
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s64 + pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                    break;
-                case 0x2D: // daddu
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].u64 + pCPU->aGPR[MIPS_RT(nOpcode)].u64;
-                    break;
-                case 0x2E: // dsub
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].s64 - pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                    break;
-                case 0x2F: // dsubu
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
-                        pCPU->aGPR[MIPS_RS(nOpcode)].u64 - pCPU->aGPR[MIPS_RT(nOpcode)].u64;
-                    break;
-                case 0x30: // tge
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x31: // tgeu
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 >= pCPU->aGPR[MIPS_RT(nOpcode)].u32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x32: // tlt
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x33: // tltu
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < pCPU->aGPR[MIPS_RT(nOpcode)].u32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x34: // teq
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x36: // tne
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x38: // dsll
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 << MIPS_SA(nOpcode);
-                    break;
-                case 0x3A: // dsrl
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u64 = pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> MIPS_SA(nOpcode);
-                    break;
-                case 0x3B: // dsra
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> MIPS_SA(nOpcode);
-                    break;
-                case 0x3C: // dsll32
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 << (MIPS_SA(nOpcode) + 32);
-                    break;
-                case 0x3E: // dsrl32
-                    pCPU->aGPR[MIPS_RD(nOpcode)].u64 = pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> (MIPS_SA(nOpcode) + 32);
-                    break;
-                case 0x3F: // dsra32
-                    pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> (MIPS_SA(nOpcode) + 32);
-                    break;
-            }
-            break;
-        case 0x01: // regimm
-            switch (MIPS_RT(nOpcode)) {
-                case 0x00: // bltz
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    }
-                    break;
-                case 0x01: // bgez
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    }
-                    break;
-                case 0x02: // bltzl
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    } else {
-                        pCPU->nMode |= 4;
-                        pCPU->nPC += 4;
-                    }
-                    break;
-                case 0x03: // bgezl
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    } else {
-                        pCPU->nMode |= 4;
-                        pCPU->nPC += 4;
-                    }
-                    break;
-                case 0x08: // tgei
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x09: // tgeiu
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 >= MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x0A: // tlti
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x0B: // tltiu
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x0C: // teqi
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x0E: // tnei
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != MIPS_IMM_S16(nOpcode)) {
-                        cpuException(pCPU, CEC_TRAP, 0);
-                    }
-                    break;
-                case 0x10: // bltzal
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
-                        pCPU->aGPR[31].s32 = pCPU->nPC + 4;
-                        pCPU->nWaitPC = pCPU->nCallLast = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    }
-                    break;
-                case 0x11: // bgezal
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
-                        pCPU->aGPR[31].s32 = pCPU->nPC + 4;
-                        pCPU->nWaitPC = pCPU->nCallLast = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    }
-                    break;
-                case 0x12: // bltzall
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
-                        pCPU->aGPR[31].s32 = pCPU->nPC + 4;
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    } else {
-                        pCPU->nMode |= 4;
-                        pCPU->nPC = pCPU->nPC + 4;
-                    }
-                    break;
-                case 0x13: // bgezall
-                    if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
-                        pCPU->aGPR[31].s32 = pCPU->nPC + 4;
-                        pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-                    } else {
-                        pCPU->nMode |= 4;
-                        pCPU->nPC = pCPU->nPC + 4;
-                    }
-                    break;
-            }
-            break;
-        case 0x02: // j
-            pCPU->nWaitPC = (pCPU->nPC & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2);
-            if (pCPU->nWaitPC == pCPU->nPC - 4) {
-                if (!cpuCheckInterrupts(pCPU)) {
-                    return 0;
+#if IS_MM
+    if (gpSystem->eTypeROM == SRT_ZELDA2) {
+        if (MIPS_UNK(nOpcode) == 0x3C008100) {
+            gRegCount++;
+            gRegList[MIPS_RT(nOpcode)] = 1;
+        } else if (gRegCount != 0 && MIPS_UNK(nOpcode) == 0xA0000000) {
+            reg = MIPS_RS(nOpcode);
+
+            if (gRegList[reg] != 0) {
+                gRegCount--;
+                gRegList[reg] = 0;
+
+                value = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                if (value == 0x00) {
+                    simulatorPlayMovie();
+                } else if (value == 0x01) {
+                    romReloadRange(pCPU);
+                } else if (value >= 0x10 && value <= 0x19) {
+                    mcardSaveDisplay = value;
+#if VERSION == MM_J
+                } else if (value == 0x1A) {
+                    mcardSaveDisplay = value;
+#endif
+#if VERSION == MM_J || VERSION == MM_E
+                } else if (value >= 0x30 && value <= 0x31) {
+                    mcardSaveCamera(value);
+#endif
+                } else {
+                    soundPlayOcarinaTune(pCPU);
                 }
+                skipDecode = 1;
             }
-            break;
-        case 0x03: // jal
-            pCPU->aGPR[31].s32 = pCPU->nPC + 4;
-            pCPU->nWaitPC = pCPU->nCallLast = (pCPU->nPC & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2);
-            cpuFindFunction(pCPU, pCPU->nWaitPC, &pFunction);
-            break;
-        case 0x04: // beq
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            }
-            if (pCPU->nWaitPC == pCPU->nPC - 4) {
-                if (!cpuCheckInterrupts(pCPU)) {
-                    return 0;
+        }
+    }
+
+    if (skipDecode == 0)
+#endif
+    {
+        switch (MIPS_OP(nOpcode)) {
+            case 0x00: // special
+                switch (MIPS_FUNCT(nOpcode)) {
+                    case 0x00: // sll
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32 << MIPS_SA(nOpcode);
+                        break;
+                    case 0x02: // srl
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u32 = pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> MIPS_SA(nOpcode);
+                        break;
+                    case 0x03: // sra
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32 >> MIPS_SA(nOpcode);
+                        break;
+                    case 0x04: // sllv
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32
+                                                           << (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
+                        break;
+                    case 0x06: // srlv
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
+                            pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
+                        break;
+                    case 0x07: // srav
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RT(nOpcode)].s32 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s32 & 0x1F);
+                        break;
+                    case 0x08: // jr
+                        pCPU->nWaitPC = pCPU->aGPR[MIPS_RS(nOpcode)].u32;
+                        break;
+                    case 0x09: // jalr
+                        pCPU->nWaitPC = pCPU->aGPR[MIPS_RS(nOpcode)].u32;
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nPC + 4;
+                        break;
+                    case 0x0C: // syscall
+                        cpuException(pCPU, CEC_SYSCALL, 0);
+                        break;
+                    case 0x0D: // break
+                        cpuException(pCPU, CEC_BREAK, 0);
+                        break;
+                    case 0x10: // mfhi
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nHi;
+                        break;
+                    case 0x11: // mthi
+                        pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s64;
+                        break;
+                    case 0x12: // mflo
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->nLo;
+                        break;
+                    case 0x13: // mtlo
+                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64;
+                        break;
+                    case 0x14: // dsllv
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64
+                                                           << (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
+                        break;
+                    case 0x16: // dsrlv
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
+                            pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
+                        break;
+                    case 0x17: // dsrav
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
+                            pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> (pCPU->aGPR[MIPS_RS(nOpcode)].s64 & 0x3F);
+                        break;
+                    case 0x18: // mult
+                        nData64 = (s64)pCPU->aGPR[MIPS_RS(nOpcode)].s32 * (s64)pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        pCPU->nLo = (s32)(nData64 & 0xFFFFFFFF);
+                        pCPU->nHi = (s32)(nData64 >> 32);
+                        break;
+                    case 0x19: // multu
+                        nData64 = (u64)pCPU->aGPR[MIPS_RS(nOpcode)].u32 * (u64)pCPU->aGPR[MIPS_RT(nOpcode)].u32;
+                        pCPU->nLo = (s32)(nData64 & 0xFFFFFFFF);
+                        pCPU->nHi = (s32)(nData64 >> 32);
+                        break;
+                    case 0x1A: // div
+                        if (pCPU->aGPR[MIPS_RT(nOpcode)].s32 != 0) {
+                            pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s32 / pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                            pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s32 % pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        }
+                        break;
+                    case 0x1B: // divu
+                        if (pCPU->aGPR[MIPS_RT(nOpcode)].u32 != 0) {
+                            pCPU->nLo = (s32)(pCPU->aGPR[MIPS_RS(nOpcode)].u32 / pCPU->aGPR[MIPS_RT(nOpcode)].u32);
+                            pCPU->nHi = (s32)(pCPU->aGPR[MIPS_RS(nOpcode)].u32 % pCPU->aGPR[MIPS_RT(nOpcode)].u32);
+                        }
+                        break;
+                    case 0x1C: // dmult
+                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64 * pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                        pCPU->nHi = (pCPU->nLo < 0) ? -1 : 0;
+                        break;
+                    case 0x1D: // dmultu
+                        pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].u64 * pCPU->aGPR[MIPS_RT(nOpcode)].u64;
+                        pCPU->nHi = (pCPU->nLo < 0) ? -1 : 0;
+                        break;
+                    case 0x1E: // ddiv
+                        if (pCPU->aGPR[MIPS_RT(nOpcode)].s64 != 0) {
+                            pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].s64 / pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                            pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].s64 % pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                        }
+                        break;
+                    case 0x1F: // ddivu
+                        if (pCPU->aGPR[MIPS_RT(nOpcode)].u64 != 0) {
+                            pCPU->nLo = pCPU->aGPR[MIPS_RS(nOpcode)].u64 / pCPU->aGPR[MIPS_RT(nOpcode)].u64;
+                            pCPU->nHi = pCPU->aGPR[MIPS_RS(nOpcode)].u64 % pCPU->aGPR[MIPS_RT(nOpcode)].u64;
+                        }
+                        break;
+                    case 0x20: // add
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s32 + pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        break;
+                    case 0x21: // addu
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].u32 + pCPU->aGPR[MIPS_RT(nOpcode)].u32;
+                        break;
+                    case 0x22: // sub
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s32 - pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        break;
+                    case 0x23: // subu
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].u32 - pCPU->aGPR[MIPS_RT(nOpcode)].u32;
+                        break;
+                    case 0x24: // and
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s32 & pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        break;
+                    case 0x25: // or
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s32 | pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        break;
+                    case 0x26: // xor
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s32 ^ pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                        break;
+                    case 0x27: // nor
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            ~(pCPU->aGPR[MIPS_RS(nOpcode)].s32 | pCPU->aGPR[MIPS_RT(nOpcode)].s32);
+                        break;
+                    case 0x2A: // slt
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < pCPU->aGPR[MIPS_RT(nOpcode)].s32) ? 1 : 0;
+                        break;
+                    case 0x2B: // sltu
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s32 =
+                            (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < pCPU->aGPR[MIPS_RT(nOpcode)].u32) ? 1 : 0;
+                        break;
+                    case 0x2C: // dadd
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s64 + pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                        break;
+                    case 0x2D: // daddu
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].u64 + pCPU->aGPR[MIPS_RT(nOpcode)].u64;
+                        break;
+                    case 0x2E: // dsub
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].s64 - pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                        break;
+                    case 0x2F: // dsubu
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u64 =
+                            pCPU->aGPR[MIPS_RS(nOpcode)].u64 - pCPU->aGPR[MIPS_RT(nOpcode)].u64;
+                        break;
+                    case 0x30: // tge
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x31: // tgeu
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 >= pCPU->aGPR[MIPS_RT(nOpcode)].u32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x32: // tlt
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x33: // tltu
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < pCPU->aGPR[MIPS_RT(nOpcode)].u32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x34: // teq
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x36: // tne
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x38: // dsll
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 << MIPS_SA(nOpcode);
+                        break;
+                    case 0x3A: // dsrl
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u64 = pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> MIPS_SA(nOpcode);
+                        break;
+                    case 0x3B: // dsra
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> MIPS_SA(nOpcode);
+                        break;
+                    case 0x3C: // dsll32
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 << (MIPS_SA(nOpcode) + 32);
+                        break;
+                    case 0x3E: // dsrl32
+                        pCPU->aGPR[MIPS_RD(nOpcode)].u64 = pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> (MIPS_SA(nOpcode) + 32);
+                        break;
+                    case 0x3F: // dsra32
+                        pCPU->aGPR[MIPS_RD(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64 >> (MIPS_SA(nOpcode) + 32);
+                        break;
                 }
                 break;
-            }
-            break;
-        case 0x05: // bne
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            }
-            break;
-        case 0x06: // blez
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 <= 0) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            }
-            break;
-        case 0x07: // bgtz
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 > 0) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            }
-            break;
-        case 0x08: // addi
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            break;
-        case 0x09: // addiu
-            pCPU->aGPR[MIPS_RT(nOpcode)].u32 = pCPU->aGPR[MIPS_RS(nOpcode)].u32 + MIPS_IMM_S16(nOpcode);
-            break;
-        case 0x0A: // slti
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < MIPS_IMM_S16(nOpcode)) ? 1 : 0;
-            break;
-        case 0x0B: // sltiu
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < MIPS_IMM_S16(nOpcode)) ? 1 : 0;
-            break;
-        case 0x0C: // andi
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 & MIPS_IMM_U16(nOpcode);
-            break;
-        case 0x0D: // ori
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 | MIPS_IMM_U16(nOpcode);
-            break;
-        case 0x0E: // xori
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 ^ MIPS_IMM_U16(nOpcode);
-            break;
-        case 0x0F: // lui
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = MIPS_IMM_S16(nOpcode) << 16;
-            break;
-        case 0x10: // cop0
-            switch (MIPS_FUNCT(nOpcode)) {
-                case 0x01: // tlbr
-                    iEntry = pCPU->anCP0[0] & 0x3F;
-                    pCPU->anCP0[2] = pCPU->aTLB[iEntry][0];
-                    pCPU->anCP0[3] = pCPU->aTLB[iEntry][1];
-                    pCPU->anCP0[10] = pCPU->aTLB[iEntry][2];
-                    pCPU->anCP0[5] = pCPU->aTLB[iEntry][3];
-                    break;
-                case 0x02: // tlbwi
-                    iEntry = pCPU->anCP0[0] & 0x3F;
-                    cpuSetTLB(pCPU, iEntry);
-                    break;
-                case 0x05: // tlbwr
-                    iEntry = cpuCountTLB(pCPU, &nCount);
-                    pCPU->anCP0[1] = iEntry;
-                    cpuSetTLB(pCPU, iEntry);
-                    break;
-                case 0x08: // tlbp
-                    pCPU->anCP0[0] |= 0x80000000;
-                    for (iEntry = 0; iEntry < 48; iEntry++) {
-                        if ((pCPU->aTLB[iEntry][0] & 2) && pCPU->aTLB[iEntry][2] == pCPU->anCP0[10]) {
-                            pCPU->anCP0[0] = iEntry;
-                            break;
-                        }
-                    }
-                    break;
-                case 0x18: // eret
-                    if (pCPU->anCP0[12] & 4) {
-                        pCPU->nPC = pCPU->anCP0[30];
-                        pCPU->anCP0[12] &= ~4;
-                    } else {
-                        pCPU->nPC = pCPU->anCP0[14];
-                        pCPU->anCP0[12] &= ~2;
-                    }
-                    pCPU->nMode |= 4;
-                    pCPU->nMode |= 0x20;
-                    break;
-                default:
-                    switch (MIPS_RS(nOpcode)) {
-                        case 0x00: // mfc0
-                            if (cpuGetRegisterCP0(pCPU, MIPS_RD(nOpcode), &nData64)) {
-                                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64 & 0xFFFFFFFF;
-                            }
-                            break;
-                        case 0x01: // dmfc0
-                            if (cpuGetRegisterCP0(pCPU, MIPS_RD(nOpcode), &nData64)) {
-                                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
-                            }
-                            break;
-                        case 0x02:
-                            break;
-                        case 0x04: // mtc0
-                            cpuSetRegisterCP0(pCPU, MIPS_RD(nOpcode), pCPU->aGPR[MIPS_RT(nOpcode)].u32);
-                            break;
-                        case 0x05: // dmtc0
-                            cpuSetRegisterCP0(pCPU, MIPS_RD(nOpcode), pCPU->aGPR[MIPS_RT(nOpcode)].u64);
-                            break;
-                        case 0x08:
-                            break;
-                    }
-                    break;
-            }
-            break;
-        case 0x11: // cop1
-            if ((nOpcode & 0x7FF) == 0 && MIPS_FMT(nOpcode) < 0x10) {
-                switch ((u8)MIPS_FMT(nOpcode)) {
-                    case 0x00: // mfc1
-                        if (MIPS_FS(nOpcode) & 1) {
-                            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode) - 1].u64 >> 32;
-                        } else {
-                            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                        }
-                        break;
-                    case 0x01: // dmfc1
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                        break;
-                    case 0x02: // cfc1
-                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->anFCR[MIPS_FS(nOpcode)];
-                        break;
-                    case 0x04: // mtc1
-                        if (MIPS_FS(nOpcode) & 1) {
-                            pCPU->aFPR[MIPS_FS(nOpcode) - 1].s64 &= 0xFFFFFFFF;
-                            pCPU->aFPR[MIPS_FS(nOpcode) - 1].s64 |= (u64)pCPU->aGPR[MIPS_RT(nOpcode)].u32 << 32;
-                        } else {
-                            pCPU->aFPR[MIPS_FS(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                        }
-                        break;
-                    case 0x05: // dmtc1
-                        pCPU->aFPR[MIPS_FS(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-                        break;
-                    case 0x06: // ctc1
-                        pCPU->anFCR[MIPS_FS(nOpcode)] = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-                        break;
-                }
-            } else if (MIPS_FMT(nOpcode) == 0x08) {
-                switch (MIPS_FT(nOpcode)) {
-                    case 0x00: // bc1f
-                        if (!(pCPU->anFCR[31] & 0x800000)) {
+            case 0x01: // regimm
+                switch (MIPS_RT(nOpcode)) {
+                    case 0x00: // bltz
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
                             pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
                         }
                         break;
-                    case 0x01: // bc1t
-                        if (pCPU->anFCR[31] & 0x800000) {
+                    case 0x01: // bgez
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
                             pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
                         }
                         break;
-                    case 0x02: // bc1fl
-                        if (!(pCPU->anFCR[31] & 0x800000)) {
+                    case 0x02: // bltzl
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
                             pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
                         } else {
                             pCPU->nMode |= 4;
                             pCPU->nPC += 4;
                         }
                         break;
-                    case 0x03: // bc1tl
-                        if (pCPU->anFCR[31] & 0x800000) {
+                    case 0x03: // bgezl
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
                             pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
                         } else {
                             pCPU->nMode |= 4;
                             pCPU->nPC += 4;
                         }
                         break;
+                    case 0x08: // tgei
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x09: // tgeiu
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 >= MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x0A: // tlti
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x0B: // tltiu
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x0C: // teqi
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x0E: // tnei
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != MIPS_IMM_S16(nOpcode)) {
+                            cpuException(pCPU, CEC_TRAP, 0);
+                        }
+                        break;
+                    case 0x10: // bltzal
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
+                            pCPU->aGPR[31].s32 = pCPU->nPC + 4;
+                            pCPU->nWaitPC = pCPU->nCallLast = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                        }
+                        break;
+                    case 0x11: // bgezal
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
+                            pCPU->aGPR[31].s32 = pCPU->nPC + 4;
+                            pCPU->nWaitPC = pCPU->nCallLast = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                        }
+                        break;
+                    case 0x12: // bltzall
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < 0) {
+                            pCPU->aGPR[31].s32 = pCPU->nPC + 4;
+                            pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                        } else {
+                            pCPU->nMode |= 4;
+                            pCPU->nPC = pCPU->nPC + 4;
+                        }
+                        break;
+                    case 0x13: // bgezall
+                        if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 >= 0) {
+                            pCPU->aGPR[31].s32 = pCPU->nPC + 4;
+                            pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                        } else {
+                            pCPU->nMode |= 4;
+                            pCPU->nPC = pCPU->nPC + 4;
+                        }
+                        break;
                 }
-            } else {
-                switch ((u8)MIPS_FMT(nOpcode)) {
-                    case 0x10: // s
-                        switch (MIPS_FUNCT(nOpcode)) {
-                            case 0x00: // add.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f32 + pCPU->aFPR[MIPS_FT(nOpcode)].f32;
+                break;
+            case 0x02: // j
+                pCPU->nWaitPC = (pCPU->nPC & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2);
+                if (pCPU->nWaitPC == pCPU->nPC - 4) {
+                    if (!cpuCheckInterrupts(pCPU)) {
+                        return 0;
+                    }
+                }
+                break;
+            case 0x03: // jal
+                pCPU->aGPR[31].s32 = pCPU->nPC + 4;
+                pCPU->nWaitPC = pCPU->nCallLast = (pCPU->nPC & 0xF0000000) | (MIPS_TARGET(nOpcode) << 2);
+                cpuFindFunction(pCPU, pCPU->nWaitPC, &pFunction);
+                break;
+            case 0x04: // beq
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                }
+                if (pCPU->nWaitPC == pCPU->nPC - 4) {
+                    if (!cpuCheckInterrupts(pCPU)) {
+                        return 0;
+                    }
+                    break;
+                }
+                break;
+            case 0x05: // bne
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                }
+                break;
+            case 0x06: // blez
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 <= 0) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                }
+                break;
+            case 0x07: // bgtz
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 > 0) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                }
+                break;
+            case 0x08: // addi
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                break;
+            case 0x09: // addiu
+                pCPU->aGPR[MIPS_RT(nOpcode)].u32 = pCPU->aGPR[MIPS_RS(nOpcode)].u32 + MIPS_IMM_S16(nOpcode);
+                break;
+            case 0x0A: // slti
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (pCPU->aGPR[MIPS_RS(nOpcode)].s32 < MIPS_IMM_S16(nOpcode)) ? 1 : 0;
+                break;
+            case 0x0B: // sltiu
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (pCPU->aGPR[MIPS_RS(nOpcode)].u32 < MIPS_IMM_S16(nOpcode)) ? 1 : 0;
+                break;
+            case 0x0C: // andi
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 & MIPS_IMM_U16(nOpcode);
+                break;
+            case 0x0D: // ori
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 | MIPS_IMM_U16(nOpcode);
+                break;
+            case 0x0E: // xori
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aGPR[MIPS_RS(nOpcode)].s32 ^ MIPS_IMM_U16(nOpcode);
+                break;
+            case 0x0F: // lui
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = MIPS_IMM_S16(nOpcode) << 16;
+                break;
+            case 0x10: // cop0
+                switch (MIPS_FUNCT(nOpcode)) {
+                    case 0x01: // tlbr
+                        iEntry = pCPU->anCP0[0] & 0x3F;
+                        pCPU->anCP0[2] = pCPU->aTLB[iEntry][0];
+                        pCPU->anCP0[3] = pCPU->aTLB[iEntry][1];
+                        pCPU->anCP0[10] = pCPU->aTLB[iEntry][2];
+                        pCPU->anCP0[5] = pCPU->aTLB[iEntry][3];
+                        break;
+                    case 0x02: // tlbwi
+                        iEntry = pCPU->anCP0[0] & 0x3F;
+                        cpuSetTLB(pCPU, iEntry);
+                        break;
+                    case 0x05: // tlbwr
+                        iEntry = cpuCountTLB(pCPU, &nCount);
+                        pCPU->anCP0[1] = iEntry;
+                        cpuSetTLB(pCPU, iEntry);
+                        break;
+                    case 0x08: // tlbp
+                        pCPU->anCP0[0] |= 0x80000000;
+                        for (iEntry = 0; iEntry < 48; iEntry++) {
+                            if ((pCPU->aTLB[iEntry][0] & 2) && pCPU->aTLB[iEntry][2] == pCPU->anCP0[10]) {
+                                pCPU->anCP0[0] = iEntry;
                                 break;
-                            case 0x01: // sub.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f32 - pCPU->aFPR[MIPS_FT(nOpcode)].f32;
-                                break;
-                            case 0x02: // mul.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f32 * pCPU->aFPR[MIPS_FT(nOpcode)].f32;
-                                break;
-                            case 0x03: // div.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f32 / pCPU->aFPR[MIPS_FT(nOpcode)].f32;
-                                break;
-                            case 0x04: // sqrt.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x05: // abs.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x06: // mov.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x07: // neg.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = -pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x08: // round.l.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32 + 0.5f;
-                                break;
-                            case 0x09: // trunc.l.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x0A: // ceil.l.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x0B: // floor.l.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x0C: // round.w.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32 + 0.5f;
-                                break;
-                            case 0x0D: // trunc.w.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x0E: // ceil.w.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x0F: // floor.w.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
-                                break;
-                            case 0x20: // cvt.s.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x21: // cvt.d.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x24: // cvt.w.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x25: // cvt.l.s
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
-                                break;
-                            case 0x30: // c.f.s
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x31: // c.un.s
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x32: // c.eq.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x33: // c.ueq.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x34: // c.olt.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x35: // c.ult.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x36: // c.ole.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x37: // c.ule.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x38: // c.sf.s
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x39: // c.ngle.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3A: // c.seq.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3B: // c.ngl.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3C: // c.lt.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3D: // c.nge.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3E: // c.le.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3F: // c.ngt.s
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
+                            }
                         }
                         break;
-                    case 0x11: // d
-                        switch (MIPS_FUNCT(nOpcode)) {
-                            case 0x00: // add.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f64 + pCPU->aFPR[MIPS_FT(nOpcode)].f64;
-                                break;
-                            case 0x01: // sub.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f64 - pCPU->aFPR[MIPS_FT(nOpcode)].f64;
-                                break;
-                            case 0x02: // mul.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f64 * pCPU->aFPR[MIPS_FT(nOpcode)].f64;
-                                break;
-                            case 0x03: // div.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].f64 / pCPU->aFPR[MIPS_FT(nOpcode)].f64;
-                                break;
-                            case 0x04: // sqrt.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x05: // abs.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x06: // mov.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x07: // neg.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = -pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x08: // round.l.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64 + 0.5f;
-                                break;
-                            case 0x09: // trunc.l.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x0A: // ceil.l.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x0B: // floor.l.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x0C: // round.w.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64 + 0.5f;
-                                break;
-                            case 0x0D: // trunc.w.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x0E: // ceil.w.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x0F: // floor.w.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
-                                break;
-                            case 0x20: // cvt.s.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x21: // cvt.d.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x24: // cvt.w.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x25: // cvt.l.d
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
-                                break;
-                            case 0x30: // c.f.d
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x31: // c.un.d
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x32: // c.eq.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x33: // c.ueq.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x34: // c.olt.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x35: // c.ult.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x36: // c.ole.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x37: // c.ule.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x38: // c.sf.d
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x39: // c.ngle.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3A: // c.seq.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3B: // c.ngl.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3C: // c.lt.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3D: // c.nge.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3E: // c.le.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3F: // c.ngt.d
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
+                    case 0x18: // eret
+                        if (pCPU->anCP0[12] & 4) {
+                            pCPU->nPC = pCPU->anCP0[30];
+                            pCPU->anCP0[12] &= ~4;
+                        } else {
+                            pCPU->nPC = pCPU->anCP0[14];
+                            pCPU->anCP0[12] &= ~2;
                         }
+                        pCPU->nMode |= 4;
+                        pCPU->nMode |= 0x20;
                         break;
-                    case 0x14: // w
-                        switch (MIPS_FUNCT(nOpcode)) {
-                            case 0x00: // add.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s32 + pCPU->aFPR[MIPS_FT(nOpcode)].s32;
-                                break;
-                            case 0x01: // sub.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s32 - pCPU->aFPR[MIPS_FT(nOpcode)].s32;
-                                break;
-                            case 0x02: // mul.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s32 * pCPU->aFPR[MIPS_FT(nOpcode)].s32;
-                                break;
-                            case 0x03: // div.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s32 / pCPU->aFPR[MIPS_FT(nOpcode)].s32;
-                                break;
-                            case 0x04: // sqrt.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x05: // abs.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x06: // mov.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x07: // neg.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = -pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x08: // round.l.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x09: // trunc.l.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x0A: // ceil.l.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x0B: // floor.l.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x0C: // round.w.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x0D: // trunc.w.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x0E: // ceil.w.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x0F: // floor.w.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
-                                break;
-                            case 0x20: // cvt.s.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x21: // cvt.d.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x24: // cvt.w.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x25: // cvt.l.w
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
-                                break;
-                            case 0x30: // c.f.w
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x31: // c.un.w
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x32: // c.eq.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
+                    default:
+                        switch (MIPS_RS(nOpcode)) {
+                            case 0x00: // mfc0
+                                if (cpuGetRegisterCP0(pCPU, MIPS_RD(nOpcode), &nData64)) {
+                                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64 & 0xFFFFFFFF;
                                 }
                                 break;
-                            case 0x33: // c.ueq.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
+                            case 0x01: // dmfc0
+                                if (cpuGetRegisterCP0(pCPU, MIPS_RD(nOpcode), &nData64)) {
+                                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
                                 }
                                 break;
-                            case 0x34: // c.olt.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
+                            case 0x02:
                                 break;
-                            case 0x35: // c.ult.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
+                            case 0x04: // mtc0
+                                cpuSetRegisterCP0(pCPU, MIPS_RD(nOpcode), pCPU->aGPR[MIPS_RT(nOpcode)].u32);
                                 break;
-                            case 0x36: // c.ole.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
+                            case 0x05: // dmtc0
+                                cpuSetRegisterCP0(pCPU, MIPS_RD(nOpcode), pCPU->aGPR[MIPS_RT(nOpcode)].u64);
                                 break;
-                            case 0x37: // c.ule.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x38: // c.sf.w
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x39: // c.ngle.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3A: // c.seq.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3B: // c.ngl.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3C: // c.lt.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3D: // c.nge.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3E: // c.le.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3F: // c.ngt.w
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                        }
-                        break;
-                    case 0x15: // l
-                        switch (MIPS_FUNCT(nOpcode)) {
-                            case 0x00: // add.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s64 + pCPU->aFPR[MIPS_FT(nOpcode)].s64;
-                                break;
-                            case 0x01: // sub.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s64 - pCPU->aFPR[MIPS_FT(nOpcode)].s64;
-                                break;
-                            case 0x02: // mul.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s64 * pCPU->aFPR[MIPS_FT(nOpcode)].s64;
-                                break;
-                            case 0x03: // div.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
-                                    pCPU->aFPR[MIPS_FS(nOpcode)].s64 / pCPU->aFPR[MIPS_FT(nOpcode)].s64;
-                                break;
-                            case 0x04: // sqrt.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x05: // abs.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x06: // mov.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x07: // neg.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = -pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x08: // round.l.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x09: // trunc.l.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x0A: // ceil.l.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x0B: // floor.l.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x0C: // round.w.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x0D: // trunc.w.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x0E: // ceil.w.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x0F: // floor.w.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
-                                break;
-                            case 0x20: // cvt.s.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x21: // cvt.d.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x24: // cvt.w.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x25: // cvt.l.l
-                                pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
-                                break;
-                            case 0x30: // c.f.l
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x31: // c.un.l
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x32: // c.eq.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x33: // c.ueq.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x34: // c.olt.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x35: // c.ult.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x36: // c.ole.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x37: // c.ule.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x38: // c.sf.l
-                                pCPU->anFCR[31] &= ~0x800000;
-                                break;
-                            case 0x39: // c.ngle.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3A: // c.seq.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3B: // c.ngl.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3C: // c.lt.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3D: // c.nge.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3E: // c.le.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
-                                break;
-                            case 0x3F: // c.ngt.l
-                                if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
-                                    pCPU->anFCR[31] |= 0x800000;
-                                } else {
-                                    pCPU->anFCR[31] &= ~0x800000;
-                                }
+                            case 0x08:
                                 break;
                         }
                         break;
                 }
-            }
-            break;
-        case 0x14: // beq
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            } else {
-                pCPU->nMode |= 4;
-                pCPU->nPC += 4;
-            }
-            break;
-        case 0x15: // bne
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            } else {
-                pCPU->nMode |= 4;
-                pCPU->nPC += 4;
-            }
-            break;
-        case 0x16: // blez
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 <= 0) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            } else {
-                pCPU->nMode |= 4;
-                pCPU->nPC += 4;
-            }
-            break;
-        case 0x17: // bgtz
-            if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 > 0) {
-                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
-            } else {
-                pCPU->nMode |= 4;
-                pCPU->nPC += 4;
-            }
-            break;
-        case 0x18: // daddi
-            pCPU->aGPR[MIPS_RT(nOpcode)].s64 = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            break;
-        case 0x19: // daddiu
-            pCPU->aGPR[MIPS_RT(nOpcode)].u64 = pCPU->aGPR[MIPS_RS(nOpcode)].u64 + MIPS_IMM_S16(nOpcode);
-            break;
-        case 0x1F: // library call
-            if (!libraryCall(SYSTEM_LIBRARY(pCPU->pHost), pCPU, MIPS_IMM_S16(nOpcode))) {
-                return false;
-            }
-            break;
-        case 0x1A: // ldl
-            nCount = 0x38;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            do {
-                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                    nData64 = ((s64)nData8 & 0xFF) << nCount;
-                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 =
-                        nData64 | (pCPU->aGPR[MIPS_RT(nOpcode)].s64 & ~((s64)0xFF << nCount));
-                }
-                nCount -= 8;
-            } while ((nAddress++ & 7) != 0);
-            break;
-        case 0x1B: // ldr
-            nCount = 0;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            do {
-                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                    nData64 = ((s64)nData8 & 0xFF) << nCount;
-                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 =
-                        nData64 | (pCPU->aGPR[MIPS_RT(nOpcode)].s64 & ~((s64)0xFF << nCount));
-                }
-                nCount += 8;
-            } while ((nAddress-- & 7) != 0);
-            break;
-        case 0x27: // lwu
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].u64 = (u32)nData32;
-            }
-            break;
-        case 0x20: // lb
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData8;
-            }
-            break;
-        case 0x21: // lh
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET16(apDevice, aiDevice, nAddress, &nData16)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData16;
-            }
-            break;
-        case 0x22: // lwl
-            nCount = 0x18;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            do {
-                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                    nData32 = ((u32)nData8 & 0xFF) << nCount;
-                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
-                }
-                nCount -= 8;
-            } while ((nAddress++ & 3) != 0);
-            break;
-        case 0x23: // lw
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32;
-            }
-            break;
-        case 0x24: // lbu
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u8)nData8;
-            }
-            break;
-        case 0x25: // lhu
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (frameGetDepth(SYSTEM_FRAME(pCPU->pHost), (u16*)&nData16, nAddress)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u16)nData16;
-            } else {
-                if (CPU_DEVICE_GET16(apDevice, aiDevice, nAddress, &nData16)) {
-                    pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u16)nData16;
-                }
-            }
-            break;
-        case 0x26: // lwr
-            nCount = 0;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            do {
-                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
-                    nData32 = ((u32)nData8 & 0xFF) << nCount;
-                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
-                }
-                nCount += 8;
-            } while ((nAddress-- & 3) != 0);
-            break;
-        case 0x28: // sb
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s8);
-            break;
-        case 0x29: // sh
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            CPU_DEVICE_PUT16(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s16);
-            break;
-        case 0x2A: // swl
-            nCount = 0x18;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            do {
-                nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> nCount) & 0xFF;
-                CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
-                nCount -= 8;
-            } while ((nAddress++ & 3) != 0);
-            break;
-        case 0x2B: // sw
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s32);
-            break;
-        case 0x2C: // sdl
-            nCount = 0x38;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            do {
-                nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> nCount) & 0xFF;
-                CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
-                nCount -= 8;
-            } while ((nAddress++ & 7) != 0);
-            break;
-        case 0x2D: // sdr
-            nCount = 0;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            do {
-                nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> nCount) & 0xFF;
-                CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
-                nCount += 8;
-            } while ((nAddress-- & 7) != 0);
-            break;
-        case 0x2E: // swr
-            nCount = 0;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            do {
-                nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> nCount) & 0xFF;
-                CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
-                nCount += 8;
-            } while ((nAddress-- & 3) != 0);
-            break;
-        case 0x2F: // cache
-            if (!cpuExecuteCacheInstruction(pCPU)) {
-                return false;
-            }
-            break;
-        case 0x30: // ll
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32;
-            }
-            break;
-        case 0x31: // lwc1
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
-                if (MIPS_RT(nOpcode) & 1) {
-                    pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 &= 0xFFFFFFFF;
-                    pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 |= (s64)nData32 << 32;
+                break;
+            case 0x11: // cop1
+                if ((nOpcode & 0x7FF) == 0 && MIPS_FMT(nOpcode) < 0x10) {
+                    switch ((u8)MIPS_FMT(nOpcode)) {
+                        case 0x00: // mfc1
+                            if (MIPS_FS(nOpcode) & 1) {
+                                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode) - 1].u64 >> 32;
+                            } else {
+                                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                            }
+                            break;
+                        case 0x01: // dmfc1
+                            pCPU->aGPR[MIPS_RT(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                            break;
+                        case 0x02: // cfc1
+                            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = pCPU->anFCR[MIPS_FS(nOpcode)];
+                            break;
+                        case 0x04: // mtc1
+                            if (MIPS_FS(nOpcode) & 1) {
+                                pCPU->aFPR[MIPS_FS(nOpcode) - 1].s64 &= 0xFFFFFFFF;
+                                pCPU->aFPR[MIPS_FS(nOpcode) - 1].s64 |= (u64)pCPU->aGPR[MIPS_RT(nOpcode)].u32 << 32;
+                            } else {
+                                pCPU->aFPR[MIPS_FS(nOpcode)].s32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                            }
+                            break;
+                        case 0x05: // dmtc1
+                            pCPU->aFPR[MIPS_FS(nOpcode)].s64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                            break;
+                        case 0x06: // ctc1
+                            pCPU->anFCR[MIPS_FS(nOpcode)] = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                            break;
+                    }
+                } else if (MIPS_FMT(nOpcode) == 0x08) {
+                    switch (MIPS_FT(nOpcode)) {
+                        case 0x00: // bc1f
+                            if (!(pCPU->anFCR[31] & 0x800000)) {
+                                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                            }
+                            break;
+                        case 0x01: // bc1t
+                            if (pCPU->anFCR[31] & 0x800000) {
+                                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                            }
+                            break;
+                        case 0x02: // bc1fl
+                            if (!(pCPU->anFCR[31] & 0x800000)) {
+                                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                            } else {
+                                pCPU->nMode |= 4;
+                                pCPU->nPC += 4;
+                            }
+                            break;
+                        case 0x03: // bc1tl
+                            if (pCPU->anFCR[31] & 0x800000) {
+                                pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                            } else {
+                                pCPU->nMode |= 4;
+                                pCPU->nPC += 4;
+                            }
+                            break;
+                    }
                 } else {
-                    pCPU->aFPR[MIPS_RT(nOpcode)].s32 = nData32;
+                    switch ((u8)MIPS_FMT(nOpcode)) {
+                        case 0x10: // s
+                            switch (MIPS_FUNCT(nOpcode)) {
+                                case 0x00: // add.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f32 + pCPU->aFPR[MIPS_FT(nOpcode)].f32;
+                                    break;
+                                case 0x01: // sub.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f32 - pCPU->aFPR[MIPS_FT(nOpcode)].f32;
+                                    break;
+                                case 0x02: // mul.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f32 * pCPU->aFPR[MIPS_FT(nOpcode)].f32;
+                                    break;
+                                case 0x03: // div.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f32 / pCPU->aFPR[MIPS_FT(nOpcode)].f32;
+                                    break;
+                                case 0x04: // sqrt.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x05: // abs.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x06: // mov.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x07: // neg.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = -pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x08: // round.l.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32 + 0.5f;
+                                    break;
+                                case 0x09: // trunc.l.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x0A: // ceil.l.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x0B: // floor.l.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x0C: // round.w.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32 + 0.5f;
+                                    break;
+                                case 0x0D: // trunc.w.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x0E: // ceil.w.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x0F: // floor.w.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f32);
+                                    break;
+                                case 0x20: // cvt.s.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x21: // cvt.d.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x24: // cvt.w.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x25: // cvt.l.s
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f32;
+                                    break;
+                                case 0x30: // c.f.s
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x31: // c.un.s
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x32: // c.eq.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x33: // c.ueq.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x34: // c.olt.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x35: // c.ult.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x36: // c.ole.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x37: // c.ule.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x38: // c.sf.s
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x39: // c.ngle.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3A: // c.seq.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3B: // c.ngl.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 == pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3C: // c.lt.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3D: // c.nge.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 < pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3E: // c.le.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3F: // c.ngt.s
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f32 <= pCPU->aFPR[MIPS_FT(nOpcode)].f32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                            }
+                            break;
+                        case 0x11: // d
+                            switch (MIPS_FUNCT(nOpcode)) {
+                                case 0x00: // add.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f64 + pCPU->aFPR[MIPS_FT(nOpcode)].f64;
+                                    break;
+                                case 0x01: // sub.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f64 - pCPU->aFPR[MIPS_FT(nOpcode)].f64;
+                                    break;
+                                case 0x02: // mul.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f64 * pCPU->aFPR[MIPS_FT(nOpcode)].f64;
+                                    break;
+                                case 0x03: // div.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].f64 / pCPU->aFPR[MIPS_FT(nOpcode)].f64;
+                                    break;
+                                case 0x04: // sqrt.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x05: // abs.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x06: // mov.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x07: // neg.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = -pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x08: // round.l.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64 + 0.5f;
+                                    break;
+                                case 0x09: // trunc.l.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x0A: // ceil.l.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x0B: // floor.l.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x0C: // round.w.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64 + 0.5f;
+                                    break;
+                                case 0x0D: // trunc.w.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x0E: // ceil.w.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x0F: // floor.w.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].f64);
+                                    break;
+                                case 0x20: // cvt.s.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x21: // cvt.d.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x24: // cvt.w.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x25: // cvt.l.d
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].f64;
+                                    break;
+                                case 0x30: // c.f.d
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x31: // c.un.d
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x32: // c.eq.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x33: // c.ueq.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x34: // c.olt.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x35: // c.ult.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x36: // c.ole.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x37: // c.ule.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x38: // c.sf.d
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x39: // c.ngle.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3A: // c.seq.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3B: // c.ngl.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 == pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3C: // c.lt.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3D: // c.nge.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 < pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3E: // c.le.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3F: // c.ngt.d
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].f64 <= pCPU->aFPR[MIPS_FT(nOpcode)].f64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                            }
+                            break;
+                        case 0x14: // w
+                            switch (MIPS_FUNCT(nOpcode)) {
+                                case 0x00: // add.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s32 + pCPU->aFPR[MIPS_FT(nOpcode)].s32;
+                                    break;
+                                case 0x01: // sub.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s32 - pCPU->aFPR[MIPS_FT(nOpcode)].s32;
+                                    break;
+                                case 0x02: // mul.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s32 * pCPU->aFPR[MIPS_FT(nOpcode)].s32;
+                                    break;
+                                case 0x03: // div.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s32 / pCPU->aFPR[MIPS_FT(nOpcode)].s32;
+                                    break;
+                                case 0x04: // sqrt.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x05: // abs.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x06: // mov.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x07: // neg.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = -pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x08: // round.l.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x09: // trunc.l.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x0A: // ceil.l.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x0B: // floor.l.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x0C: // round.w.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x0D: // trunc.w.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x0E: // ceil.w.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x0F: // floor.w.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s32);
+                                    break;
+                                case 0x20: // cvt.s.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x21: // cvt.d.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x24: // cvt.w.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x25: // cvt.l.w
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s32;
+                                    break;
+                                case 0x30: // c.f.w
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x31: // c.un.w
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x32: // c.eq.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x33: // c.ueq.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x34: // c.olt.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x35: // c.ult.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x36: // c.ole.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x37: // c.ule.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x38: // c.sf.w
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x39: // c.ngle.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3A: // c.seq.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3B: // c.ngl.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 == pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3C: // c.lt.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3D: // c.nge.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 < pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3E: // c.le.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3F: // c.ngt.w
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s32 <= pCPU->aFPR[MIPS_FT(nOpcode)].s32) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                            }
+                            break;
+                        case 0x15: // l
+                            switch (MIPS_FUNCT(nOpcode)) {
+                                case 0x00: // add.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s64 + pCPU->aFPR[MIPS_FT(nOpcode)].s64;
+                                    break;
+                                case 0x01: // sub.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s64 - pCPU->aFPR[MIPS_FT(nOpcode)].s64;
+                                    break;
+                                case 0x02: // mul.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s64 * pCPU->aFPR[MIPS_FT(nOpcode)].s64;
+                                    break;
+                                case 0x03: // div.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 =
+                                        pCPU->aFPR[MIPS_FS(nOpcode)].s64 / pCPU->aFPR[MIPS_FT(nOpcode)].s64;
+                                    break;
+                                case 0x04: // sqrt.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = sqrt(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x05: // abs.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = fabs(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x06: // mov.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x07: // neg.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = -pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x08: // round.l.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x09: // trunc.l.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x0A: // ceil.l.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x0B: // floor.l.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x0C: // round.w.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x0D: // trunc.w.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x0E: // ceil.w.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = ceil(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x0F: // floor.w.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = floor(pCPU->aFPR[MIPS_FS(nOpcode)].s64);
+                                    break;
+                                case 0x20: // cvt.s.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x21: // cvt.d.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].f64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x24: // cvt.w.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s32 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x25: // cvt.l.l
+                                    pCPU->aFPR[MIPS_FD(nOpcode)].s64 = pCPU->aFPR[MIPS_FS(nOpcode)].s64;
+                                    break;
+                                case 0x30: // c.f.l
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x31: // c.un.l
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x32: // c.eq.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x33: // c.ueq.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x34: // c.olt.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x35: // c.ult.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x36: // c.ole.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x37: // c.ule.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x38: // c.sf.l
+                                    pCPU->anFCR[31] &= ~0x800000;
+                                    break;
+                                case 0x39: // c.ngle.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3A: // c.seq.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3B: // c.ngl.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 == pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3C: // c.lt.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3D: // c.nge.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 < pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3E: // c.le.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                                case 0x3F: // c.ngt.l
+                                    if (pCPU->aFPR[MIPS_FS(nOpcode)].s64 <= pCPU->aFPR[MIPS_FT(nOpcode)].s64) {
+                                        pCPU->anFCR[31] |= 0x800000;
+                                    } else {
+                                        pCPU->anFCR[31] &= ~0x800000;
+                                    }
+                                    break;
+                            }
+                            break;
+                    }
                 }
-            }
-            break;
-        case 0x34: // lld
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
-            }
-            break;
-        case 0x35: // ldc1
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
-                pCPU->aFPR[MIPS_RT(nOpcode)].s64 = nData64;
-            }
-            break;
-        case 0x37: // ld
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
-                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
-            }
-            break;
-        case 0x38: // sc
-            nData32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &nData32)) ? 1 : 0;
-            break;
-        case 0x39: // swc1
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            if (MIPS_RT(nOpcode) & 1) {
-                nData32 = pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 >> 32;
-            } else {
-                nData32 = pCPU->aFPR[MIPS_RT(nOpcode)].s32;
-            }
-            CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &nData32);
-            break;
-        case 0x3C: // scd
-            nData64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
-            pCPU->aGPR[MIPS_RT(nOpcode)].s64 = (CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64)) ? 1 : 0;
-            break;
-        case 0x3D: // sdc1
-            nData64 = pCPU->aFPR[MIPS_RT(nOpcode)].s64;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64);
-            break;
-        case 0x3F: // sd
-            nData64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
-            nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
-            CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64);
-            break;
+                break;
+            case 0x14: // beq
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 == (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                } else {
+                    pCPU->nMode |= 4;
+                    pCPU->nPC += 4;
+                }
+                break;
+            case 0x15: // bne
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 != (s32)pCPU->aGPR[MIPS_RT(nOpcode)].s32) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                } else {
+                    pCPU->nMode |= 4;
+                    pCPU->nPC += 4;
+                }
+                break;
+            case 0x16: // blez
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 <= 0) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                } else {
+                    pCPU->nMode |= 4;
+                    pCPU->nPC += 4;
+                }
+                break;
+            case 0x17: // bgtz
+                if (pCPU->aGPR[MIPS_RS(nOpcode)].s32 > 0) {
+                    pCPU->nWaitPC = pCPU->nPC + MIPS_IMM_S16(nOpcode) * 4;
+                } else {
+                    pCPU->nMode |= 4;
+                    pCPU->nPC += 4;
+                }
+                break;
+            case 0x18: // daddi
+                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                break;
+            case 0x19: // daddiu
+                pCPU->aGPR[MIPS_RT(nOpcode)].u64 = pCPU->aGPR[MIPS_RS(nOpcode)].u64 + MIPS_IMM_S16(nOpcode);
+                break;
+            case 0x1F: // library call
+                if (!libraryCall(SYSTEM_LIBRARY(pCPU->pHost), pCPU, MIPS_IMM_S16(nOpcode))) {
+                    return false;
+                }
+                break;
+            case 0x1A: // ldl
+                nCount = 0x38;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                do {
+                    if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                        nData64 = ((s64)nData8 & 0xFF) << nCount;
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s64 =
+                            nData64 | (pCPU->aGPR[MIPS_RT(nOpcode)].s64 & ~((s64)0xFF << nCount));
+                    }
+                    nCount -= 8;
+                } while ((nAddress++ & 7) != 0);
+                break;
+            case 0x1B: // ldr
+                nCount = 0;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                do {
+                    if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                        nData64 = ((s64)nData8 & 0xFF) << nCount;
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s64 =
+                            nData64 | (pCPU->aGPR[MIPS_RT(nOpcode)].s64 & ~((s64)0xFF << nCount));
+                    }
+                    nCount += 8;
+                } while ((nAddress-- & 7) != 0);
+                break;
+            case 0x27: // lwu
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].u64 = (u32)nData32;
+                }
+                break;
+            case 0x20: // lb
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData8;
+                }
+                break;
+            case 0x21: // lh
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET16(apDevice, aiDevice, nAddress, &nData16)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData16;
+                }
+                break;
+            case 0x22: // lwl
+                nCount = 0x18;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                do {
+                    if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                        nData32 = ((u32)nData8 & 0xFF) << nCount;
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 =
+                            nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
+                    }
+                    nCount -= 8;
+                } while ((nAddress++ & 3) != 0);
+                break;
+            case 0x23: // lw
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32;
+                }
+                break;
+            case 0x24: // lbu
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u8)nData8;
+                }
+                break;
+            case 0x25: // lhu
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (frameGetDepth(SYSTEM_FRAME(pCPU->pHost), (u16*)&nData16, nAddress)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u16)nData16;
+                } else {
+                    if (CPU_DEVICE_GET16(apDevice, aiDevice, nAddress, &nData16)) {
+                        pCPU->aGPR[MIPS_RT(nOpcode)].u32 = (u16)nData16;
+                    }
+                }
+                break;
+            case 0x26: // lwr
+                nCount = 0;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                do {
+                    if (CPU_DEVICE_GET8(apDevice, aiDevice, nAddress, &nData8)) {
+                        nData32 = ((u32)nData8 & 0xFF) << nCount;
+                        pCPU->aGPR[MIPS_RT(nOpcode)].s32 =
+                            nData32 | (pCPU->aGPR[MIPS_RT(nOpcode)].s32 & ~(0xFF << nCount));
+                    }
+                    nCount += 8;
+                } while ((nAddress-- & 3) != 0);
+                break;
+            case 0x28: // sb
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s8);
+                break;
+            case 0x29: // sh
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                CPU_DEVICE_PUT16(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s16);
+                break;
+            case 0x2A: // swl
+                nCount = 0x18;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                do {
+                    nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> nCount) & 0xFF;
+                    CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
+                    nCount -= 8;
+                } while ((nAddress++ & 3) != 0);
+                break;
+            case 0x2B: // sw
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &pCPU->aGPR[MIPS_RT(nOpcode)].s32);
+                break;
+            case 0x2C: // sdl
+                nCount = 0x38;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                do {
+                    nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> nCount) & 0xFF;
+                    CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
+                    nCount -= 8;
+                } while ((nAddress++ & 7) != 0);
+                break;
+            case 0x2D: // sdr
+                nCount = 0;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                do {
+                    nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u64 >> nCount) & 0xFF;
+                    CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
+                    nCount += 8;
+                } while ((nAddress-- & 7) != 0);
+                break;
+            case 0x2E: // swr
+                nCount = 0;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                do {
+                    nData8 = (pCPU->aGPR[MIPS_RT(nOpcode)].u32 >> nCount) & 0xFF;
+                    CPU_DEVICE_PUT8(apDevice, aiDevice, nAddress, &nData8);
+                    nCount += 8;
+                } while ((nAddress-- & 3) != 0);
+                break;
+            case 0x2F: // cache
+                if (!cpuExecuteCacheInstruction(pCPU)) {
+                    return false;
+                }
+                break;
+            case 0x30: // ll
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s32 = nData32;
+                }
+                break;
+            case 0x31: // lwc1
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET32(apDevice, aiDevice, nAddress, &nData32)) {
+                    if (MIPS_RT(nOpcode) & 1) {
+                        pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 &= 0xFFFFFFFF;
+                        pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 |= (s64)nData32 << 32;
+                    } else {
+                        pCPU->aFPR[MIPS_RT(nOpcode)].s32 = nData32;
+                    }
+                }
+                break;
+            case 0x34: // lld
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
+                }
+                break;
+            case 0x35: // ldc1
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
+                    pCPU->aFPR[MIPS_RT(nOpcode)].s64 = nData64;
+                }
+                break;
+            case 0x37: // ld
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (CPU_DEVICE_GET64(apDevice, aiDevice, nAddress, &nData64)) {
+                    pCPU->aGPR[MIPS_RT(nOpcode)].s64 = nData64;
+                }
+                break;
+            case 0x38: // sc
+                nData32 = pCPU->aGPR[MIPS_RT(nOpcode)].s32;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                pCPU->aGPR[MIPS_RT(nOpcode)].s32 = (CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &nData32)) ? 1 : 0;
+                break;
+            case 0x39: // swc1
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                if (MIPS_RT(nOpcode) & 1) {
+                    nData32 = pCPU->aFPR[MIPS_RT(nOpcode) - 1].u64 >> 32;
+                } else {
+                    nData32 = pCPU->aFPR[MIPS_RT(nOpcode)].s32;
+                }
+                CPU_DEVICE_PUT32(apDevice, aiDevice, nAddress, &nData32);
+                break;
+            case 0x3C: // scd
+                nData64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s64 + MIPS_IMM_S16(nOpcode);
+                pCPU->aGPR[MIPS_RT(nOpcode)].s64 = (CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64)) ? 1 : 0;
+                break;
+            case 0x3D: // sdc1
+                nData64 = pCPU->aFPR[MIPS_RT(nOpcode)].s64;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64);
+                break;
+            case 0x3F: // sd
+                nData64 = pCPU->aGPR[MIPS_RT(nOpcode)].s64;
+                nAddress = pCPU->aGPR[MIPS_RS(nOpcode)].s32 + MIPS_IMM_S16(nOpcode);
+                CPU_DEVICE_PUT64(apDevice, aiDevice, nAddress, &nData64);
+                break;
+        }
     }
 
     if (!cpuExecuteUpdate(pCPU, &nAddressGCN, nTick + 1)) {
