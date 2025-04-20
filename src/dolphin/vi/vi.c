@@ -25,7 +25,7 @@ static OSThreadQueue retraceQueue;
 static VIRetraceCallback PreCB;
 static VIRetraceCallback PostCB;
 
-#if IS_CE
+#if IS_CE || IS_MM
 static VIPositionCallback PositionCallback;
 #endif
 
@@ -159,7 +159,7 @@ static void __VIRetraceHandler(__OSInterrupt interrupt, OSContext* context) {
 
     if ((inter & 4) || (inter & 8)) {
 
-#if IS_CE
+#if IS_CE || IS_MM
         OSClearContext(&exceptionContext);
         OSSetCurrentContext(&exceptionContext);
         if (PositionCallback) {

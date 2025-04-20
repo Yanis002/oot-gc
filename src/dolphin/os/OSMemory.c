@@ -180,13 +180,13 @@ void __OSInitMemoryProtection(void) {
     OSRegisterResetFunction(&ResetFunctionInfo);
 
     if (OSGetConsoleSimulatedMemSize() < OSGetPhysicalMemSize() && OSGetConsoleSimulatedMemSize() == 0x1800000) {
-#if IS_CE
+#if IS_CE || IS_MM
         DCInvalidateRange((void*)0x81800000, 0x1800000);
 #endif
         __MEMRegs[20] = 2;
     }
 
-#if IS_CE
+#if IS_CE || IS_MM
     if (simulatedSize <= 0x1800000) {
         RealMode((u32)&Config24MB);
     } else if (simulatedSize <= 0x3000000) {

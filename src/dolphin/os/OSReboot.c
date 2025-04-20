@@ -100,7 +100,7 @@ inline bool IsStreamEnabled(void) {
 
 void __OSReboot(u32 resetCode, u32 bootDol) {
     OSContext exceptionContext;
-#if IS_CE
+#if IS_CE || IS_MM
     OSTime time;
     DVDCommandBlock dvdCmd;
     DVDCommandBlock dvdCmd2;

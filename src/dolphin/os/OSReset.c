@@ -15,7 +15,7 @@ typedef struct OSResetQueue {
 
 static OSResetQueue ResetFunctionQueue;
 
-#if IS_CE
+#if IS_CE || IS_MM
 static u32 bootThisDol;
 #endif
 
@@ -175,7 +175,7 @@ void OSResetSystem(int reset, u32 resetCode, bool forceMenu) {
     if (reset == OS_RESET_HOTRESET) {
         __OSDoHotReset(resetCode);
     } else if (reset == OS_RESET_RESTART) {
-#if IS_CE
+#if IS_CE || IS_MM
         if ((*(u32*)OSPhysicalToCached(0x30EC) = bootThisDol) != 0) {
             __PADDisableRecalibration(disableRecalibration);
         }

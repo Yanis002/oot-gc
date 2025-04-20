@@ -72,7 +72,7 @@ static inline void PADDisable(s32 chan) {
     CheckingBits &= ~chanBit;
     PendingBits &= ~chanBit;
 
-#if IS_CE
+#if IS_CE || IS_MM
     BarrelBits &= ~chanBit;
 #endif
 
@@ -279,7 +279,7 @@ bool PADReset(u32 mask) {
     diableBits = ResettingBits & EnabledBits;
     EnabledBits &= ~mask;
 
-#if IS_CE
+#if IS_CE || IS_MM
     BarrelBits &= ~mask;
 #endif
 
@@ -311,7 +311,7 @@ bool PADRecalibrate(u32 mask) {
     disableBits = ResettingBits & EnabledBits;
     EnabledBits &= ~mask;
 
-#if IS_CE
+#if IS_CE || IS_MM
     BarrelBits &= ~mask;
 #endif
 
@@ -472,7 +472,7 @@ void PADControlMotor(s32 chan, u32 command) {
             command = PAD_MOTOR_STOP;
         }
 
-#if IS_CE
+#if IS_CE || IS_MM
         if (GameChoice & 0x20) {
             command = PAD_MOTOR_STOP;
         }
@@ -643,7 +643,7 @@ static void SPEC2_MakeStatus(s32 chan, PADStatus* status, u32 data[2]) {
     status->substickX -= 128;
     status->substickY -= 128;
 
-#if IS_CE
+#if IS_CE || IS_MM
     type = Type[chan];
 
     if (((Type[chan] & 0xFFFF0000) == SI_GC_CONTROLLER) && ((status->button & 0x80) ^ 0x80)) {
