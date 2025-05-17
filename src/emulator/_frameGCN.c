@@ -14,6 +14,8 @@
 #include "macros.h"
 #include "math.h"
 
+bool rspSetImage(Frame* pFrame, Rsp* pRSP, s32 nFormat, s32 nWidth, s32 nSize, s32 nImage);
+
 static bool frameDrawTriangle_C0T0(Frame* pFrame, Primitive* pPrimitive);
 static bool frameDrawTriangle_C1T0(Frame* pFrame, Primitive* pPrimitive);
 static bool frameDrawTriangle_C3T0(Frame* pFrame, Primitive* pPrimitive);
@@ -5173,20 +5175,20 @@ static bool frameEvent(Frame* pFrame, s32 nEvent, void* pArgument) {
             pFrame->nCameraBuffer = NULL;
             if (((gpSystem->eTypeROM == SRT_PANEL) || (gpSystem->eTypeROM == SRT_ZELDA2) ||
                  (gpSystem->eTypeROM == SRT_DRMARIO)) &&
-                !xlHeapTake(&pFrame->nTempBuffer, 0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
+                !xlHeapTake((void**)&pFrame->nTempBuffer, 0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
                 return false;
             }
             if ((gpSystem->eTypeROM == SRT_ZELDA2) &&
-                !xlHeapTake(&pFrame->nCopyBuffer, 0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
+                !xlHeapTake((void**)&pFrame->nCopyBuffer, 0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
                 return false;
             }
 #if IS_OOT
-            if ((gpSystem->eTypeROM == SRT_ZELDA2) && !xlHeapTake(&pFrame->nLensBuffer, 0x30000000 | 0x4B000)) {
+            if ((gpSystem->eTypeROM == SRT_ZELDA2) && !xlHeapTake((void**)&pFrame->nLensBuffer, 0x30000000 | 0x4B000)) {
                 return false;
             }
 #endif
             if (gpSystem->eTypeROM == SRT_ZELDA2 &&
-                !xlHeapTake(&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
+                !xlHeapTake((void**)&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
                 return false;
             }
             break;

@@ -406,7 +406,7 @@ typedef struct zVtxDest {
 } zVtxDest; // size = 0x10
 
 bool rspFillObjBg(Rsp* pRSP, s32 nAddress, uObjBg* pBg);
-bool rspSetImage(struct Frame* pFrame, Rsp* pRSP, s32 nFormat, s32 nWidth, s32 nSize, s32 nImage);
+// bool rspSetImage(struct Frame* pFrame, Rsp* pRSP, s32 nFormat, s32 nWidth, s32 nSize, s32 nImage);
 bool rspFillObjBgScale(Rsp* pRSP, s32 nAddress, uObjBg* pBg);
 bool rspPut32(Rsp* pRSP, u32 nAddress, s32* pData);
 bool rspGet32(Rsp* pRSP, u32 nAddress, s32* pData);
