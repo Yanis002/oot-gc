@@ -1,5 +1,25 @@
 #include "macros.h"
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+/* macros for GPR/FPR resting and saving */
+#define SAVE_FPR(reg) _savefpr_##reg
+#define RESTORE_FPR(reg) _restfpr_##reg
+#define SAVE_GPR(reg) _savegpr_##reg
+#define RESTORE_GPR(reg) _restgpr_##reg
+#define ENTRY_SAVE_FPR(reg) entry SAVE_FPR(reg)
+#define ENTRY_RESTORE_FPR(reg) entry RESTORE_FPR(reg)
+#define ENTRY_SAVE_GPR(reg) entry SAVE_GPR(reg)
+#define ENTRY_RESTORE_GPR(reg) entry RESTORE_GPR(reg)
+#define SAVE_FPR2(reg) _savef##reg
+#define RESTORE_FPR2(reg) _restf##reg
+#define ENTRY_SAVE_FPR2(reg)
+#define ENTRY_RESTORE_FPR2(reg)
+
+#define save_restore_reg r11
+
 ASM void __div2u(void);
 ASM void __div2i(void);
 ASM void __mod2u(void);
@@ -13,6 +33,114 @@ ASM void __cvt_sll_flt(void);
 ASM void __cvt_ull_flt(void);
 ASM void __cvt_dbl_usll(void);
 ASM void __cvt_dbl_ull(void);
+void SAVE_FPR(14)(void);
+void SAVE_FPR(15)(void);
+void SAVE_FPR(16)(void);
+void SAVE_FPR(17)(void);
+void SAVE_FPR(18)(void);
+void SAVE_FPR(19)(void);
+void SAVE_FPR(20)(void);
+void SAVE_FPR(21)(void);
+void SAVE_FPR(22)(void);
+void SAVE_FPR(23)(void);
+void SAVE_FPR(24)(void);
+void SAVE_FPR(25)(void);
+void SAVE_FPR(26)(void);
+void SAVE_FPR(27)(void);
+void SAVE_FPR(28)(void);
+void SAVE_FPR(29)(void);
+void SAVE_FPR(30)(void);
+void SAVE_FPR(31)(void);
+void SAVE_FPR2(14)(void);
+void SAVE_FPR2(15)(void);
+void SAVE_FPR2(16)(void);
+void SAVE_FPR2(17)(void);
+void SAVE_FPR2(18)(void);
+void SAVE_FPR2(19)(void);
+void SAVE_FPR2(20)(void);
+void SAVE_FPR2(21)(void);
+void SAVE_FPR2(22)(void);
+void SAVE_FPR2(23)(void);
+void SAVE_FPR2(24)(void);
+void SAVE_FPR2(25)(void);
+void SAVE_FPR2(26)(void);
+void SAVE_FPR2(27)(void);
+void SAVE_FPR2(28)(void);
+void SAVE_FPR2(29)(void);
+void SAVE_FPR2(30)(void);
+void SAVE_FPR2(31)(void);
+void RESTORE_FPR(14)(void);
+void RESTORE_FPR(15)(void);
+void RESTORE_FPR(16)(void);
+void RESTORE_FPR(17)(void);
+void RESTORE_FPR(18)(void);
+void RESTORE_FPR(19)(void);
+void RESTORE_FPR(20)(void);
+void RESTORE_FPR(21)(void);
+void RESTORE_FPR(22)(void);
+void RESTORE_FPR(23)(void);
+void RESTORE_FPR(24)(void);
+void RESTORE_FPR(25)(void);
+void RESTORE_FPR(26)(void);
+void RESTORE_FPR(27)(void);
+void RESTORE_FPR(28)(void);
+void RESTORE_FPR(29)(void);
+void RESTORE_FPR(30)(void);
+void RESTORE_FPR(31)(void);
+void RESTORE_FPR2(14)(void);
+void RESTORE_FPR2(15)(void);
+void RESTORE_FPR2(16)(void);
+void RESTORE_FPR2(17)(void);
+void RESTORE_FPR2(18)(void);
+void RESTORE_FPR2(19)(void);
+void RESTORE_FPR2(20)(void);
+void RESTORE_FPR2(21)(void);
+void RESTORE_FPR2(22)(void);
+void RESTORE_FPR2(23)(void);
+void RESTORE_FPR2(24)(void);
+void RESTORE_FPR2(25)(void);
+void RESTORE_FPR2(26)(void);
+void RESTORE_FPR2(27)(void);
+void RESTORE_FPR2(28)(void);
+void RESTORE_FPR2(29)(void);
+void RESTORE_FPR2(30)(void);
+void RESTORE_FPR2(31)(void);
+void SAVE_GPR(14)(void);
+void SAVE_GPR(15)(void);
+void SAVE_GPR(16)(void);
+void SAVE_GPR(17)(void);
+void SAVE_GPR(18)(void);
+void SAVE_GPR(19)(void);
+void SAVE_GPR(20)(void);
+void SAVE_GPR(21)(void);
+void SAVE_GPR(22)(void);
+void SAVE_GPR(23)(void);
+void SAVE_GPR(24)(void);
+void SAVE_GPR(25)(void);
+void SAVE_GPR(26)(void);
+void SAVE_GPR(27)(void);
+void SAVE_GPR(28)(void);
+void SAVE_GPR(29)(void);
+void SAVE_GPR(30)(void);
+void SAVE_GPR(31)(void);
+void RESTORE_GPR(14)(void);
+void RESTORE_GPR(15)(void);
+void RESTORE_GPR(16)(void);
+void RESTORE_GPR(17)(void);
+void RESTORE_GPR(18)(void);
+void RESTORE_GPR(19)(void);
+void RESTORE_GPR(20)(void);
+void RESTORE_GPR(21)(void);
+void RESTORE_GPR(22)(void);
+void RESTORE_GPR(23)(void);
+void RESTORE_GPR(24)(void);
+void RESTORE_GPR(25)(void);
+void RESTORE_GPR(26)(void);
+void RESTORE_GPR(27)(void);
+void RESTORE_GPR(28)(void);
+void RESTORE_GPR(29)(void);
+void RESTORE_GPR(30)(void);
+void RESTORE_GPR(31)(void);
 
 static const unsigned long __constants[] = {
     0x00000000, 0x00000000, 0x41F00000, 0x00000000, 0x41E00000, 0x00000000,
@@ -607,3 +735,273 @@ func_end:
     blr
 #endif // clang-format on
 }
+
+void __cvt_dbl_ull(void) {
+#ifdef __MWERKS__ // clang-format off
+    nofralloc
+    stwu r1, -0x10(r1)
+    stfd f1, 8(r1)
+    lwz r3, 8(r1)
+    lwz r4, 0xC(r1)
+    extrwi r5, r3, 11, 1
+    cmplwi r5, 0x3FF
+    bge loc_80518FB4
+
+loc_80518FA8:
+    li r3, 0
+    li r4, 0
+    b end
+
+loc_80518FB4:
+    clrrwi. r6, r3, 31
+    bne loc_80518FA8
+    clrlwi r3, r3, 12
+    oris r3, r3, 0x10
+    addi r5, r5, -0x433
+    cmpwi r5, 0
+    bge loc_80518FF8
+    neg r5, r5
+    subfic r8, r5, 0x20
+    addic r9, r5, -0x20
+    srw r4, r4, r5
+    slw r10, r3, r8
+    or r4, r4, r10
+    srw r10, r3, r9
+    or r4, r4, r10
+    srw r3, r3, r5
+    b end
+
+loc_80518FF8:
+    cmpwi r5, 0xB
+    ble+ loc_8051900C
+    li r3, -1
+    li r4, -1
+    b end
+
+loc_8051900C:
+    subfic r8, r5, 0x20
+    addic r9, r5, -0x20
+    slw r3, r3, r5
+    srw r10, r4, r8
+    or r3, r3, r10
+    slw r10, r4, r9
+    or r3, r3, r10
+    slw r4, r4, r5
+
+end:
+    addi r1, r1, 0x10
+    blr
+#endif // clang-format on
+}
+
+static ASM void __save_fpr(void) {
+#ifdef __MWERKS__ // clang-format off
+	nofralloc
+	ENTRY_SAVE_FPR(14)
+	ENTRY_SAVE_FPR2(14)
+		stfd	fp14,-144(save_restore_reg)
+	ENTRY_SAVE_FPR(15)
+	ENTRY_SAVE_FPR2(15)
+		stfd	fp15,-136(save_restore_reg)
+	ENTRY_SAVE_FPR(16)
+	ENTRY_SAVE_FPR2(16)
+		stfd	fp16,-128(save_restore_reg)
+	ENTRY_SAVE_FPR(17)
+	ENTRY_SAVE_FPR2(17)
+		stfd	fp17,-120(save_restore_reg)
+	ENTRY_SAVE_FPR(18)
+	ENTRY_SAVE_FPR2(18)
+		stfd	fp18,-112(save_restore_reg)
+	ENTRY_SAVE_FPR(19)
+	ENTRY_SAVE_FPR2(19)
+		stfd	fp19,-104(save_restore_reg)
+	ENTRY_SAVE_FPR(20)
+	ENTRY_SAVE_FPR2(20)
+		stfd	fp20,-96(save_restore_reg)
+	ENTRY_SAVE_FPR(21)
+	ENTRY_SAVE_FPR2(21)
+		stfd	fp21,-88(save_restore_reg)
+	ENTRY_SAVE_FPR(22)
+	ENTRY_SAVE_FPR2(22)
+		stfd	fp22,-80(save_restore_reg)
+	ENTRY_SAVE_FPR(23)
+	ENTRY_SAVE_FPR2(23)
+		stfd	fp23,-72(save_restore_reg)
+	ENTRY_SAVE_FPR(24)
+	ENTRY_SAVE_FPR2(24)
+		stfd	fp24,-64(save_restore_reg)
+	ENTRY_SAVE_FPR(25)
+	ENTRY_SAVE_FPR2(25)
+		stfd	fp25,-56(save_restore_reg)
+	ENTRY_SAVE_FPR(26)
+	ENTRY_SAVE_FPR2(26)
+		stfd	fp26,-48(save_restore_reg)
+	ENTRY_SAVE_FPR(27)
+	ENTRY_SAVE_FPR2(27)
+		stfd	fp27,-40(save_restore_reg)
+	ENTRY_SAVE_FPR(28)
+	ENTRY_SAVE_FPR2(28)
+		stfd	fp28,-32(save_restore_reg)
+	ENTRY_SAVE_FPR(29)
+	ENTRY_SAVE_FPR2(29)
+		stfd	fp29,-24(save_restore_reg)
+	ENTRY_SAVE_FPR(30)
+	ENTRY_SAVE_FPR2(30)
+		stfd	fp30,-16(save_restore_reg)
+	ENTRY_SAVE_FPR(31)
+	ENTRY_SAVE_FPR2(31)
+		stfd	fp31,-8(save_restore_reg)
+		blr
+#endif // clang-format on
+}
+
+static ASM void __restore_fpr(void) {
+#ifdef __MWERKS__ // clang-format off
+	nofralloc
+	ENTRY_RESTORE_FPR(14)
+	ENTRY_RESTORE_FPR2(14)
+		lfd		fp14,-144(save_restore_reg)
+	ENTRY_RESTORE_FPR(15)
+	ENTRY_RESTORE_FPR2(15)
+		lfd		fp15,-136(save_restore_reg)
+	ENTRY_RESTORE_FPR(16)
+	ENTRY_RESTORE_FPR2(16)
+		lfd		fp16,-128(save_restore_reg)
+	ENTRY_RESTORE_FPR(17)
+	ENTRY_RESTORE_FPR2(17)
+		lfd		fp17,-120(save_restore_reg)
+	ENTRY_RESTORE_FPR(18)
+	ENTRY_RESTORE_FPR2(18)
+		lfd		fp18,-112(save_restore_reg)
+	ENTRY_RESTORE_FPR(19)
+	ENTRY_RESTORE_FPR2(19)
+		lfd		fp19,-104(save_restore_reg)
+	ENTRY_RESTORE_FPR(20)
+	ENTRY_RESTORE_FPR2(20)
+		lfd		fp20,-96(save_restore_reg)
+	ENTRY_RESTORE_FPR(21)
+	ENTRY_RESTORE_FPR2(21)
+		lfd		fp21,-88(save_restore_reg)
+	ENTRY_RESTORE_FPR(22)
+	ENTRY_RESTORE_FPR2(22)
+		lfd		fp22,-80(save_restore_reg)
+	ENTRY_RESTORE_FPR(23)
+	ENTRY_RESTORE_FPR2(23)
+		lfd		fp23,-72(save_restore_reg)
+	ENTRY_RESTORE_FPR(24)
+	ENTRY_RESTORE_FPR2(24)
+		lfd		fp24,-64(save_restore_reg)
+	ENTRY_RESTORE_FPR(25)
+	ENTRY_RESTORE_FPR2(25)
+		lfd		fp25,-56(save_restore_reg)
+	ENTRY_RESTORE_FPR(26)
+	ENTRY_RESTORE_FPR2(26)
+		lfd		fp26,-48(save_restore_reg)
+	ENTRY_RESTORE_FPR(27)
+	ENTRY_RESTORE_FPR2(27)
+		lfd		fp27,-40(save_restore_reg)
+	ENTRY_RESTORE_FPR(28)
+	ENTRY_RESTORE_FPR2(28)
+		lfd		fp28,-32(save_restore_reg)
+	ENTRY_RESTORE_FPR(29)
+	ENTRY_RESTORE_FPR2(29)
+		lfd		fp29,-24(save_restore_reg)
+	ENTRY_RESTORE_FPR(30)
+	ENTRY_RESTORE_FPR2(30)
+		lfd		fp30,-16(save_restore_reg)
+	ENTRY_RESTORE_FPR(31)
+	ENTRY_RESTORE_FPR2(31)
+		lfd		fp31,-8(save_restore_reg)
+		blr
+#endif // clang-format on
+}
+
+static ASM void __save_gpr(void) {
+#ifdef __MWERKS__ // clang-format off
+	nofralloc
+	ENTRY_SAVE_GPR(14)
+		stw		r14,-72(save_restore_reg)
+	ENTRY_SAVE_GPR(15)
+		stw		r15,-68(save_restore_reg)
+	ENTRY_SAVE_GPR(16)
+		stw		r16,-64(save_restore_reg)
+	ENTRY_SAVE_GPR(17)
+		stw		r17,-60(save_restore_reg)
+	ENTRY_SAVE_GPR(18)
+		stw		r18,-56(save_restore_reg)
+	ENTRY_SAVE_GPR(19)
+		stw		r19,-52(save_restore_reg)
+	ENTRY_SAVE_GPR(20)
+		stw		r20,-48(save_restore_reg)
+	ENTRY_SAVE_GPR(21)
+		stw		r21,-44(save_restore_reg)
+	ENTRY_SAVE_GPR(22)
+		stw		r22,-40(save_restore_reg)
+	ENTRY_SAVE_GPR(23)
+		stw		r23,-36(save_restore_reg)
+	ENTRY_SAVE_GPR(24)
+		stw		r24,-32(save_restore_reg)
+	ENTRY_SAVE_GPR(25)
+		stw		r25,-28(save_restore_reg)
+	ENTRY_SAVE_GPR(26)
+		stw		r26,-24(save_restore_reg)
+	ENTRY_SAVE_GPR(27)
+		stw		r27,-20(save_restore_reg)
+	ENTRY_SAVE_GPR(28)
+		stw		r28,-16(save_restore_reg)
+	ENTRY_SAVE_GPR(29)
+		stw		r29,-12(save_restore_reg)
+	ENTRY_SAVE_GPR(30)
+		stw		r30,-8(save_restore_reg)
+	ENTRY_SAVE_GPR(31)
+		stw		r31,-4(save_restore_reg)
+		blr
+#endif // clang-format on
+}
+
+static ASM void __restore_gpr(void){
+#ifdef __MWERKS__ // clang-format off
+	nofralloc
+	ENTRY_RESTORE_GPR(14)
+		lwz		r14,-72(save_restore_reg)
+	ENTRY_RESTORE_GPR(15)
+		lwz		r15,-68(save_restore_reg)
+	ENTRY_RESTORE_GPR(16)
+		lwz		r16,-64(save_restore_reg)
+	ENTRY_RESTORE_GPR(17)
+		lwz		r17,-60(save_restore_reg)
+	ENTRY_RESTORE_GPR(18)
+		lwz		r18,-56(save_restore_reg)
+	ENTRY_RESTORE_GPR(19)
+		lwz		r19,-52(save_restore_reg)
+	ENTRY_RESTORE_GPR(20)
+		lwz		r20,-48(save_restore_reg)
+	ENTRY_RESTORE_GPR(21)
+		lwz		r21,-44(save_restore_reg)
+	ENTRY_RESTORE_GPR(22)
+		lwz		r22,-40(save_restore_reg)
+	ENTRY_RESTORE_GPR(23)
+		lwz		r23,-36(save_restore_reg)
+	ENTRY_RESTORE_GPR(24)
+		lwz		r24,-32(save_restore_reg)
+	ENTRY_RESTORE_GPR(25)
+		lwz		r25,-28(save_restore_reg)
+	ENTRY_RESTORE_GPR(26)
+		lwz		r26,-24(save_restore_reg)
+	ENTRY_RESTORE_GPR(27)
+		lwz		r27,-20(save_restore_reg)
+	ENTRY_RESTORE_GPR(28)
+		lwz		r28,-16(save_restore_reg)
+	ENTRY_RESTORE_GPR(29)
+		lwz		r29,-12(save_restore_reg)
+	ENTRY_RESTORE_GPR(30)
+		lwz		r30,-8(save_restore_reg)
+	ENTRY_RESTORE_GPR(31)
+		lwz		r31,-4(save_restore_reg)
+		blr
+#endif // clang-format on
+}
+
+#ifdef __cplusplus
+}
+#endif
