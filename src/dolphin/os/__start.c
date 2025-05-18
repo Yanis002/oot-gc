@@ -10,7 +10,7 @@ extern void InitMetroTRK();
 extern int main(int argc, char* argv[]);
 extern void exit(int);
 
-u16 Pad3Button AT_ADDRESS(PAD3_BUTTON_ADDR);
+extern u16 Pad3Button AT_ADDRESS(PAD3_BUTTON_ADDR);
 
 #if IS_CE
 static u8 Debug_BBA = 0;

@@ -1,6 +1,7 @@
 #include "math.h"
 
 // Referenced by a some unused function in this file
+#ifdef __MWERKS__
 int __fpclassifyd__Fd(f64 x) {
     switch (__HI(x) & 0x7FF00000) {
         case 0x7FF00000: {
@@ -22,3 +23,4 @@ int __fpclassifyd__Fd(f64 x) {
     }
     return FP_NORMAL;
 }
+#endif

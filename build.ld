@@ -4,8 +4,8 @@
 
 OUTPUT_FORMAT("elf32-powerpc", "elf32-powerpc", "elf32-powerpc");
 OUTPUT_ARCH(powerpc:common);
-EXTERN(_start);
-ENTRY(_start);
+EXTERN(__start);
+ENTRY(__start);
 
 PHDRS
 {
