@@ -4,6 +4,7 @@
 #include "macros.h"
 
 #include "dolphin/private/__os.h"
+#include "dolphin/private/__dvd.h"
 
 typedef struct ApploaderHeader {
     // total size: 0x20

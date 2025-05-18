@@ -34,10 +34,14 @@ static void GXUnderflowHandler(s16 interrupt, OSContext* context) {
     __GXWriteFifoIntEnable(1, 0);
 }
 
+#ifdef __MWERKS__
 #define SOME_SET_REG_MACRO(reg, size, shift, val)                                                   \
     do {                                                                                            \
         (reg) = (u32)__rlwimi((u32)(reg), (val), (shift), (32 - (shift) - (size)), (31 - (shift))); \
     } while (0);
+#else
+#define SOME_SET_REG_MACRO(reg, size, shift, val) __OLD_SET_REG_FIELD(reg, size, shift, val)
+#endif
 
 static void GXBreakPointHandler(__OSInterrupt interrupt, OSContext* context) {
     OSContext exceptionContext;

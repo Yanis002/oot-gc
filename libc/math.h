@@ -32,6 +32,8 @@ f32 powf(f32 x, f32 y);
 f32 acosf(f32);
 f32 atan2f(f32 x, f32 y);
 
+f64 frexp(f64 x, int* eptr);
+
 static inline f64 fabs(f64 x) { return __fabs(x); }
 
 // In reality, these are "weak" functions which all have C++ names (except scalbn).

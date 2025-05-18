@@ -1,6 +1,7 @@
 #include "dolphin/ar.h"
 #include "dolphin/hw_regs.h"
 #include "dolphin/os.h"
+#include "dolphin/base/PPCArch.h"
 
 #if IS_MQ
 char* __ARVersion = "<< Dolphin SDK - AR\trelease build: Sep  5 2002 05:34:27 (0x2301) >>";

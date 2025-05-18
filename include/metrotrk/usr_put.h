@@ -7,6 +7,7 @@
 extern "C" {
 #endif
 
+void usr_put_initialize(void);
 void usr_puts_serial(const char* msg);
 
 #ifdef __cplusplus

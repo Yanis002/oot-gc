@@ -2,6 +2,8 @@
 #include "dolphin/hw_regs.h"
 #include "dolphin/os.h"
 
+void __OSEnableBarnacle(s32 chan, u32 dev);
+
 #pragma scheduling off
 
 #if IS_MQ

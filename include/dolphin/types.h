@@ -55,9 +55,9 @@ typedef int bool;
 #define NULL ((void*)0)
 #endif
 
-#include "libc/ctype.h"
-#include "libc/stdarg.h"
-#include "libc/stdio.h"
-#include "libc/string.h"
+#include "ctype.h"
+#include "stdarg.h"
+#include "stdio.h"
+#include "string.h"
 
 #endif

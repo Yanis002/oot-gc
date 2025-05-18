@@ -1,4 +1,5 @@
 #include "ansi_fp.h"
+#include "math.h"
 
 #define __HI(x) (((int*)&x)[0])
 #define __LO(x) (((int*)&x)[1])
