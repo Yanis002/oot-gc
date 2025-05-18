@@ -64,26 +64,31 @@ OBJDUMP := $(PPC_BIN_PREFIX)objdump
 
 INCLUDES := -Iinclude -Ilibc -Ibuild/$(VERSION)/include -Isrc
 
+MWCC_DIR := build/compilers/$(MWCC_VERSION)
+MWCC_CC := $(WINE) $(MWCC_DIR)/mwcceppc.exe
+MWCC_LD := $(WINE) $(MWCC_DIR)/mwldeppc.exe
+MWCC_ASFLAGS := -mgekko -I include -I libc
+MWCC_LDFLAGS := -map $(MAP) -fp hardware -nodefaults -warn off
+MWCC_CFLAGS := -c -Cpp_exceptions off -proc gekko -fp hardware -fp_contract on -enum int -align powerpc -nosyspath -RTTI off -str reuse -enc SJIS -O4,p -sym on -nodefaults -msgstyle gcc $(INCLUDES) -DVERSION=CE_J -inline auto
+
 ifeq ($(COMPILER),gcc)
 CC := $(PPC_BIN_PREFIX)gcc
 LD := $(CC)
 
 ASFLAGS := -mgekko -I include -I libc
-LDFLAGS := -T libs/common_symbols.txt -G 0 -specs=nosys.specs -Wl,--gc-sections,--section-start,.init=0x80003100 -Wl,-Map=$(MAP)
-CFLAGS := -c -mcpu=750 -meabi -mhard-float -G 0 -O3 -ffreestanding -ffunction-sections -fdata-sections -DVERSION=CE_J $(INCLUDES)
+LDFLAGS := -T libs/common_symbols.txt -specs=nosys.specs -Wl,--gc-sections,--section-start,.init=0x80003100 -Wl,-Map=$(MAP)
+CFLAGS := -c -mcpu=750 -meabi -mhard-float -O3 -ffreestanding -ffunction-sections -fdata-sections -DVERSION=CE_J $(INCLUDES)
 else
-MWCC_DIR := build/compilers/$(MWCC_VERSION)
-CC := $(WINE) $(MWCC_DIR)/mwcceppc.exe
-LD := $(WINE) $(MWCC_DIR)/mwldeppc.exe
-
-ASFLAGS := -mgekko -I include -I libc
-LDFLAGS := -map $(MAP) -fp hardware -nodefaults -warn off
-CFLAGS := -c -Cpp_exceptions off -proc gekko -fp hardware -fp_contract on -enum int -align powerpc -nosyspath -RTTI off -str reuse -enc SJIS -O4,p -sym on -nodefaults -msgstyle gcc $(INCLUDES) -DVERSION=CE_J -inline auto
+CC := $(MWCC_CC)
+LD := $(MWCC_LD)
+ASFLAGS := $(MWCC_ASFLAGS)
+LDFLAGS := $(MWCC_LDFLAGS)
+CFLAGS := $(MWCC_CFLAGS)
 endif
 
 PYTHON := python3
 
-# ELF2DOL := tools/elf2dol/elf2dol
+ELF2DOL := build/tools/dtk elf2dol
 # POSTPROC := tools/postprocess.py
 
 CFLAGS += -DNON_MATCHING
@@ -138,7 +143,7 @@ format:
 	find include libc src -name '*.h' -o -name '*.c' -o -name '*.hpp' -o -name '*.cpp' | xargs clang-format-18 -i
 
 # Note: this is meant for testing/modding purposes as a dol is easier to package and run than the original elf
-# dol: all $(DOL)
+dol: all $(DOL)
 
 .PHONY: all setup clean format dol distclean
 
@@ -155,8 +160,59 @@ $(ELF): $(O_FILES) ldscript.lcf
 	$(LD) $(LDFLAGS) -o $@ -lcf ldscript.lcf $(O_FILES)
 endif
 
-# $(DOL): $(ELF)
-# 	$(ELF2DOL) $< $@ $(SDATA_PDHR) $(SBSS_PDHR) $(TARGET_COL)
+$(DOL): $(ELF)
+	$(ELF2DOL) $< $@
+
+# compile the files with inline asm using mwcc
+ifeq ($(COMPILER),gcc)
+$(BUILD_DIR)/src/emulator/simGCN.o: src/emulator/simGCN.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/ai/ai.o: src/dolphin/ai/ai.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/base/PPCArch.o: src/dolphin/base/PPCArch.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/db/db.o: src/dolphin/db/db.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/gx/GXTransform.o: src/dolphin/gx/GXTransform.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/mtx/mtx.o: src/dolphin/mtx/mtx.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/mtx/mtx44.o: src/dolphin/mtx/mtx44.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/mtx/mtxvec.o: src/dolphin/mtx/mtxvec.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/os/%.o: src/dolphin/os/%.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/dolphin/thp/THPDec.o: src/dolphin/thp/THPDec.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/metrotrk/dolphin_trk_glue.o: src/metrotrk/dolphin_trk_glue.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/metrotrk/dolphin_trk.o: src/metrotrk/dolphin_trk.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/metrotrk/flush_cache.o: src/metrotrk/flush_cache.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/metrotrk/mpc_7xx_603e.o: src/metrotrk/mpc_7xx_603e.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/metrotrk/targimpl.o: src/metrotrk/targimpl.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/src/runtime/runtime.o: src/runtime/runtime.c
+	$(MWCC_CC) $(MWCC_CFLAGS) -o $@ $<
+endif
 
 $(BUILD_DIR)/%.o: %.s
 	$(AS) $(ASFLAGS) -o $@ $<

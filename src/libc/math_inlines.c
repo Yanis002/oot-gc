@@ -1,6 +1,7 @@
 // sqrt() is defined here and used in e_pow.c, even though it's inlined in all other cases.
 #define DONT_INLINE_SQRT
 #include "math.h"
+#include "intrinsics.h"
 
 f64 sqrt(f64 x) {
     if (x > 0.0) {

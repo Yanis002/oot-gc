@@ -1597,6 +1597,19 @@ ASM void PSMTX44MultVecNoW(Mtx44 m, Vec3f* src, Vec3f* dst){
     psq_st  f2, 0(r5), 0, 0
     psq_st  f3, 8(r5), 1, 0
     blr
+#else
+    Vec vTmp;
+    f32 w;
+
+    vTmp.x = m[0][0] * src->x + m[0][1] * src->y + m[0][2] * src->z + m[0][3];
+    vTmp.y = m[1][0] * src->x + m[1][1] * src->y + m[1][2] * src->z + m[1][3];
+    vTmp.z = m[2][0] * src->x + m[2][1] * src->y + m[2][2] * src->z + m[2][3];
+    w = m[3][0] * src->x + m[3][1] * src->y + m[3][2] * src->z + m[3][3];
+    w = 1.0f / w;
+
+    dst->x = vTmp.x * w;
+    dst->y = vTmp.y * w;
+    dst->z = vTmp.z * w;
 #endif // clang-format on
 }
 

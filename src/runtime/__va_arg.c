@@ -1,6 +1,7 @@
 #include "dolphin/types.h"
 #include "stdarg.h"
 
+#ifdef __MWERKS__
 void* __va_arg(va_list v_list, unsigned char type) {
     char* addr;
     char* reg = &v_list->gpr;
@@ -50,3 +51,4 @@ void* __va_arg(va_list v_list, unsigned char type) {
 
     return addr;
 }
+#endif

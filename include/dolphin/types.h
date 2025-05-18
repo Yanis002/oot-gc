@@ -45,7 +45,7 @@ typedef int bool;
 #error unknown compiler
 #endif
 
-#ifdef __MWERKS__
+#if (defined __MWERKS__) || (defined __GNUC__)
 #define ATTRIBUTE_ALIGN(num) __attribute__((aligned(num)))
 #else
 #define ATTRIBUTE_ALIGN(num)
@@ -59,5 +59,6 @@ typedef int bool;
 #include "stdarg.h"
 #include "stdio.h"
 #include "string.h"
+#include "intrinsics.h"
 
 #endif

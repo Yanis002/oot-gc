@@ -33,3 +33,5 @@ BOOT_REGION_START       = 0x812FDFF0;
 BOOT_REGION_END         = 0x812FDFEC;
 OS_RESET_CODE           = 0x800030F0;
 OS_REBOOT_BOOL          = 0x800030E2;
+_rom_copy_info          = 0x80005514;
+_bss_init_info          = 0x80005580;
