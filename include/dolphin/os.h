@@ -69,19 +69,20 @@ volatile OSContext* __OSCurrentContext AT_ADDRESS(OS_BASE_CACHED | 0x00D4);
 int __EXIProbeStartTime[2] AT_ADDRESS(OS_BASE_CACHED | 0x30C0);
 u8 GameChoice AT_ADDRESS(OS_BASE_CACHED | 0x30E3);
 #else
-#define __OSPhysicalMemSize (*(u32*)(OS_BASE_CACHED | 0x0028))
-#define __OSTVMode (*(volatile int*)(OS_BASE_CACHED | 0x00CC))
-#define __OSActiveThreadQueue (*(OSThreadQueue*)(OS_BASE_CACHED | 0x00DC))
-#define __OSCurrentThread ((OSThread*)(OS_BASE_CACHED | 0x00E4))
-#define __OSSimulatedMemSize (*(u32*)(OS_BASE_CACHED | 0x00F0))
-#define __OSBusClock (*(u32*)(OS_BASE_CACHED | 0x00F8))
-#define __OSCoreClock (*(u32*)(OS_BASE_CACHED | 0x00FC))
-#define __OSDeviceCode (*(volatile u16*)(OS_BASE_CACHED | 0x30E6))
-#define __OSWirelessPadFixMode (*(u16*)(OS_BASE_CACHED | 0x30E0))
-#define __OSFPUContext ((OSContext*)(OS_BASE_CACHED | 0x00D8))
-#define __OSFPUContext ((OSContext*)(OS_BASE_CACHED | 0x00D8))
-#define __EXIProbeStartTime ((int*)(OS_BASE_CACHED | 0x30C0))
-#define GameChoice (*(u8*)(OS_BASE_CACHED | 0x30E3))
+// see `common_addresses.txt` to get the addresses
+extern u32 __OSPhysicalMemSize;
+extern volatile int __OSTVMode;
+extern OSThreadQueue __OSActiveThreadQueue;
+extern OSThread* __OSCurrentThread;
+extern u32 __OSSimulatedMemSize;
+extern u32 __OSBusClock;
+extern u32 __OSCoreClock;
+extern volatile u16 __OSDeviceCode;
+extern u16 __OSWirelessPadFixMode;
+extern OSContext* __OSFPUContext;
+extern volatile OSContext* __OSCurrentContext;
+extern int __EXIProbeStartTime[2];
+extern u8 GameChoice;
 #endif
 
 #define OS_BUS_CLOCK __OSBusClock

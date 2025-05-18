@@ -1,11 +1,12 @@
 NON_MATCHING := 1
 VERSION := ce-j
 
+# either mwcc or gcc
+COMPILER := gcc
+
 #-------------------------------------------------------------------------------
 # Files
 #-------------------------------------------------------------------------------
-
-TARGET_COL := gamecube
 
 TARGET := oot-gcc
 
@@ -51,19 +52,44 @@ else
 	endif
 endif
 
-PPC_BIN_PREFIX := build/binutils/powerpc-eabi-
+ifneq ($(strip $(DEVKITPPC)),)
+PPC_BIN_PREFIX      = $(DEVKITPPC)/bin/powerpc-eabi-
+else
+PPC_BIN_PREFIX      = powerpc-eabi-
+endif
+
 AS := $(PPC_BIN_PREFIX)as
 OBJCOPY := $(PPC_BIN_PREFIX)objcopy
 OBJDUMP := $(PPC_BIN_PREFIX)objdump
 
+INCLUDES := -Iinclude -Ilibc -Ibuild/$(VERSION)/include -Isrc
+
+ifeq ($(COMPILER),gcc)
+CC := $(PPC_BIN_PREFIX)gcc
+LD := $(CC)
+
+ASFLAGS := -mgekko -I include -I libc
+LDFLAGS := -T libs/common_symbols.txt -G 0 -specs=nosys.specs -Wl,--gc-sections,--section-start,.init=0x80003100 -Wl,-Map=$(MAP)
+CFLAGS := -c -mcpu=750 -meabi -mhard-float -G 0 -O3 -ffreestanding -ffunction-sections -fdata-sections -DVERSION=CE_J $(INCLUDES)
+else
 MWCC_DIR := build/compilers/$(MWCC_VERSION)
 CC := $(WINE) $(MWCC_DIR)/mwcceppc.exe
 LD := $(WINE) $(MWCC_DIR)/mwldeppc.exe
 
-DOLPHIN_MWCC_DIR := build/compilers/GC/1.2.5n
-DOLPHIN_CC := $(WINE) $(DOLPHIN_MWCC_DIR)/mwcceppc.exe
+ASFLAGS := -mgekko -I include -I libc
+LDFLAGS := -map $(MAP) -fp hardware -nodefaults -warn off
+CFLAGS := -c -Cpp_exceptions off -proc gekko -fp hardware -fp_contract on -enum int -align powerpc -nosyspath -RTTI off -str reuse -enc SJIS -O4,p -sym on -nodefaults -msgstyle gcc $(INCLUDES) -DVERSION=CE_J -inline auto
+endif
+
+PYTHON := python3
+
+# ELF2DOL := tools/elf2dol/elf2dol
+# POSTPROC := tools/postprocess.py
+
+CFLAGS += -DNON_MATCHING
 
 CC_CHECK := gcc
+CC_CHECK_FLAGS := -fno-builtin -fsyntax-only -std=gnu99 -I include -I libc $(CC_CHECK_WARNINGS) -DNON_MATCHING -DDOLPHIN_REV=$(DOLPHIN_REVISION)
 CC_CHECK_WARNINGS := \
 	-Wall \
 	-Wextra \
@@ -81,33 +107,6 @@ CC_CHECK_WARNINGS := \
 	-Wno-unused-parameter \
 	-Wno-unused-variable
 
-SHA1SUM := sha1sum
-PYTHON := python3
-ELF2DOL := tools/elf2dol/elf2dol
-
-ASM_PROCESSOR_DIR := tools/asm_processor
-ASM_PROCESSOR := $(ASM_PROCESSOR_DIR)/compile.sh
-
-POSTPROC := tools/postprocess.py
-
-# Options
-INCLUDES := -Iinclude -Ilibc -Ibuild/$(VERSION)/include -Isrc
-ASFLAGS := -mgekko -I include -I libc
-LDFLAGS := -map $(MAP) -fp hardware -nodefaults -warn off
-CFLAGS := -c -Cpp_exceptions off -proc gekko -fp hardware -fp_contract on -enum int -align powerpc -nosyspath -RTTI off -str reuse -enc SJIS -O4,p -sym on -nodefaults -msgstyle gcc $(INCLUDES) -DVERSION=CE_J
-INLINE_CFLAGS := -inline auto
-CC_CHECK_FLAGS := -fno-builtin -fsyntax-only -std=gnu99 -I include -I libc $(CC_CHECK_WARNINGS) -DNON_MATCHING -DDOLPHIN_REV=$(DOLPHIN_REVISION)
-
-ifneq ($(NON_MATCHING),0)
-	CFLAGS += -DNON_MATCHING
-endif
-
-CFLAGS += $(INLINE_CFLAGS)
-
-# elf2dol needs to know these in order to calculate sbss correctly.
-SDATA_PDHR 	:= 9
-SBSS_PDHR 	:= 10
-
 #-------------------------------------------------------------------------------
 # Recipes
 #-------------------------------------------------------------------------------
@@ -119,16 +118,16 @@ default: all
 # Compare to the checksum of a stripped original
 all: $(ELF)
 
-setup:
-# Build/download tools
-	$(MAKE) -C tools
-# Patch linker
-	tools/patch_linker.sh $(MWCC_DIR)/mwldeppc.exe
-# Strip debugging sections and .mwcats.text section so only the important sections remain
-# Tested to ensure it doesn't crash at least on Dolphin
-	$(OBJCOPY) SIM_original.elf SIM.elf -R .mwcats.text -g
-# Copy again to strip symbols since we don't want to diff those
-	$(OBJCOPY) SIM.elf SIM_S.elf -S
+# setup:
+# # Build/download tools
+# 	$(MAKE) -C tools
+# # Patch linker
+# 	tools/patch_linker.sh $(MWCC_DIR)/mwldeppc.exe
+# # Strip debugging sections and .mwcats.text section so only the important sections remain
+# # Tested to ensure it doesn't crash at least on Dolphin
+# 	$(OBJCOPY) SIM_original.elf SIM.elf -R .mwcats.text -g
+# # Copy again to strip symbols since we don't want to diff those
+# 	$(OBJCOPY) SIM.elf SIM_S.elf -S
 
 clean:
 	rm -f -r $(BUILD_DIR)
@@ -139,7 +138,7 @@ format:
 	find include libc src -name '*.h' -o -name '*.c' -o -name '*.hpp' -o -name '*.cpp' | xargs clang-format-18 -i
 
 # Note: this is meant for testing/modding purposes as a dol is easier to package and run than the original elf
-dol: all $(DOL)
+# dol: all $(DOL)
 
 .PHONY: all setup clean format dol distclean
 
@@ -148,15 +147,22 @@ ALL_DIRS := build $(BUILD_DIR) $(addprefix $(BUILD_DIR)/,$(SRC_DIRS) $(ASM_DIRS)
 # Make sure build directory exists before compiling anything
 DUMMY != mkdir -p $(ALL_DIRS)
 
+ifeq ($(COMPILER),gcc)
+$(ELF): $(O_FILES) build.ld
+	$(LD) $(LDFLAGS) -o $@ -T build.ld $(O_FILES) 
+else
 $(ELF): $(O_FILES) ldscript.lcf
-	$(RM) -rf $(ASM_PROCESSOR_DIR)/tmp
 	$(LD) $(LDFLAGS) -o $@ -lcf ldscript.lcf $(O_FILES)
+endif
 
-$(DOL): $(ELF)
-	$(ELF2DOL) $< $@ $(SDATA_PDHR) $(SBSS_PDHR) $(TARGET_COL)
+# $(DOL): $(ELF)
+# 	$(ELF2DOL) $< $@ $(SDATA_PDHR) $(SBSS_PDHR) $(TARGET_COL)
 
 $(BUILD_DIR)/%.o: %.s
 	$(AS) $(ASFLAGS) -o $@ $<
 
 $(BUILD_DIR)/%.o: %.c
-	$(CC) $(CFLAGS) $(INLINE_CFLAGS) -o $@ $<
+	$(CC) $(CFLAGS) -o $@ $<
+
+$(BUILD_DIR)/%.o: %.cpp
+	$(CC) $(CFLAGS) -o $@ $<
