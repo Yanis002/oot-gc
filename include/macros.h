@@ -47,7 +47,7 @@ inline void padStack(void) { int pad = 0; }
 #define WEAK __declspec(weak)
 #define ASM asm
 #elif __GNUC__
-#define DECL_SECTION(x) // __attribute__((section (x)))
+#define DECL_SECTION(x) __attribute__((section (x)))
 #define WEAK __attribute__((weak))
 #define ASM
 #else

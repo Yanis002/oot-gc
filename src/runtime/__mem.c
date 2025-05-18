@@ -3,6 +3,7 @@
 #include "stddef.h"
 
 INIT void* memcpy(void* dst, const void* src, size_t n) {
+#ifdef __MWERKS__
     const char* p;
     char* q;
     int rev = ((u32)src < (u32)dst);
@@ -18,6 +19,17 @@ INIT void* memcpy(void* dst, const void* src, size_t n) {
     }
 
     return dst;
+#else
+    char* _dst = dst;
+    const char* _src = src;
+
+    while (n > 0) {
+        *_dst++ = *_src++;
+        n--;
+    }
+
+    return dst;
+#endif
 }
 
 INIT void __fill_mem(void* dst, int val, size_t n) {
