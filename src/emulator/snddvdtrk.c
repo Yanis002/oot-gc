@@ -47,16 +47,11 @@ static void DVDTrackGetErrorCallback(s32 result) {
     // -> DVDTrackList gDVDTrackList;
 }
 
-static void CheckErrorStatus(volatile s32 result, DVDCommandBlock* block) {
-    // Parameters
-    // s32 result; // r1+0x8
+static void CheckErrorStatus(s32 result, DVDCommandBlock* block) {
+    s32* pResult = &result;
 
-    // References
-    // -> DVDTrackList gDVDTrackList;
-
-    int new_var;
-
-    gDVDTrackList.error.code = result;
+    if (*pResult < 0) {}
+    gDVDTrackList.error.code = *pResult;
     gDVDTrackList.errorState = ERROR_RETRIEVED;
 }
 
