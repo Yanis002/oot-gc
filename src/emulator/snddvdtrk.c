@@ -366,37 +366,37 @@ static inline s32 UnknownInline3() {
 }
 
 static inline bool Inline_1(u32 status) {
-	bool ret = true;
+    bool ret = true;
 
-	if ((status - 4) > 1) {
-	    ret = false;
-	}
+    if ((status - 4) > 1) {
+        ret = false;
+    }
 
-	return ret;
+    return ret;
 }
 
 static inline bool Inline_2(s32 status) {
-	bool ret = true;
+    bool ret = true;
 
-	if (!Inline_1(status) && status != 6) {
-		ret = 0;
-	}
+    if (!Inline_1(status) && status != 6) {
+        ret = 0;
+    }
 
-	return ret;
+    return ret;
 }
 
 static inline bool Inline_3(s32 status) {
-	bool ret = true;
+    bool ret = true;
 
-	if (!Inline_2(status) && status != 11) {
-		ret = false;
-	}
+    if (!Inline_2(status) && status != 11) {
+        ret = false;
+    }
 
-	return ret;
+    return ret;
 }
 
 static inline bool Inline_4(s32 status, s32 thing) {
-     if (thing == 0) {
+    if (thing == 0) {
         return false;
     }
 
@@ -432,7 +432,7 @@ void UpdateDVDTrackList(void) {
             var_r29 = 0;
         }
 
-        if ((var_r29 == 0) && (DVDCheckDisk() != 1) && ((s32) vErrReadDone == 0)) {
+        if ((var_r29 == 0) && (DVDCheckDisk() != 1) && ((s32)vErrReadDone == 0)) {
             vErrReadDone = 1;
             DVDOpen("yes.raw", &sErrorDFI);
             DVDSeekAsyncPrio(&sErrorDFI, 0, ErrorCallBack, 2);
@@ -440,8 +440,8 @@ void UpdateDVDTrackList(void) {
             status = DVDGetDriveStatus();
             var_r29 = 1;
             if (!Inline_3(status) && (status != -1)) {
-				var_r29 = 0;
-			}
+                var_r29 = 0;
+            }
         }
 
         error = Inline_4(status, var_r29);
@@ -470,7 +470,8 @@ void UpdateDVDTrackList(void) {
                 counter++;
 
                 if (gDVDTrackList.errorState == ERROR_RETRIEVED) {
-                    if (gDVDTrackList.error.code < 0 || gDVDTrackList.error.bytes[3] == 0 || gDVDTrackList.error.bytes[0] != 0 || gDVDTrackList.error.bytes[1] != 0) {
+                    if (gDVDTrackList.error.code < 0 || gDVDTrackList.error.bytes[3] == 0 ||
+                        gDVDTrackList.error.bytes[0] != 0 || gDVDTrackList.error.bytes[1] != 0) {
                         if (!(gDVDTrackList.curState.flags & 1)) {
                             DVDClose(&gDVDTrackList.playingFileInfo);
                             AISetStreamPlayState(0);
@@ -487,7 +488,8 @@ void UpdateDVDTrackList(void) {
                     }
 
                     gDVDTrackList.errorState = NO_ERROR_RETRIEVING;
-                } else if (!(counter & 0xF) && gDVDTrackList.state == TRACK_PLAYING_STREAM && gDVDTrackList.errorState == NO_ERROR_RETRIEVING) {
+                } else if (!(counter & 0xF) && gDVDTrackList.state == TRACK_PLAYING_STREAM &&
+                           gDVDTrackList.errorState == NO_ERROR_RETRIEVING) {
                     gDVDTrackList.errorState = RETRIEVING_ERROR;
                     DVDGetStreamErrorStatusAsync(&gDVDTrackList.playingFileInfo.cb, &CheckErrorStatus);
                 }
