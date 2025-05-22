@@ -725,7 +725,7 @@ static bool rspParseGBI_Setup(Rsp* pRSP, RspTask* pTask) {
         return false;
     }
 
-    if (pRSP->eTypeUCode != RUT_ZSORT || pRSP->nPass == 1) {
+    if ((pRSP->eTypeUCode != RUT_ZSORT && pRSP->eTypeUCode != RUT_F3DEX3) || pRSP->nPass == 1) {
         if (!frameBegin(SYSTEM_FRAME(pRSP->pHost), pRSP->nCountVertex)) {
             return false;
         }
@@ -761,6 +761,10 @@ static bool rspParseGBI(Rsp* pRSP, bool* pbDone, s32 nCount) {
             case RUT_L3DEX2:
                 nStatus = rspParseGBI_F3DEX2(pRSP, &pRSP->apDL[pRSP->iDL], &bDone);
                 break;
+            case RUT_F3DEX3:
+                //! TODO: rspParseGBI_F3DEX3
+                nStatus = rspParseGBI_F3DEX2(pRSP, &pRSP->apDL[pRSP->iDL], &bDone);
+                break;
             default:
                 return false;
         }
@@ -785,7 +789,7 @@ static bool rspParseGBI(Rsp* pRSP, bool* pbDone, s32 nCount) {
         }
     }
 
-    if (pRSP->eTypeUCode == RUT_ZSORT) {
+    if (pRSP->eTypeUCode == RUT_ZSORT || pRSP->eTypeUCode == RUT_F3DEX3) {
         if (pRSP->nPass == 1) {
             pRSP->nPass = 2;
         } else {
