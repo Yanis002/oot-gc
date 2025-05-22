@@ -80,6 +80,7 @@ typedef enum RspUCodeType {
     RUT_AUDIO1 = 11,
     RUT_AUDIO2 = 12,
     RUT_JPEG = 13,
+    RUT_F3DEX3 = 14,
 } RspUCodeType;
 
 // __anon_0x44829

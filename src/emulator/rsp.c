@@ -233,10 +233,38 @@ static bool rspFindUCode(Rsp* pRSP, RspTask* pTask) {
         nCheckSum += pFUCode[i];
     }
 
+    OSReport("pFUData at 0x%08X\n", pFUData);
+
     for (i = 0; i < (nLengthData >> 3); i++) {
         nFUData = pFUData[i];
         for (j = 0; j < 8; j++) {
             aBigBuffer[i * 8 + j] = nFUData >> (int)(56 - j * 8);
+        }
+
+        if (((nFUData >> 16) & 0xFFFFFFFFFFFF) == 0x463344455833) { // 'F3DEX3'
+            u64 nFUDataNext = pFUData[i + 1];
+
+            eType = RUT_F3DEX3;
+            pRSP->nVersionUCode = 0;
+
+            acUCodeName[0] = 'F';
+            acUCodeName[1] = '3';
+            acUCodeName[2] = 'D';
+            acUCodeName[3] = 'E';
+            acUCodeName[4] = 'X';
+            acUCodeName[5] = '3';
+            acUCodeName[6] = (nFUData >> 8) & 0xFF;
+            acUCodeName[7] = nFUData & 0xFF;
+            acUCodeName[8] = (nFUDataNext >> 56) & 0xFF;
+            acUCodeName[9] = (nFUDataNext >> 48) & 0xFF;
+            acUCodeName[10] = (nFUDataNext >> 40) & 0xFF;
+            acUCodeName[11] = (nFUDataNext >> 32) & 0xFF;
+            acUCodeName[12] = (nFUDataNext >> 24) & 0xFF;
+            acUCodeName[13] = (nFUDataNext >> 16) & 0xFF;
+            acUCodeName[14] = '\0';
+
+            OSReport("F3DEX3 Version: %s\n", acUCodeName);
+            break;
         }
 
         if (((nFUData >> 32) & 0xFFFFFFFF) != 'RSP ') {
