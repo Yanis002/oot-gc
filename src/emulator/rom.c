@@ -9,6 +9,7 @@
 #include "emulator/xlFile.h"
 #include "emulator/xlHeap.h"
 #include "macros.h"
+#include "string.h"
 
 static bool romMakeFreeCache(Rom* pROM, s32* piCache, RomCacheType eType);
 static bool romSetBlockCache(Rom* pROM, s32 iBlock, RomCacheType eType);
@@ -17,6 +18,23 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress);
 
 extern u8 greadingDisk[];
 extern u8 gbar[];
+
+enum {
+    CONFIG_SCENE_START_OFFSET,
+    CONFIG_CODE_START, // code
+    CONFIG_CODE_END, // ovl_title
+    CONFIG_SKYBOX_START, // vr_cloud3_pal_static
+    CONFIG_MSG_FIELD_START, // elf_message_field
+    CONFIG_MSG_YDAN_START, // elf_message_ydan
+    CONFIG_SCENE_START,
+};
+
+#define DMA_ENTRY_SIZE 32
+extern int atoi(const char* str);
+
+static u32 ganOffsetBlockFromDmadata[500] ATTRIBUTE_ALIGN(32) = {0};
+static u32 ganConfig[500] ATTRIBUTE_ALIGN(32);
+static s32 giLastScene;
 
 _XL_OBJECTTYPE gClassROM = {
     "ROM",
@@ -246,10 +264,13 @@ static bool romMakeFreeCache(Rom* pROM, s32* piCache, RomCacheType eType) {
         if (!romFindFreeCache(pROM, &iCache, RCT_RAM)) {
             if (romFindOldestBlock(pROM, &iBlockOldest, RCT_RAM, 2)) {
                 iCache = pROM->aBlock[iBlockOldest].iCache;
-                if (!romSetBlockCache(pROM, iBlockOldest, RCT_ARAM) &&
-                    romFindOldestBlock(pROM, &iBlockOldest, RCT_RAM, 0)) {
-                    iCache = pROM->aBlock[iBlockOldest].iCache;
-                    romMarkBlockAsFree(pROM, iBlockOldest);
+                if (!romSetBlockCache(pROM, iBlockOldest, RCT_ARAM)) {
+                    if (romFindOldestBlock(pROM, &iBlockOldest, RCT_RAM, 0)) {
+                        iCache = pROM->aBlock[iBlockOldest].iCache;
+                        romMarkBlockAsFree(pROM, iBlockOldest);
+                    } else {
+                        OSReport("romMakeFreeCache: no ROM cache space available!\n");
+                    }
                 }
             } else {
                 return false;
@@ -1559,6 +1580,104 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
 
 #endif
 
+static bool romGetDmaConfig(Rom* pROM) {
+    static char entry[DMA_ENTRY_SIZE] ATTRIBUTE_ALIGN(32);
+    char acValue[16];
+    s32 nFileSize = pROM->dmaFileInfo.length / DMA_ENTRY_SIZE;
+    s32 iConfig = 0;
+    s32 iFilePos;
+    s32 iData;
+    s32 iEntry;
+
+    /**
+     * you can generate 'dma_config.txt' from oot decomp with the following tool:
+     * https://gist.github.com/Yanis42/dd54a76f41b0395c28b511b335262e12
+     */
+
+    // get dmadata from config file
+    for (iFilePos = 0; iFilePos < nFileSize; iFilePos++) {
+        // reset value array
+        for (iData = 0; iData < ARRAY_COUNT(acValue); iData++) {
+            acValue[iData] = '\0';
+        }
+
+        // read the file
+        if (!simulatorDVDRead(&pROM->dmaFileInfo, (void*)entry, DMA_ENTRY_SIZE, iFilePos * DMA_ENTRY_SIZE, NULL)) {
+            return false;
+        }
+
+        // fetch the data
+        for (iEntry = 0; iEntry < ARRAY_COUNT(entry); iEntry += ARRAY_COUNT(acValue)) {
+            for (iData = 0; iData < ARRAY_COUNT(acValue); iData++) {
+                acValue[iData] = entry[iData + iEntry];
+            }
+            ganConfig[iConfig++] = atoi(acValue);
+            OSReport("DMA Config Entry Found - %d;\n", ganConfig[iConfig - 1]);
+        }
+    }
+
+    giLastScene = iConfig - 1;
+    return true;
+}
+
+// Set up ROM cache for OOT (gz or not) from dmadata, so that files can move around between versions.
+static bool romCacheGameFromDmadata(Rom* pROM) {
+    s32 blockCount = 0;
+    s32 nCountOffsetBlocks = 0;
+    s32 rangeStart;
+    s32 rangeEnd;
+    s32 i;
+
+    if (!romGetDmaConfig(pROM)) {
+        return false;
+    }
+
+    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = ganConfig[CONFIG_MSG_FIELD_START];
+    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = ganConfig[CONFIG_MSG_YDAN_START] - 1;
+
+    // scene file indices
+    for (i = 0; i < (giLastScene + 1); i++) {
+        if (i >= CONFIG_SCENE_START) {
+            rangeStart = ganConfig[i];
+            if (i + 1 < (giLastScene + 1)) {
+                rangeEnd = ganConfig[i + 1] - 1;
+            } else {
+                rangeEnd = ganConfig[giLastScene] - 1;
+            }
+        }
+
+        if (rangeStart != rangeEnd + 1) {
+            ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeStart;
+            ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeEnd;
+        } else {
+            OSReport("Warning: rangeStart == rangeEnd: %d, %d, %d\n", i, rangeStart, rangeEnd);
+        }
+    }
+
+    pROM->anOffsetBlock = ganOffsetBlockFromDmadata;
+    pROM->nCountOffsetBlocks = nCountOffsetBlocks;
+
+    // Load up to the start of code
+    rangeStart = 0;
+    rangeEnd = ganConfig[CONFIG_CODE_START] - 1;
+    OSReport("romCacheGameFromDmadata: loading range %08X-%08X\n", rangeStart, rangeEnd);
+    if (!romLoadRange(pROM, rangeStart, rangeEnd, &blockCount, 1, &romCacheGame_ZELDA)) {
+        return false;
+    }
+
+    // Load from end of code to start of skyboxes (except for normal sky)
+    rangeStart = ganConfig[CONFIG_CODE_END];
+    rangeEnd = ganConfig[CONFIG_SKYBOX_START] - 1;
+
+    OSReport("romCacheGameFromDmadata: loading range %08X-%08X\n", rangeStart, rangeEnd);
+    if (!romLoadRange(pROM, rangeStart, rangeEnd, &blockCount, 1, &romCacheGame_ZELDA)) {
+        return false;
+    }
+
+    OSReport("romCacheGameFromDmadata: loaded %d blocks (%08X bytes)\n", blockCount, blockCount * 0x2000);
+    return true;
+}
+
 #if VERSION == MQ_J
 
 static bool romCacheGame(Rom* pROM) {
@@ -1596,20 +1715,8 @@ static bool romCacheGame(Rom* pROM) {
             gbDisplayedError = true;
         }
 
-        if (gnFlagZelda & 2) {
-            if (!romLoadRange(pROM, 0, 0xA6251F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xAFDAA0, 0x0168515F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-        } else {
-            if (!romLoadRange(pROM, 0, 0xA6251F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xAFDB00, 0x01684BCF, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
+        if (!romCacheGameFromDmadata(pROM)) {
+            return false;
         }
     } else if (romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE")) {
         if (!romLoadRange(pROM, 0, 0xEFAB5F, &blockCount, 1, NULL)) {
@@ -1688,20 +1795,8 @@ static bool romCacheGame(Rom* pROM) {
             gbDisplayedError = true;
         }
 
-        if (gnFlagZelda & 2) {
-            if (!romLoadRange(pROM, 0, 0xA6251F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xAFDAA0, 0x0168515F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-        } else {
-            if (!romLoadRange(pROM, 0, 0xA6251F, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
-            if (!romLoadRange(pROM, 0xAFDB00, 0x01684BCF, &blockCount, 1, &romCacheGame_ZELDA)) {
-                return false;
-            }
+        if (!romCacheGameFromDmadata(pROM)) {
+            return false;
         }
     } else if (romTestCode(pROM, "NZSJ") || romTestCode(pROM, "NZSE")) {
         if (!romLoadRange(pROM, 0, 0xEFAB5F, &blockCount, 1, NULL)) {
@@ -2956,6 +3051,7 @@ static inline void romOpen(Rom* pROM, char* szNameFile) {
 
     pROM->bFlip = bFlip;
     simulatorDVDOpen(szNameFile, &pROM->fileInfo);
+    simulatorDVDOpen("dma_config.txt", &pROM->dmaFileInfo);
 }
 
 bool romSetImage(Rom* pROM, char* szNameFile) {

@@ -13,5 +13,6 @@ bool xlHeapFill32(void* pHeap, s32 nByteCount, u32 nData);
 bool xlHeapGetFree(s32* pnFreeBytes);
 bool xlHeapSetup(void* pHeap, s32 nSizeBytes);
 bool xlHeapReset(void);
+void xlHeapReportStats(void);
 
 #endif

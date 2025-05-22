@@ -91,6 +91,12 @@
 #define Z_BNR_PATH "TPL/z_bnr.tpl"
 #endif
 
+// overrides
+#undef MCARD_FILE_NAME
+#undef MCARD_COMMENT
+#define MCARD_FILE_NAME "HACKERN64"
+#define MCARD_COMMENT "HackerN64 Game Mod"
+
 _XL_OBJECTTYPE gClassSystem = {
     "SYSTEM (N64)",
     sizeof(System),
@@ -160,12 +166,12 @@ static u32 contMap[][GCN_BTN_COUNT] = {
         0x04000000,     // GCN_BTN_UNK9
         0x02000000,     // GCN_BTN_UNK10
         0x01000000,     // GCN_BTN_UNK11
-        N64_BTN_L,      // GCN_BTN_DPAD_UP
-        N64_BTN_L,      // GCN_BTN_DPAD_DOWN
-        N64_BTN_L,      // GCN_BTN_DPAD_LEFT
-        N64_BTN_L,      // GCN_BTN_DPAD_RIGHT
+        N64_BTN_DUP,    // GCN_BTN_DPAD_UP
+        N64_BTN_DDOWN,  // GCN_BTN_DPAD_DOWN
+        N64_BTN_DLEFT,  // GCN_BTN_DPAD_LEFT
+        N64_BTN_DRIGHT, // GCN_BTN_DPAD_RIGHT
         N64_BTN_CUP,    // GCN_BTN_CSTICK_UP
-        N64_BTN_CDOWN,  // GCN_BTN_CSTICK_DOWN
+        N64_BTN_L,      // GCN_BTN_CSTICK_DOWN
         N64_BTN_CLEFT,  // GCN_BTN_CSTICK_LEFT
         N64_BTN_CRIGHT, // GCN_BTN_CSTICK_RIGHT
     },
@@ -235,6 +241,7 @@ static bool systemSetupGameRAM(System* pSystem) {
     u32 nCode;
     u32 iCode;
     u32 anCode[0x100]; // size = 0x400
+    char* acNameFile;
 
     bExpansion = false;
     pROM = SYSTEM_ROM(pSystem);
@@ -406,6 +413,16 @@ static bool systemSetupGameRAM(System* pSystem) {
         nSizeCacheROM -= nSizeExtra;
     }
 
+    // Overrides for gz
+    acNameFile = SYSTEM_ROM(pSystem)->acNameFile;
+    if (strcmp(acNameFile, "zlj_f.n64") == 0) {
+        gnFlagZelda = 2;
+    } else if (strcmp(acNameFile, "urazlj_f.n64") == 0) {
+        gnFlagZelda = 4;
+    }
+    nSizeRAM = 0x800000; // 8 MiB
+    nSizeCacheROM = 0x500000; // 5 MiB
+
     if (!ramSetSize(SYSTEM_RAM(pSystem), nSizeRAM)) {
         return false;
     }
@@ -414,6 +431,8 @@ static bool systemSetupGameRAM(System* pSystem) {
         return false;
     }
 
+    OSReport("systemSetupGameRAM: filename=%s nCode=%08X gnFlagZelda=%d nSizeRAM=%08X nSizeCacheROM=%08X\n", acNameFile,
+             nCode, gnFlagZelda, nSizeRAM, nSizeCacheROM);
     return true;
 }
 
@@ -870,7 +889,7 @@ static bool systemSetupGameALL(System* pSystem) {
 
                 DVDClose(&fileInfo);
                 simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
-                mcardOpen(&mCard, MCARD_FILE_NAME, MCARD_COMMENT, mCard.saveIcon, mCard.saveBanner, "ZELDAX",
+                mcardOpen(&mCard, MCARD_FILE_NAME, MCARD_COMMENT, mCard.saveIcon, mCard.saveBanner, "HACKERN64X",
                           &gSystemRomConfigurationList[i].currentControllerConfig, MCARD_FILE_SIZE, 0x8000);
             } else {
 #if IS_OOT_EU || IS_MM
@@ -895,7 +914,7 @@ static bool systemSetupGameALL(System* pSystem) {
 
                 DVDClose(&fileInfo);
                 simulatorUnpackTexPalette((TEXPalette*)mCard.saveBanner);
-                mcardOpen(&mCard, MCARD_FILE_NAME, MCARD_COMMENT, mCard.saveIcon, mCard.saveBanner, "ZELDA",
+                mcardOpen(&mCard, MCARD_FILE_NAME, MCARD_COMMENT, mCard.saveIcon, mCard.saveBanner, "HACKERN64X",
                           &gSystemRomConfigurationList[i].currentControllerConfig, MCARD_FILE_SIZE, 0x8000);
             }
 #if IS_OOT_EU || IS_MM_EU

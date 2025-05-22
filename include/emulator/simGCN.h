@@ -139,6 +139,10 @@ extern u8 TexCoords_u8[];
 
 extern char gpErrorMessageBuffer[20480];
 
+extern bool gPreviousAllowResetSetting;
+extern bool gPreviousForceMenuSetting;
+extern bool gPreviousIPLSetting;
+
 void simulatorUnpackTexPalette(TEXPalette* pal);
 bool simulatorDVDOpen(char* szNameFile, DVDFileInfo* pFileInfo);
 bool simulatorDVDRead(DVDFileInfo* pFileInfo, void* anData, s32 nSizeRead, s32 nOffset, DVDCallback callback);
