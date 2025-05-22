@@ -1000,7 +1000,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                     default:
                         return false;
                 }
-            } else { // F3DEX2: G_MOVEMEM
+            } else { // F3DEX2/F3DEX3: G_MOVEMEM
                 switch (nCommandHi & 0xFF) {
                     case 0x08: { // G_MV_VIEWPORT
                         void* pData;
@@ -1040,6 +1040,8 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                     }
                     case 0x0E: { // G_MV_MATRIX
                         s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
+
+                        OSReport("rspParseGBI_F3DEX2: F3DEX2:G_MV_MATRIX\n");
 
                         if (!rspLoadMatrix(pRSP, nAddress, matrix)) {
                             return false;
@@ -1117,7 +1119,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 if (!rspObjRectangleR(pRSP, pFrame, nAddress)) {
                     return false;
                 }
-            } else if (pRSP->eTypeUCode == RUT_ZSORT) { // ZSORT: G_ZS_SENDSIGNAL
+            } else if (pRSP->eTypeUCode == RUT_ZSORT || pRSP->eTypeUCode == RUT_F3DEX3) { // ZSORT: G_ZS_SENDSIGNAL
                 pRSP->nStatus |= nCommandLo | (nCommandHi & 0xFFFFFF);
                 xlObjectEvent(pRSP->pHost, 0x1000, (void*)5);
             } else { // F3DEX2: G_MTX
@@ -1134,7 +1136,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         }
-        case 0xD9:
+        case 0xD9: // F3DEX3: G_GEOMETRYMODE
             if (pRSP->eTypeUCode != RUT_ZSORT) { // ZSORT: G_ZS_WAITSIGNAL
                 s32 nSet = nCommandLo & 0xFFFFFF;
                 s32 nClr = nCommandHi & 0xFFFFFF;
@@ -1142,7 +1144,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 rspGeometryMode(pRSP, nSet, nClr);
             }
             break;
-        case 0xD8:
+        case 0xD8: // F3DEX3: G_POPMTX
             if (pRSP->eTypeUCode == RUT_ZSORT) { // ZSORT: G_ZS_SETSUBDL
                 pRSP->nZSortSubDL = SEGMENT_ADDRESS(pRSP, nCommandLo);
             } else { // F3DEX2: G_POPMTX
@@ -1156,7 +1158,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0xD7:
+        case 0xD7: // F3DEX3: G_TEXTURE
             if (pRSP->eTypeUCode == RUT_ZSORT) { // ZSORT: G_ZS_LINKSUBDL
                 if (pRSP->nZSortSubDL != 0 && pRSP->nStatusSubDL != 1) {
                     if (!rspSetDL(pRSP, pRSP->nZSortSubDL, true)) {
@@ -1173,7 +1175,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0xD6:
+        case 0xD6: // F3DEX3: G_DMA_IO
             if (pRSP->eTypeUCode == RUT_ZSORT) { // ZSORT: G_ZS_MULT_MPMTX
                 s32 nVertices = (nCommandLo >> 24) + 1;
                 s32 nSrcAdrs = ((nCommandLo >> 12) & 0xFFF) - 1024;
@@ -1231,9 +1233,9 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0xD5:
+        case 0xD5: // F3DEX3: G_MEMSET
             break;
-        case 0xD4:
+        case 0xD4: // F3DEX3: G_FLUSH
             break;
         case 0xD3:
             if (pRSP->eTypeUCode == RUT_ZSORT && pRSP->nVersionUCode == 3) { // ZSORT: G_ZS_LIGHTING_L
@@ -1248,7 +1250,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             break;
         case 0xD0:
             break;
-        case 0x01:
+        case 0x01: // F3DEX3: G_VTX
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_RECTANGLE
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1269,7 +1271,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x02:
+        case 0x02: // F3DEX3: G_MODIFYVTX
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_SPRITE
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1301,7 +1303,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x03: { // F3DEX2: G_SELECT_DL
+        case 0x03: { // F3DEX2: G_SELECT_DL | F3DEX3: G_CULLDL
             u32 nVertexStart = (nCommandHi & 0xFFFF) >> 1;
             u32 nVertexEnd = (nCommandLo & 0xFFFF) >> 1;
 
@@ -1312,9 +1314,9 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         }
-        case 0x04:
+        case 0x04: // F3DEX3: G_BRANCH_WZ
             return false;
-        case 0x05:
+        case 0x05: // F3DEX3: G_TRI1
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_LOADTXTR
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1351,7 +1353,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x06:
+        case 0x06: // F3DEX3: G_TRI2
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_LDTX_SPRITE
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1392,7 +1394,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x07:
+        case 0x07: // F3DEX3: G_QUAD
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_LDTX_RECT
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1433,7 +1435,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x08:
+        case 0x08: // F3DEX3: G_TRISTRIP
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_LDTX_RECT_R
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1469,7 +1471,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             }
             break;
-        case 0x09: {
+        case 0x09: { // F3DEX3: G_TRIFAN
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_BG_1CYC
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
                 uObjBg bg;
@@ -1513,7 +1515,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         }
-        case 0x0A: {
+        case 0x0A: { // F3DEX3: G_LIGHTTORDP
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_BG_COPY
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1551,7 +1553,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         }
-        case 0x0B:
+        case 0x0B: // F3DEX3: G_RELSEGMENT
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_RENDERMODE
                 pRSP->nMode2D = nCommandLo & 0xFFFF;
             } else {
@@ -1586,6 +1588,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         default:
+            OSReport("rspParseGBI_F3DEX2: unknown code: 0x%02X\n", c);
             return false;
     }
 
