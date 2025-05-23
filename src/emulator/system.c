@@ -86,7 +86,7 @@
 #define Z_ICON_PATH buf1
 #define Z_BNR_PATH buf2
 #else
-#define ROM_IS_OOT(pROM) (romTestCode(pROM, "CZLJ") || romTestCode(pROM, "CZLE"))
+#define ROM_IS_OOT(pROM) (romTestCode(pROM, "CZLJ") || romTestCode(pROM, "CZLE") || pSystem->bHackerOoT)
 #define Z_ICON_PATH "TPL/z_icon.tpl"
 #define Z_BNR_PATH "TPL/z_bnr.tpl"
 #endif
@@ -501,7 +501,7 @@ bool systemGetInitialConfiguration(System* pSystem, Rom* pROM, s32 index) {
         gSystemRomConfigurationList[index].storageDevice = SOT_RSP;
 #endif
 
-    } else if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ")
+    } else if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ") || pSystem->bHackerOoT
 #if IS_OOT_EU || IS_MM
                || romTestCode(pROM, "NZLP")
 #endif
@@ -765,7 +765,7 @@ static bool systemSetupGameALL(System* pSystem) {
         if (!cpuSetCodeHack(pCPU, 0x80317938, 0x5420FFFE, 0)) {
             return false;
         }
-    } else if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ")
+    } else if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ") || pSystem->bHackerOoT
 #if IS_OOT_EU || IS_MM
                || romTestCode(pROM, "NZLP")
 #endif

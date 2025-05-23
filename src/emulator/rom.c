@@ -3135,6 +3135,20 @@ bool romSetImage(Rom* pROM, char* szNameFile) {
     }
 #endif
 
+    {
+        char acCodeCurrent[5];
+        romGetCode(pROM, acCodeCurrent);
+
+        SYSTEM(pROM->pHost)->bHackerOoT =
+            acCodeCurrent[0] == 'N' && acCodeCurrent[1] == 'Z' && acCodeCurrent[2] == 'L' && acCodeCurrent[3] == '\0';
+
+        if (SYSTEM(pROM->pHost)->bHackerOoT) {
+            OSReport("HackerOoT detected!\n");
+        } else {
+            OSReport("Game detected: %s\n", acCodeCurrent);
+        }
+    }
+
     return true;
 }
 

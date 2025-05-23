@@ -155,6 +155,7 @@ typedef struct System {
 #if VERSION != MM_J && VERSION != MM_E
     /* 0x84 */ bool bJapaneseVersion;
 #endif
+    bool bHackerOoT;
 } System; // size = 0x88
 
 // __anon_0x3459E
