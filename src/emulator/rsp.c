@@ -233,7 +233,7 @@ static bool rspFindUCode(Rsp* pRSP, RspTask* pTask) {
         nCheckSum += pFUCode[i];
     }
 
-    OSReport("pFUData at 0x%08X\n", pFUData);
+    // OSReport("pFUData at 0x%08X\n", pFUData);
 
     for (i = 0; i < (nLengthData >> 3); i++) {
         nFUData = pFUData[i];
@@ -771,6 +771,8 @@ static bool rspParseGBI(Rsp* pRSP, bool* pbDone, s32 nCount) {
                 return false;
         }
 
+        // OSReport("rspParseGBI: nStatus = %d\n", nStatus);
+
         if (nStatus == 0) {
             pRSP->apDL[pRSP->iDL] = pDL;
             if (!rdpParseGBI(SYSTEM_RDP(pRSP->pHost), &pRSP->apDL[pRSP->iDL], pRSP->eTypeUCode)) {
@@ -809,6 +811,7 @@ static bool rspParseGBI(Rsp* pRSP, bool* pbDone, s32 nCount) {
         *pbDone = bDone;
     }
 
+    // OSReport("rspParseGBI: done!\n");
     return true;
 }
 
@@ -1289,7 +1292,9 @@ bool rspUpdate(Rsp* pRSP, RspUpdateMode eMode) {
                         xlObjectEvent(pRSP->pHost, 0x1000, (void*)5);
                         xlObjectEvent(pRSP->pHost, 0x1000, (void*)10);
                     }
+                    // OSReport("rspUpdate: bDone = %d\n", bDone);
                 } else {
+                    // OSReport("rspUpdate: rspParseGBI returned false!\n");
                     __cpuBreak(SYSTEM_CPU(pRSP->pHost));
                 }
                 pRSP->nTickLast = OSGetTick();

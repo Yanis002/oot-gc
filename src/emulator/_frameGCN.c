@@ -3104,8 +3104,6 @@ bool frameBegin(Frame* pFrame, s32 nCountVertex) {
     if (gbFrameBegin) {
         gbFrameBegin = false;
 
-        OSReport("gbFrameBegin: %d\n", gbFrameBegin);
-
         while (gbFrameValid) {
             OSReport("Waiting for valid?\n");
         }

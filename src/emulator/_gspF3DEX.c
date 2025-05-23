@@ -753,7 +753,7 @@ static bool rspGeometryMode(Rsp* pRSP, s32 nSet, s32 nClr) {
     return true;
 }
 
-#define DEBUG
+// #define DEBUG
 
 #ifdef DEBUG
 #define REPORT(...) OSReport("rspParseGBI_F3DEX2: "__VA_ARGS__)
@@ -1262,10 +1262,10 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 if (!rspObjRectangleR(pRSP, pFrame, nAddress)) {
                     return false;
                 }
-            } else if (pRSP->eTypeUCode == RUT_ZSORT || pRSP->eTypeUCode == RUT_F3DEX3) { // ZSORT: G_ZS_SENDSIGNAL
+            } else if (pRSP->eTypeUCode == RUT_ZSORT) { // ZSORT: G_ZS_SENDSIGNAL
                 pRSP->nStatus |= nCommandLo | (nCommandHi & 0xFFFFFF);
                 xlObjectEvent(pRSP->pHost, 0x1000, (void*)5);
-            } else { // F3DEX2: G_MTX
+            } else { // F3DEX2/F3DEX3: G_MTX
                 s32 nMode = nCommandHi & 0xFF;
                 s32 nAddress = SEGMENT_ADDRESS(pRSP, nCommandLo);
 
@@ -1378,17 +1378,28 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             break;
         case 0xD5: // F3DEX3: G_MEMSET
             if (pRSP->eTypeUCode == RUT_F3DEX3) {
-                // Rectangle primitive;
+                Rectangle primitive;
+                u32* pDest;
+                u32 i;
 
-                // primitive.nX1 = (nCommandHi >> 14) & 0x3FF;
-                // primitive.nY1 = (nCommandHi >> 2) & 0x3FF;
-                // primitive.nX0 = (nCommandLo >> 14) & 0x3FF;
-                // primitive.nY0 = (nCommandLo >> 2) & 0x3FF;
+                primitive.nX1 = 0; //(nCommandHi >> 14) & 0x3FF;
+                primitive.nY1 = 0; //(nCommandHi >> 2) & 0x3FF;
+                primitive.nX0 = 0; //(nCommandLo >> 14) & 0x3FF;
+                primitive.nY0 = 0; //(nCommandLo >> 2) & 0x3FF;
 
-                // if (!pFrame->aDraw[2](pFrame, &primitive)) {
-                //     return false;
-                // }
+                if (!pFrame->aDraw[2](pFrame, &primitive)) {
+                    return false;
+                }
 
+                if (!ramGetBuffer(SYSTEM_RAM(pRSP->pHost), &pDest, nCommandLo, NULL)) {
+                    return false;
+                }
+
+                for (i = 0; i < ((nCommandHi & 0x00FFFFFF) >> 2); i++) {
+                    pDest[i] = 0xFFFFFFFF; //! TODO fillcolor
+                }
+
+                REPORT("pDest: 0x%08X, nCommandHi: 0x%lX, nCommandLo: 0x%lX\n", pDest, nCommandHi, nCommandLo);
                 REPORT("G_MEMSET - not supported!\n");
             }
             break;
@@ -1728,15 +1739,16 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 }
             } else if (pRSP->eTypeUCode == RUT_F3DEX3) {
                 REPORT("G_LIGHTTORDP - not supported!\n");
+                break;
             } else {
                 return false;
             }
             break;
         }
-        case 0x0B: // F3DEX3: G_RELSEGMENT
+        case 0x0B:
             if (pRSP->eTypeUCode == RUT_S2DEX2) { // S2DEX2: G_OBJ_RENDERMODE
                 pRSP->nMode2D = nCommandLo & 0xFFFF;
-            } else if (pRSP->eTypeUCode == RUT_F3DEX3) {
+            } else if (pRSP->eTypeUCode == RUT_F3DEX3) { // F3DEX3: G_RELSEGMENT
                 u32 offset = nCommandLo & 0x00FFFFFF;
                 u32 rel = (offset >> 24) & 0xF;
 
