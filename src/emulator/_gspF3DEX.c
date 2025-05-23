@@ -753,7 +753,7 @@ static bool rspGeometryMode(Rsp* pRSP, s32 nSet, s32 nClr) {
     return true;
 }
 
-// #define DEBUG
+#define DEBUG
 
 #ifdef DEBUG
 #define REPORT(...) OSReport("rspParseGBI_F3DEX2: "__VA_ARGS__)
@@ -813,7 +813,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
     *ppnGBI = ++pnGBI;
     pFrame->pnGBI = pnGBI;
 
-    REPORT("current cmd: 0x%02X\n", c);
+    // REPORT("current cmd: 0x%02X\n", c);
 
     switch (c) {
         case 0x00: // G_NOOP
@@ -893,7 +893,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         case 0xDE: // G_DL
-            REPORT("G_DL: nCommandHi: 0x%X, nCommandLo: 0x%X\n", nCommandHi, nCommandLo);
+            // REPORT("G_DL: nCommandHi: 0x%X, nCommandLo: 0x%X\n", nCommandHi, nCommandLo);
             if (!rspSetDL(pRSP, nCommandLo, (nCommandHi >> 16) & 0xFF ? false : true)) {
                 return false;
             }
@@ -1063,6 +1063,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                             u32 len = (1 + ((nCommandHi >> 19) & 0x1F)) * 8;
                             s32 nAddress;
                             u32 i;
+                            u32 j;
 
                             for (i = 0; i < len; i += 4) {
                                 int off = iLight + i;
@@ -1089,9 +1090,20 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                                         return false;
                                     }
                                 }
+
+                                for (j = 1; j <= pFrame->nCountLight + 1; j++) {
+                                    if (((j - 1) * 16 + 16) == off) {
+                                        if (!ramGetBuffer(SYSTEM_RAM(pRSP->pHost), &pData, w, NULL)) {
+                                            return false;
+                                        }
+                                        if (!frameSetLight(pFrame, j, pData)) {
+                                            return false;
+                                        }
+                                    }
+                                }
                             }
 
-                            REPORT("nCommandHi: 0x%lX, nCommandLo: 0x%lX\n", nCommandHi, nCommandLo);
+                            REPORT("G_MV_LIGHT - nCommandHi: 0x%lX, nCommandLo: 0x%lX\n", nCommandHi, nCommandLo);
                         } else {
                             void* pData;
                             s32 iLight = ((s32)(((nCommandHi >> 8) & 0xFF) * 8) - 24) / 24;
@@ -1127,12 +1139,13 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                             }
                         } else {
                             REPORT("G_MV_MATRIX - not supported!\n");
+                            return false;
                         }
                         break;
                     }
                     case 0x02: // G_MV_MMTX
                         if (pRSP->eTypeUCode == RUT_F3DEX3) {
-                            REPORT("G_MV_MMTX - not supported!\n");
+                            // REPORT("G_MV_MMTX - not supported!\n");
                         }
                         break;
                     case 0x06: // G_MV_PMTX
@@ -1180,7 +1193,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                             case 0x1A: // G_MWO_LAST_MAT_DL_ADDR
                                 break;
                             default:
-                                REPORT("G_MW_FX - unsupported command!\n");
+                                // REPORT("G_MW_FX - unsupported command!\n");
                                 break;
                         }
                         break;
@@ -1210,7 +1223,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                         break;
                     }
                     default:
-                        REPORT("G_MOVEWORD - unsupported command!\n");
+                        // REPORT("G_MOVEWORD - unsupported command!\n");
                         break;
                 }
             } else {
@@ -1381,26 +1394,31 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 Rectangle primitive;
                 u32* pDest;
                 u32 i;
+                u32 len = ((nCommandHi & 0x00FFFFFF) >> 2);
+                u32 address = nCommandLo;
 
-                primitive.nX1 = 0; //(nCommandHi >> 14) & 0x3FF;
-                primitive.nY1 = 0; //(nCommandHi >> 2) & 0x3FF;
-                primitive.nX0 = 0; //(nCommandLo >> 14) & 0x3FF;
-                primitive.nY0 = 0; //(nCommandLo >> 2) & 0x3FF;
+                nCommandHi = GBI_COMMAND_HI(pnGBI);
+                nCommandLo = GBI_COMMAND_LO(pnGBI);
+
+                primitive.nX1 = 0;//(nCommandHi >> 14) & 0x3FF;
+                primitive.nY1 = 0;//(nCommandHi >> 2) & 0x3FF;
+                primitive.nX0 = 0;//(nCommandLo >> 14) & 0x3FF;
+                primitive.nY0 = 0;//(nCommandLo >> 2) & 0x3FF;
 
                 if (!pFrame->aDraw[2](pFrame, &primitive)) {
                     return false;
                 }
 
-                if (!ramGetBuffer(SYSTEM_RAM(pRSP->pHost), &pDest, nCommandLo, NULL)) {
+                if (!ramGetBuffer(SYSTEM_RAM(pRSP->pHost), &pDest, address, NULL)) {
                     return false;
                 }
 
-                for (i = 0; i < ((nCommandHi & 0x00FFFFFF) >> 2); i++) {
-                    pDest[i] = 0xFFFFFFFF; //! TODO fillcolor
+                for (i = 0; i < len; i++) {
+                    pDest[i] = 0; //! TODO fillcolor
                 }
 
-                REPORT("pDest: 0x%08X, nCommandHi: 0x%lX, nCommandLo: 0x%lX\n", pDest, nCommandHi, nCommandLo);
-                REPORT("G_MEMSET - not supported!\n");
+                // REPORT("pDest: 0x%08X, nCommandHi: 0x%lX, nCommandLo: 0x%lX\n", pDest, nCommandHi, nCommandLo);
+                // REPORT("G_MEMSET - not supported!\n");
             }
             break;
         case 0xD4: // F3DEX3: G_FLUSH
@@ -1484,6 +1502,8 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
         }
         case 0x04: // F3DEX3: G_BRANCH_WZ
             if (pRSP->eTypeUCode == RUT_F3DEX3) {
+                u32 address = SEGMENT_ADDRESS(pRSP, GBI_COMMAND_LO(pnGBI));
+
                 REPORT("G_BRANCH_WZ - not supported!\n");
                 break;
             } else {
@@ -1738,7 +1758,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                     }
                 }
             } else if (pRSP->eTypeUCode == RUT_F3DEX3) {
-                REPORT("G_LIGHTTORDP - not supported!\n");
+                // REPORT("G_LIGHTTORDP - not supported!\n");
                 break;
             } else {
                 return false;
@@ -1753,7 +1773,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
                 u32 rel = (offset >> 24) & 0xF;
 
                 pRSP->anBaseSegment[(nCommandHi >> 2) & 0xF] = offset + pRSP->anBaseSegment[rel];
-                REPORT("G_RELSEGMENT: nCommandHi: 0x%X, nCommandLo: 0x%X\n", nCommandHi, nCommandLo);
+                // REPORT("G_RELSEGMENT: nCommandHi: 0x%X, nCommandLo: 0x%X\n", nCommandHi, nCommandLo);
             } else {
                 return false;
             }
@@ -1786,7 +1806,7 @@ static bool rspParseGBI_F3DEX2(Rsp* pRSP, u64** ppnGBI, bool* pbDone) {
             }
             break;
         default:
-            REPORT("unknown code: 0x%02X\n", c);
+            // REPORT("unknown code: 0x%02X\n", c);
             return false;
     }
 
