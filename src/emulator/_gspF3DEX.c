@@ -753,9 +753,9 @@ static bool rspGeometryMode(Rsp* pRSP, s32 nSet, s32 nClr) {
     return true;
 }
 
-#define DEBUG
+// #define F3DEX3_DEBUG
 
-#ifdef DEBUG
+#ifdef F3DEX3_DEBUG
 #define REPORT(...) OSReport("rspParseGBI_F3DEX2: "__VA_ARGS__)
 #else
 #define REPORT(...) (void)0
