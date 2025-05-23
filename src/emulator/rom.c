@@ -11,6 +11,37 @@
 #include "macros.h"
 #include "string.h"
 
+enum {
+   CONFIG_CODE, // code
+   CONFIG_OVL_TITLE, // ovl_title
+   CONFIG_VR_FINE1_STATIC, // vr_fine1_static
+   CONFIG_MSG_FIELD, // elf_message_field
+   CONFIG_MSG_YDAN, // elf_message_ydan
+   CONFIG_SCENE_START,
+};
+
+typedef struct DmaEntry {
+    /* 0x00 */ u32 vromStart;
+    /* 0x04 */ u32 vromEnd;
+    /* 0x08 */ u32 romStart;
+    /* 0x0C */ u32 romEnd;
+} DmaEntry; // size = 0x10
+
+typedef struct DmaConfigHeader {
+    /* 0x00 */ char magic[4]; // "DMAC" (DMA Config)
+    /* 0x04 */ u32 nTableOffsetROM; // offset to the dmadata table in the rom
+    /* 0x08 */ u16 nTableSizeROM; // size of the dmadata table in the rom
+    /* 0x0A */ u16 nSize; // size of the file index data in dma_config.bin
+    /* 0x0C */ u16 nCount; // number of file index entries, should always be `nSize / sizeof(u16)`!
+    /* 0x0E */ u8 pad[0x20 - 0x0E]; // alignment padding, free to use!
+} DmaConfigHeader; // size = 0x20
+
+typedef struct DmaConfig {
+    /* 0x00 */ DmaConfigHeader header; // file header
+    /* 0x20 */ u16* data; // pointer to the file indices
+    /* 0x24 */ DmaEntry* pEntries; // pointer to the dmadata table
+} DmaConfig; // size = 0x28
+
 static bool romMakeFreeCache(Rom* pROM, s32* piCache, RomCacheType eType);
 static bool romSetBlockCache(Rom* pROM, s32 iBlock, RomCacheType eType);
 static bool romCacheEnding_ZELDA(f32 rProgress);
@@ -18,22 +49,9 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress);
 
 extern u8 greadingDisk[];
 extern u8 gbar[];
-
-enum {
-    CONFIG_SCENE_START_OFFSET,
-    CONFIG_CODE_START, // code
-    CONFIG_CODE_END, // ovl_title
-    CONFIG_SKYBOX_START, // vr_cloud3_pal_static
-    CONFIG_MSG_FIELD_START, // elf_message_field
-    CONFIG_MSG_YDAN_START, // elf_message_ydan
-    CONFIG_SCENE_START,
-};
-
-#define DMA_ENTRY_SIZE 32
 extern int atoi(const char* str);
 
 static u32 ganOffsetBlockFromDmadata[500] ATTRIBUTE_ALIGN(32) = {0};
-static u32 ganConfig[500] ATTRIBUTE_ALIGN(32);
 static s32 giLastScene;
 
 _XL_OBJECTTYPE gClassROM = {
@@ -1580,97 +1598,158 @@ static bool romCacheGame_OTHER(Rom* pROM, char* szName, f32 rProgress) {
 
 #endif
 
-static bool romGetDmaConfig(Rom* pROM) {
-    static char entry[DMA_ENTRY_SIZE] ATTRIBUTE_ALIGN(32);
-    char acValue[16];
-    s32 nFileSize = pROM->dmaFileInfo.length / DMA_ENTRY_SIZE;
-    s32 iConfig = 0;
-    s32 iFilePos;
-    s32 iData;
-    s32 iEntry;
+#define ROM_DEBUG
+#ifdef ROM_DEBUG
+#define SAFE_FAILED() OSReport("SAFE FAILED! @ %s %d\n", __FILE__, __LINE__);
+#else
+#define SAFE_FAILED() (void)0
+#endif
 
-    /**
-     * you can generate 'dma_config.txt' from oot decomp with the following tool:
-     * https://gist.github.com/Yanis42/dd54a76f41b0395c28b511b335262e12
-     */
+/**
+  * you can generate 'dma_config.bin' from oot decomp with the following tool:
+  * https://gist.github.com/Yanis002/dd54a76f41b0395c28b511b335262e12
+  */
+static bool romGetDmaConfig(Rom* pROM, DmaConfig* pConfig) {
+    tXL_FILE* pFile;
 
-    // get dmadata from config file
-    for (iFilePos = 0; iFilePos < nFileSize; iFilePos++) {
-        // reset value array
-        for (iData = 0; iData < ARRAY_COUNT(acValue); iData++) {
-            acValue[iData] = '\0';
-        }
-
-        // read the file
-        if (!simulatorDVDRead(&pROM->dmaFileInfo, (void*)entry, DMA_ENTRY_SIZE, iFilePos * DMA_ENTRY_SIZE, NULL)) {
-            return false;
-        }
-
-        // fetch the data
-        for (iEntry = 0; iEntry < ARRAY_COUNT(entry); iEntry += ARRAY_COUNT(acValue)) {
-            for (iData = 0; iData < ARRAY_COUNT(acValue); iData++) {
-                acValue[iData] = entry[iData + iEntry];
-            }
-            ganConfig[iConfig++] = atoi(acValue);
-            OSReport("DMA Config Entry Found - %d;\n", ganConfig[iConfig - 1]);
-        }
+    // open the file
+    if (!xlFileOpen(&pFile, XLFT_BINARY, "dma_config.bin")) {
+        SAFE_FAILED();
+        return false;
     }
 
-    giLastScene = iConfig - 1;
+    // get the header
+    if (!xlFileGet(pFile, (void*)&pConfig->header, sizeof(DmaConfigHeader))) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // check that the file is the correct one
+    if (strcmp(pConfig->header.magic, "DMAC")) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // check that the offset and the size of the dmatable are correct
+    if (pConfig->header.nTableOffsetROM == 0 || pConfig->header.nTableSizeROM == 0) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // get index data
+    if (!xlHeapTake((void**)&pConfig->data, pConfig->header.nSize | 0x30000000)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    if (!xlFileGet(pFile, (void*)pConfig->data, pConfig->header.nSize)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // get the dmadata from the rom
+    if (!xlHeapTake((void**)&pConfig->pEntries, pConfig->header.nTableSizeROM | 0x30000000)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    if (!simulatorDVDRead(&pROM->fileInfo, (void*)pConfig->pEntries, pConfig->header.nTableSizeROM, pConfig->header.nTableOffsetROM, NULL)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // close the config file
+    if (!xlFileClose(&pFile)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    OSReport("romGetDmaConfig: pConfig: 0x%08X, pData: 0x%08X, pEntries: 0x%08X\n", pConfig, pConfig->data, pConfig->pEntries);
     return true;
+}
+
+static bool romFreeDmaConfig(Rom* pROM, DmaConfig* pConfig) {
+    if (!xlHeapFree((void**)&pConfig->data)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    if (!xlHeapFree((void**)&pConfig->pEntries)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    return true;
+}
+
+static inline u32 getDmaRomStart(DmaConfig* pConfig, s32 iData, s32 line) {
+    u16 nIndex = pConfig->data[iData];
+    OSReport("getDmaRomStart: %d requested file index %d (%d)\n", line, nIndex, iData);
+    return pConfig->pEntries[nIndex].romStart;
+}
+
+static inline u32 getDmaRomEnd(DmaConfig* pConfig, s32 iData, s32 line) {
+    u16 nIndex = pConfig->data[iData];
+    OSReport("getDmaRomEnd: %d requested file index %d (%d)\n", line, nIndex, iData);
+    return pConfig->pEntries[nIndex].romStart - 1;
 }
 
 // Set up ROM cache for OOT (gz or not) from dmadata, so that files can move around between versions.
 static bool romCacheGameFromDmadata(Rom* pROM) {
+    DmaConfig config;
     s32 blockCount = 0;
     s32 nCountOffsetBlocks = 0;
     s32 rangeStart;
     s32 rangeEnd;
     s32 i;
 
-    if (!romGetDmaConfig(pROM)) {
+    if (!romGetDmaConfig(pROM, &config)) {
+        SAFE_FAILED();
         return false;
     }
 
-    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = ganConfig[CONFIG_MSG_FIELD_START];
-    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = ganConfig[CONFIG_MSG_YDAN_START] - 1;
+    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = getDmaRomStart(&config, CONFIG_MSG_FIELD, __LINE__);
+    ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = getDmaRomStart(&config, CONFIG_MSG_YDAN, __LINE__) - 1;
 
     // scene file indices
-    for (i = 0; i < (giLastScene + 1); i++) {
-        if (i >= CONFIG_SCENE_START) {
-            rangeStart = ganConfig[i];
-            if (i + 1 < (giLastScene + 1)) {
-                rangeEnd = ganConfig[i + 1] - 1;
-            } else {
-                rangeEnd = ganConfig[giLastScene] - 1;
-            }
+    for (i = CONFIG_SCENE_START; i < config.header.nCount; i++) {
+        rangeStart = getDmaRomStart(&config, i, __LINE__);
+        if (i + 1 < config.header.nCount) {
+            rangeEnd = getDmaRomEnd(&config, i + 1, __LINE__);
+        } else {
+            rangeEnd = getDmaRomEnd(&config, config.header.nCount - 1, __LINE__);
         }
 
-        if (rangeStart != rangeEnd + 1) {
-            ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeStart;
-            ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeEnd;
-        } else {
-            OSReport("Warning: rangeStart == rangeEnd: %d, %d, %d\n", i, rangeStart, rangeEnd);
-        }
+        ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeStart;
+        ganOffsetBlockFromDmadata[nCountOffsetBlocks++] = rangeEnd;
     }
+
+    OSReport("romCacheGameFromDmadata: ganOffsetBlockFromDmadata at 0x%08X\n", ganOffsetBlockFromDmadata);
 
     pROM->anOffsetBlock = ganOffsetBlockFromDmadata;
     pROM->nCountOffsetBlocks = nCountOffsetBlocks;
 
     // Load up to the start of code
     rangeStart = 0;
-    rangeEnd = ganConfig[CONFIG_CODE_START] - 1;
+    rangeEnd = getDmaRomEnd(&config, CONFIG_CODE, __LINE__);
     OSReport("romCacheGameFromDmadata: loading range %08X-%08X\n", rangeStart, rangeEnd);
     if (!romLoadRange(pROM, rangeStart, rangeEnd, &blockCount, 1, &romCacheGame_ZELDA)) {
+        SAFE_FAILED();
         return false;
     }
 
     // Load from end of code to start of skyboxes (except for normal sky)
-    rangeStart = ganConfig[CONFIG_CODE_END];
-    rangeEnd = ganConfig[CONFIG_SKYBOX_START] - 1;
+    rangeStart = getDmaRomStart(&config, CONFIG_OVL_TITLE, __LINE__);
+    rangeEnd = getDmaRomEnd(&config, CONFIG_VR_FINE1_STATIC, __LINE__);
 
     OSReport("romCacheGameFromDmadata: loading range %08X-%08X\n", rangeStart, rangeEnd);
     if (!romLoadRange(pROM, rangeStart, rangeEnd, &blockCount, 1, &romCacheGame_ZELDA)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    if (!romFreeDmaConfig(pROM, &config)) {
+        SAFE_FAILED();
         return false;
     }
 
@@ -1689,7 +1768,7 @@ static bool romCacheGame(Rom* pROM) {
     blockCount = 0;
     gDVDResetToggle = true;
 
-    if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ")) {
+    if (romTestCode(pROM, "CZLE") || romTestCode(pROM, "CZLJ") || SYSTEM(pROM->pHost)->bHackerOoT) {
         if (gnFlagZelda & 2) {
             pROM->anOffsetBlock = ganOffsetBlock_ZLJ;
             pROM->nCountOffsetBlocks = 0xC6;
@@ -1749,7 +1828,7 @@ static bool romCacheGame(Rom* pROM) {
 
     bIsCZLE = romTestCode(pROM, "CZLE");
     bIsCZLJ = romTestCode(pROM, "CZLJ");
-    if (bIsCZLE || bIsCZLJ) {
+    if (bIsCZLE || bIsCZLJ || SYSTEM(pROM->pHost)->bHackerOoT) {
 #if VERSION == CE_J
         if (gnFlagZelda & 2) {
             if (!bIsCZLE) {
@@ -3051,7 +3130,6 @@ static inline void romOpen(Rom* pROM, char* szNameFile) {
 
     pROM->bFlip = bFlip;
     simulatorDVDOpen(szNameFile, &pROM->fileInfo);
-    simulatorDVDOpen("dma_config.txt", &pROM->dmaFileInfo);
 }
 
 bool romSetImage(Rom* pROM, char* szNameFile) {
