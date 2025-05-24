@@ -55,7 +55,7 @@ typedef struct DVDTrackList {
     /* 0x870 0x8AC */ u8 playOrder[60];
     /* 0x8AC 0x8E8 */ DVDFileInfo playingFileInfo;
     /* 0x8E8 0x924 */ __anon_0x93582 error;
-    /* 0x8EC 0x928 */ ErrorRetreivalState errorState;
+    /* 0x8EC 0x928 */ volatile ErrorRetreivalState errorState;
     /* 0x8F0 0x92C */ s32 numTracks;
     /* 0x8F4 0x930 */ DVDTrackInfo curState;
     /* 0x904 0x940 */ DVDTrackInfo nextState;
@@ -67,7 +67,7 @@ typedef struct DVDTrackList {
     /* 0x934 0x970 */ DVDFadeInfo fadeInfo;
     /* 0x948 0x984 */ s32 volume;
     /* 0x94C 0x988 */ s32 fadeInOutVolume;
-    /* 0x950 0x98C */ DVDTrackState state;
+    /* 0x950 0x98C */ volatile DVDTrackState state;
     /* 0x954 0x990 */ DVDTrackState lastState;
 } DVDTrackList; // size = 0x958
 
