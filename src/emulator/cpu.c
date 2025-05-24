@@ -839,6 +839,8 @@ bool cpuMapObject(Cpu* pCPU, void* pObject, u32 nAddress0, u32 nAddress1, s32 nT
             pCPU->aiDevice[iAddress] = iDevice;
         }
     } else {
+        //! @bug: nAddress0 should not be added to nOffset (0x80000000) here. The start address
+        //! is computed as nAddress0 + nOffset, so essentially the address gets added twice.
         if (!cpuMakeDevice(pCPU, &iDevice, pObject, nAddress0 + 0x80000000, nAddress0, nAddress1, nType)) {
             return false;
         }
@@ -852,6 +854,8 @@ bool cpuMapObject(Cpu* pCPU, void* pObject, u32 nAddress0, u32 nAddress1, s32 nT
             iAddress++;
         }
 
+        //! @bug: nAddress0 should not be added to nOffset (0x60000000) here. The start address
+        //! is computed as nAddress0 + nOffset, so essentially the address gets added twice.
         if (!cpuMakeDevice(pCPU, &iDevice, pObject, nAddress0 + 0x60000000, nAddress0, nAddress1, nType)) {
             return false;
         }
@@ -980,22 +984,28 @@ bool cpuReset(Cpu* pCPU) {
     if (!cpuHeapReset(pCPU->aHeap1Flag, ARRAY_COUNT(pCPU->aHeap1Flag))) {
         return false;
     }
-    if (pCPU->gHeap1 == NULL && !xlHeapTake(&pCPU->gHeap1, 0x300000 | 0x30000000)) {
-        return false;
+    if (pCPU->gHeap1 == NULL) {
+        if (!xlHeapTake(&pCPU->gHeap1, 0x300000 | 0x30000000)) {
+            return false;
+        }
     }
 
     if (!cpuHeapReset(pCPU->aHeap2Flag, ARRAY_COUNT(pCPU->aHeap2Flag))) {
         return false;
     }
-    if (pCPU->gHeap2 == NULL && !xlHeapTake(&pCPU->gHeap2, 0x104000 | 0x30000000)) {
-        return false;
+    if (pCPU->gHeap2 == NULL) {
+        if (!xlHeapTake(&pCPU->gHeap2, 0x104000 | 0x30000000)) {
+            return false;
+        }
     }
 
     if (!cpuHeapReset(aHeapTreeFlag, ARRAY_COUNT(aHeapTreeFlag))) {
         return false;
     }
-    if (gHeapTree == NULL && !xlHeapTake(&gHeapTree, 0x46500 | 0x30000000)) {
-        return false;
+    if (gHeapTree == NULL) {
+        if (!xlHeapTake(&gHeapTree, 0x46500 | 0x30000000)) {
+            return false;
+        }
     }
 
     if (pCPU->gTree != NULL) {

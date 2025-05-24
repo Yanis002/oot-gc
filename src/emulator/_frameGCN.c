@@ -1510,7 +1510,7 @@ static bool frameLoadTexture(Frame* pFrame, FrameTexture* pTexture, s32 iTexture
 bool frameDrawSetup2D(Frame* pFrame) {
     Mtx44 matrix44;
 
-    if (!(*(volatile u32*)&pFrame->nMode & 0x40000000)) {
+    if (!(pFrame->nMode & 0x40000000)) {
         pFrame->nMode |= 0x40000000;
 
         GXSetViewport(0.0f, 0.0f, pFrame->anSizeX[1], pFrame->anSizeY[1], 0.0f, 1.0f);
@@ -2716,7 +2716,7 @@ static bool frameDrawRectFill(Frame* pFrame, Rectangle* pRectangle) {
             pFrame->aColor[FCT_FILL].b == 0xF0 && pFrame->aColor[FCT_FILL].a == 0x00) {
             bFlag = true;
         }
-        if (bFlag && !(*(volatile u32*)&pFrame->nMode & 0x100000)) {
+        if (bFlag && !(pFrame->nMode & 0x100000)) {
             pFrame->nMode |= 0x100000;
             return true;
         }
@@ -5171,25 +5171,30 @@ static bool frameEvent(Frame* pFrame, s32 nEvent, void* pArgument) {
             pFrame->nLensBuffer = NULL;
 #endif
             pFrame->nCameraBuffer = NULL;
-            if (((gpSystem->eTypeROM == SRT_PANEL) || (gpSystem->eTypeROM == SRT_ZELDA2) ||
-                 (gpSystem->eTypeROM == SRT_DRMARIO)) &&
-                !xlHeapTake((void**)&pFrame->nTempBuffer,
-                            0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
-                return false;
+            if (gpSystem->eTypeROM == SRT_PANEL || gpSystem->eTypeROM == SRT_ZELDA2 ||
+                gpSystem->eTypeROM == SRT_DRMARIO) {
+                if (!xlHeapTake((void**)&pFrame->nTempBuffer,
+                                0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
+                    return false;
+                }
             }
-            if ((gpSystem->eTypeROM == SRT_ZELDA2) &&
-                !xlHeapTake((void**)&pFrame->nCopyBuffer,
-                            0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
-                return false;
+            if (gpSystem->eTypeROM == SRT_ZELDA2) {
+                if (!xlHeapTake((void**)&pFrame->nCopyBuffer,
+                                0x30000000 | (N64_FRAME_WIDTH * N64_FRAME_HEIGHT * sizeof(u16)))) {
+                    return false;
+                }
             }
 #if IS_OOT
-            if ((gpSystem->eTypeROM == SRT_ZELDA2) && !xlHeapTake((void**)&pFrame->nLensBuffer, 0x30000000 | 0x4B000)) {
-                return false;
+            if (gpSystem->eTypeROM == SRT_ZELDA2) {
+                if (!xlHeapTake((void**)&pFrame->nLensBuffer, 0x30000000 | 0x4B000)) {
+                    return false;
+                }
             }
 #endif
-            if (gpSystem->eTypeROM == SRT_ZELDA2 &&
-                !xlHeapTake((void**)&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
-                return false;
+            if (gpSystem->eTypeROM == SRT_ZELDA2) {
+                if (!xlHeapTake((void**)&pFrame->nCameraBuffer, 0x30000000 | CAMERA_BUFFER_SIZE)) {
+                    return false;
+                }
             }
             break;
 #endif

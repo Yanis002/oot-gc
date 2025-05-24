@@ -43,11 +43,6 @@ parser.add_argument(
     help="create non-matching build for modding",
 )
 parser.add_argument(
-    "--no-asm-processor",
-    action="store_true",
-    help="disable asm_processor for progress calculation",
-)
-parser.add_argument(
     "--build-dir",
     metavar="DIR",
     type=Path,
@@ -158,7 +153,6 @@ config.compilers_path = args.compilers
 config.generate_map = args.map
 config.sjiswrap_path = args.sjiswrap
 config.non_matching = args.non_matching
-config.asm_processor = not args.no_asm_processor
 
 if not is_windows():
     config.wrapper = args.wrapper
@@ -171,7 +165,7 @@ if args.no_asm:
 config.binutils_tag = "2.42-1"
 config.compilers_tag = "20250520"
 config.dtk_tag = "v1.4.1"
-config.objdiff_tag = "v2.7.1"
+config.objdiff_tag = "v3.0.0-beta.8"
 config.sjiswrap_tag = "v1.2.0"
 config.wibo_tag = "0.6.11"
 config.linker_version = "GC/1.1"
@@ -313,7 +307,7 @@ config.libs = [
             Object(Linked, "emulator/rom.c"),
             Object(Linked, "emulator/rdp.c"),
             Object(Linked, "emulator/rdb.c"),
-            Object(LinkedFor("ce-j"), "emulator/rsp.c", asm_processor=True),
+            Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e"), "emulator/rsp.c"),
             Object(Linked, "emulator/mips.c"),
             Object(Linked, "emulator/disk.c"),
             Object(Linked, "emulator/flash.c"),
@@ -321,7 +315,7 @@ config.libs = [
             Object(Linked, "emulator/audio.c"),
             Object(Linked, "emulator/video.c"),
             Object(Linked, "emulator/serial.c"),
-            Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e"), "emulator/library.c"),
+            Object(LinkedFor("mq-j", "mq-u", "mq-e", "ce-j", "ce-u", "ce-e", "mm-j"), "emulator/library.c"),
             Object(Linked, "emulator/peripheral.c"),
             Object(Linked, "emulator/_frameGCNcc.c"),
             Object(Linked, "emulator/_buildtev.c"),
