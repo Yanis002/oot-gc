@@ -3730,7 +3730,6 @@ static bool libraryInitConfig(Library* pLibrary) {
                     }
                 }
 
-                OSReport("gaFunction[iFunction].anData: 0x%08X (%s)\n", gaFunction[iFunction].anData, gaFunction[iFunction].szName);
                 break;
             }
         }
@@ -3779,8 +3778,39 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
 
     for (iFunction = 0; iFunction < ARRAY_COUNTU(gaFunction); iFunction++) {
         for (iData = 0; gaFunction[iFunction].anData[iData] != 0; iData += 2) {
-            if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osViSwapBuffer_Entry) {
-                if (pFunction->nAddress0 != libraryGetN64Address(pLibrary, "osViSwapBuffer_Entry")) {
+            if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osViSwapBuffer_Entry
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__sinf
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__cosf
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osGetMemSize
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osInvalICache
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__osDisableInt
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__osRestoreInt
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__osSpSetStatus
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)_bzero
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)_bcopy
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)memcpy
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osVirtualToPhysical
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guMtxF2L
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guMtxIdentF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guMtxIdent
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guOrthoF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guOrtho
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guPerspectiveF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guPerspective
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guScaleF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guScale
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guRotateF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guRotate
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guTranslateF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guTranslate
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guLookAtF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guLookAt
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guLookAtHiliteF
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)guLookAtHilite
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osAiSetFrequency
+                || gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osAiSetNextBuffer
+            ) {
+                if (pFunction->nAddress0 != libraryGetN64Address(pLibrary, gaFunction[iFunction].szName)) {
                     continue;
                 }
             } else if (gaFunction[iFunction].anData[iData + 1] != nChecksum ||
@@ -3817,7 +3847,6 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
                     iFunction -= 1;
                 }
             } else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__osSpSetStatus) {
-                // if (pEntry == NULL) {
                     nChecksum = 0;
                     for (iCode = 0; iCode < nSizeCode; iCode++) {
                         nChecksum += pnCode[iCode];
@@ -3825,17 +3854,12 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
                     if (nChecksum != 0xC1E27C6E && nChecksum != 0xEDB2A41C && nChecksum != 0x2068A41C) {
                         bFlag = false;
                     }
-                // }
             } else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osInvalICache) {
                 if (MIPS_IMM_U16(pnCode[2]) == 0x2000) {
                     bDone = true;
                     iFunction += 1;
                 }
-            } else if (gaFunction[iFunction].pfLibrary == NULL && 
-                (nChecksum == 0x376979EF 
-                // || (pEntry != NULL && strcmp(pEntry->szName, "osInvalICache") == 0)
-                // || (pEntry != NULL && strcmp(pEntry->szName, "osWritebackDCache") == 0)
-                )) {
+            } else if (gaFunction[iFunction].pfLibrary == NULL && nChecksum == 0x376979EF) {
                 if (MIPS_IMM_U16(pnCode[2]) == 0x4000) {
                     bDone = true;
                     iFunction -= 1;
@@ -3920,8 +3944,8 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
             }
 #endif
 
-            OSReport("gaFunction[iFunction].szName: %s, pFunction->nAddress0: 0x%08X\n",
-            gaFunction[iFunction].szName, pFunction->nAddress0);
+            // OSReport("gaFunction[iFunction].szName: %s, pFunction->nAddress0: 0x%08X\n",
+            // gaFunction[iFunction].szName, pFunction->nAddress0);
 
             if (bFlag) {
                 pFunction->timeToLive = 0;
