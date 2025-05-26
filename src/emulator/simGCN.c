@@ -2137,6 +2137,7 @@ static inline void simulatorResetInit(void) {
 }
 
 void simulatorReset(bool IPL, bool forceMenu) {
+    OSReport("N64 PC: 0x%08X\n", SYSTEM_CPU(gpSystem)->nPC);
     simulatorResetInit();
 
     if (IPL == true) {

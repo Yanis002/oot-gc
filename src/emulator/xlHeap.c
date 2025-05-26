@@ -650,6 +650,9 @@ bool xlHeapReset(void) {
     return true;
 }
 
+#include "emulator/system.h"
+extern System* gpSystem;
+
 void xlHeapReportStats(void) {
     u32* pBlock;
     u32 nBlock;
@@ -682,5 +685,6 @@ void xlHeapReportStats(void) {
         pBlock += nBlockSize + 1;
     }
 
+    OSReport("N64 PC: 0x%08X\n", SYSTEM_CPU(gpSystem)->nPC);
     OSReport("xlHeapReportStats: %08X bytes allocated, %08X bytes free\n", allocatedBytes, freeBytes);
 }

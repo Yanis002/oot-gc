@@ -13,6 +13,7 @@
 #include "emulator/video.h"
 #include "emulator/xlHeap.h"
 #include "emulator/xlPostGCN.h"
+#include "emulator/xlFileGCN.h"
 #include "macros.h"
 #include "math.h"
 #include "string.h"
@@ -48,6 +49,9 @@ _XL_OBJECTTYPE gClassLibrary = {
     NULL,
     (EventFunc)libraryEvent,
 };
+
+LibraryConfig gLibraryConfig;
+static bool bConfigMode = false;
 
 static u32 __osRcpImTable[] = {
     0x00000555, 0x00000556, 0x00000559, 0x0000055A, 0x00000565, 0x00000566, 0x00000569, 0x0000056A,
@@ -3156,7 +3160,7 @@ LibraryFunc gaFunction[] = {
     {
         "guPerspectiveF",
         (LibraryFuncImpl)guPerspectiveF,
-        {0x0000008C, 0x9EC5FEAB},
+        {0x0000008C, 0x9EC5FEAB, 0x0000006C, 0xD2EF2D00},
     },
     {
         "guPerspective",
@@ -3609,6 +3613,145 @@ static bool libraryFindFunctions(Library* pLibrary) {
     return true;
 }
 
+#define LIBRARY_DEBUG
+#ifdef LIBRARY_DEBUG
+#define SAFE_FAILED() OSReport("SAFE FAILED! @ %s %d\n", __FILE__, __LINE__);
+#else
+#define SAFE_FAILED() (void)0
+#endif
+
+static LibraryConfigEntry* libraryGetEntry(Library* pLibrary, CpuFunction* pFunction) {
+    LibraryConfigEntry* pEntry;
+    s32 i;
+
+    // if the config is not initialized properly go back to default detection
+    if (!bConfigMode) {
+        return NULL;
+    }
+
+    for (i = 0; i < gLibraryConfig.header.nEntries; i++) {
+        pEntry = &gLibraryConfig.pEntries[i];
+
+        if (pFunction->nAddress0 == pEntry->nAddressN64) {
+            // OSReport("libraryGetEntry: function found! (%s)\n", pEntry->szName);
+            return pEntry;
+        }
+    }
+
+    // OSReport("libraryGetEntry: function not found! (0x%08X)\n", pFunction->nAddress0);
+    return NULL;
+}
+
+static u32 libraryGetN64Address(Library* pLibrary, const char* szName) {
+    LibraryConfigEntry* pEntry;
+    s32 i;
+
+    // if the config is not initialized properly go back to default detection
+    if (!bConfigMode) {
+        return 0;
+    }
+
+    for (i = 0; i < gLibraryConfig.header.nEntries; i++) {
+        pEntry = &gLibraryConfig.pEntries[i];
+
+        if (strcmp(szName, pEntry->szName) == 0) {
+            // OSReport("libraryGetEntry: function found! (%s)\n", pEntry->szName);
+            return pEntry->nAddressN64;
+        }
+    }
+
+    // OSReport("libraryGetEntry: function not found! (0x%08X)\n", pFunction->nAddress0);
+    return 0;
+}
+
+static bool libraryInitConfig(Library* pLibrary) {
+    tXL_FILE* pFile;
+    u32 nSize;
+    s32 iFunction;
+    s32 i;
+
+    // try to open the file, if it fails fall back to the normal function detection mode
+    if (!xlFileOpen(&pFile, XLFT_BINARY, "lib_config.bin")) {
+        bConfigMode = false;
+        return true;
+    }
+
+    // get the header
+    if (!xlFileGet(pFile, (void*)&gLibraryConfig.header, sizeof(LibraryConfigHeader))) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // check that the file is the correct one
+    if (strcmp(gLibraryConfig.header.magic, "LIBC")) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // check that the number of entries is correct
+    if (gLibraryConfig.header.nEntries == 0) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // get the entries
+    nSize = gLibraryConfig.header.nEntries * sizeof(LibraryConfigEntry);
+    if (!xlHeapTake((void**)&gLibraryConfig.pEntries, nSize | 0x30000000)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    if (!xlFileGet(pFile, (void*)gLibraryConfig.pEntries, nSize)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // close the config file
+    if (!xlFileClose(&pFile)) {
+        SAFE_FAILED();
+        return false;
+    }
+
+    // add the missing sizes in gaFunction (hacky but hopefully works)
+    for (iFunction = 0; iFunction < ARRAY_COUNTU(gaFunction); iFunction++) {
+        for (i = 0; i < gLibraryConfig.header.nEntries; i++) {
+            LibraryConfigEntry* pEntry = &gLibraryConfig.pEntries[i];
+            char* szName;
+
+            szName = pEntry->szName;
+
+            if (pEntry != NULL && strcmp(gaFunction[iFunction].szName, szName) == 0 && gaFunction[iFunction].anData[0] != 0) {
+                s32 iData;
+
+                for (iData = 0; iData < ARRAY_COUNT(gaFunction[iFunction].anData); iData++) {
+                    if (gaFunction[iFunction].anData[iData] != 0 && gaFunction[iFunction].anData[iData + 1] == 0) {
+                        gaFunction[iFunction].anData[iData + 1] = (pEntry->nSize >> 2) + 1;
+                        break;
+                    }
+                }
+
+                OSReport("gaFunction[iFunction].anData: 0x%08X (%s)\n", gaFunction[iFunction].anData, gaFunction[iFunction].szName);
+                break;
+            }
+        }
+    }
+
+    bConfigMode = true;
+    OSReport("libraryInitConfig: gLibraryConfig: 0x%08X, pEntries: 0x%08X\n", &gLibraryConfig, gLibraryConfig.pEntries);
+    return true;
+}
+
+static bool libraryFreeConfig(Library* pLibrary) {
+    if (gLibraryConfig.pEntries != NULL) {
+        if (!xlHeapFree((void**)&gLibraryConfig.pEntries)) {
+            SAFE_FAILED();
+            return false;
+        }
+    }
+
+    return true;
+}
+
 bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
     s32 iFunction;
     s32 iData;
@@ -3622,16 +3765,25 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
     u32 nChecksum;
     u32 nOpcode;
     u32 nAddress;
+    Frame* pFrame;
+    LibraryConfigEntry* pEntry = NULL;
+
+    pFrame = SYSTEM_FRAME(gpSystem);
 
     if (!cpuGetFunctionChecksum(SYSTEM_CPU(pLibrary->pHost), &nChecksum, pFunction)) {
         return false;
     }
 
+    pEntry = libraryGetEntry(pLibrary, pFunction);
     nSizeCode = ((pFunction->nAddress1 - pFunction->nAddress0) >> 2) + 1;
 
     for (iFunction = 0; iFunction < ARRAY_COUNTU(gaFunction); iFunction++) {
         for (iData = 0; gaFunction[iFunction].anData[iData] != 0; iData += 2) {
-            if (gaFunction[iFunction].anData[iData + 1] != nChecksum ||
+            if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osViSwapBuffer_Entry) {
+                if (pFunction->nAddress0 != libraryGetN64Address(pLibrary, "osViSwapBuffer_Entry")) {
+                    continue;
+                }
+            } else if (gaFunction[iFunction].anData[iData + 1] != nChecksum ||
                 gaFunction[iFunction].anData[iData] != nSizeCode) {
                 continue;
             }
@@ -3665,19 +3817,25 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
                     iFunction -= 1;
                 }
             } else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)__osSpSetStatus) {
-                nChecksum = 0;
-                for (iCode = 0; iCode < nSizeCode; iCode++) {
-                    nChecksum += pnCode[iCode];
-                }
-                if (nChecksum != 0xC1E27C6E && nChecksum != 0xEDB2A41C && nChecksum != 0x2068A41C) {
-                    bFlag = false;
-                }
+                // if (pEntry == NULL) {
+                    nChecksum = 0;
+                    for (iCode = 0; iCode < nSizeCode; iCode++) {
+                        nChecksum += pnCode[iCode];
+                    }
+                    if (nChecksum != 0xC1E27C6E && nChecksum != 0xEDB2A41C && nChecksum != 0x2068A41C) {
+                        bFlag = false;
+                    }
+                // }
             } else if (gaFunction[iFunction].pfLibrary == (LibraryFuncImpl)osInvalICache) {
                 if (MIPS_IMM_U16(pnCode[2]) == 0x2000) {
                     bDone = true;
                     iFunction += 1;
                 }
-            } else if (gaFunction[iFunction].pfLibrary == NULL && nChecksum == 0x376979EF) {
+            } else if (gaFunction[iFunction].pfLibrary == NULL && 
+                (nChecksum == 0x376979EF 
+                // || (pEntry != NULL && strcmp(pEntry->szName, "osInvalICache") == 0)
+                // || (pEntry != NULL && strcmp(pEntry->szName, "osWritebackDCache") == 0)
+                )) {
                 if (MIPS_IMM_U16(pnCode[2]) == 0x4000) {
                     bDone = true;
                     iFunction -= 1;
@@ -3762,8 +3920,8 @@ bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction) {
             }
 #endif
 
-            // OSReport("gaFunction[iFunction].szName: %s, pFunction->nAddress0: 0x%08X\n",
-            // gaFunction[iFunction].szName, pFunction->nAddress0);
+            OSReport("gaFunction[iFunction].szName: %s, pFunction->nAddress0: 0x%08X\n",
+            gaFunction[iFunction].szName, pFunction->nAddress0);
 
             if (bFlag) {
                 pFunction->timeToLive = 0;
@@ -3893,10 +4051,17 @@ bool libraryEvent(Library* pLibrary, s32 nEvent, void* pArgument) {
             pLibrary->nAddStackSwap = 0;
             pLibrary->aFunction = gaFunction;
             pLibrary->nCountFunction = ARRAY_COUNT(gaFunction);
+
+            if (!libraryInitConfig(pLibrary)) {
+                return false;
+            }
             break;
         case 0:
         case 1:
         case 3:
+            if (!libraryFreeConfig(pLibrary)) {
+                return false;
+            }
         case 0x1002:
             break;
 #if VERSION != MQ_J

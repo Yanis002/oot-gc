@@ -1669,14 +1669,18 @@ static bool romGetDmaConfig(Rom* pROM, DmaConfig* pConfig) {
 }
 
 static bool romFreeDmaConfig(Rom* pROM, DmaConfig* pConfig) {
-    if (!xlHeapFree((void**)&pConfig->data)) {
-        SAFE_FAILED();
-        return false;
+    if (pConfig->data != NULL) {
+        if (!xlHeapFree((void**)&pConfig->data)) {
+            SAFE_FAILED();
+            return false;
+        }
     }
 
-    if (!xlHeapFree((void**)&pConfig->pEntries)) {
-        SAFE_FAILED();
-        return false;
+    if (pConfig->pEntries != NULL) {
+        if (!xlHeapFree((void**)&pConfig->pEntries)) {
+            SAFE_FAILED();
+            return false;
+        }
     }
 
     return true;
@@ -1702,6 +1706,8 @@ static bool romCacheGameFromDmadata(Rom* pROM) {
     s32 rangeStart;
     s32 rangeEnd;
     s32 i;
+
+    // return true;
 
     if (!romGetDmaConfig(pROM, &config)) {
         SAFE_FAILED();
