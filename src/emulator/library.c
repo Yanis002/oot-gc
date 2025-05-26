@@ -4092,6 +4092,7 @@ bool libraryEvent(Library* pLibrary, s32 nEvent, void* pArgument) {
             if (!libraryFreeConfig(pLibrary)) {
                 return false;
             }
+            break;
         case 0x1002:
             break;
 #if VERSION != MQ_J
