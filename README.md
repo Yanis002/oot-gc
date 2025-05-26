@@ -1,3 +1,12 @@
+# Mod OoT GCC Compatibility
+
+This adds basic compatiblity for GCC builds of OoT, new features:
+- cache the dma files automatically based on a configuration file created from an oot decomp build
+- better detection of libultra functions based on a configuration file created from an oot decomp build
+
+See [this](https://github.com/Yanis002/oot/tree/wii-vc) for the OoT decomp side
+
+---
 oot-gc  
 [![Build Status]][actions] ![mq-j] ![mq-u] ![mq-e] ![ce-j] ![ce-u] ![ce-e] [![Discord Badge]][discord]
 =============
