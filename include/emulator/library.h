@@ -26,7 +26,25 @@ typedef struct Library {
     /* 0x40 */ s32 anAddress[10];
 } Library; // size = 0x68
 
+typedef struct LibraryConfigHeader {
+    /* 0x00 */ char magic[4]; // always LIBC (for LIBrary Config)
+    /* 0x04 */ u16 nEntries; // number of function entries
+    /* 0x06 */ u8 pad[0x20 - 0x06];
+} LibraryConfigHeader; // size = 0x20
+
+typedef struct LibraryConfigEntry {
+    /* 0x00 */ u32 nAddressN64; // n64 vram address of the function
+    /* 0x04 */ u32 nSize; // size of the function
+    /* 0x08 */ char szName[24]; // the function's name
+} LibraryConfigEntry; // size = 0x20
+
+typedef struct LibraryConfig {
+    /* 0x00 */ LibraryConfigHeader header;
+    /* 0x20 */ LibraryConfigEntry* pEntries;
+} LibraryConfig; // size = 0x08
+
 extern _XL_OBJECTTYPE gClassLibrary;
+extern LibraryConfig gLibraryConfig;
 
 bool libraryTestFunction(Library* pLibrary, CpuFunction* pFunction);
 bool libraryFunctionReplaced(Library* pLibrary, s32 iFunction);
