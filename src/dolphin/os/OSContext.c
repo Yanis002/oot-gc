@@ -415,9 +415,14 @@ ASM void OSInitContext(register OSContext* context, register u32 pc, register u3
 #endif // clang-format on
 }
 
+#include "emulator/system.h"
+extern System* gpSystem;
+
 void OSDumpContext(OSContext* context) {
     u32 i;
     u32* p;
+
+    OSReport("N64 PC: 0x%08X\n", SYSTEM_CPU(gpSystem)->nPC);
 
     OSReport("------------------------- Context 0x%08x -------------------------\n", context);
 
